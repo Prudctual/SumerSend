@@ -190,7 +190,6 @@ DROP POLICY IF EXISTS "Allow update access to own user profile" ON public.users;
 DROP POLICY IF EXISTS "Allow insert access to users" ON public.users;
 CREATE POLICY "Allow read access to users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Allow update access to own user profile" ON public.users FOR UPDATE USING (auth.uid()::text = id);
-CREATE POLICY "Allow insert access to users" ON public.users FOR INSERT WITH CHECK (true);
 
 -- SMTP Configs policies
 DROP POLICY IF EXISTS "Allow all access to own SMTP config" ON public.smtp_configs;
@@ -268,7 +267,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to run on user insertion
 CREATE OR REPLACE TRIGGER on_user_created
@@ -310,7 +309,7 @@ BEGIN
 
   RETURN true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- =========================================================================
@@ -338,6 +337,21 @@ BEGIN
 
   RETURN true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+
+-- =========================================================================
+-- Function Execution Security Hardening (Ref: anon-security-definer)
+-- =========================================================================
+
+-- Revoke public execution permissions
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.charge_wallet_atomic(text, numeric, text, text, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.refund_wallet_atomic(text, numeric, text, text, text) FROM PUBLIC;
+
+-- Grant execution permissions only to service_role (used by Express backend)
+GRANT EXECUTE ON FUNCTION public.charge_wallet_atomic(text, numeric, text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.refund_wallet_atomic(text, numeric, text, text, text) TO service_role;
+
 
 
