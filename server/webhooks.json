@@ -1,0 +1,9 @@
+[
+  {
+    "id": "1",
+    "url": "https://mystore.iq/api/sumer-receiver",
+    "events": ["email.failed", "sms.delivered"],
+    "secret": "whsec_8f0a2e5d9c7b1a2e3f4d5c6b7a8f9e0d",
+    "createdAt": "2026-06-12T12:00:00.000Z"
+  }
+]

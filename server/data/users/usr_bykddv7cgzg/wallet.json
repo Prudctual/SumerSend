@@ -1,0 +1,21 @@
+{
+  "balance": 49880,
+  "transactions": [
+    {
+      "id": "TX758559",
+      "provider": "Usage",
+      "amount": 120,
+      "status": "completed",
+      "date": "2026-06-20T10:06:19.429Z",
+      "description": "SMS to 07801112222"
+    },
+    {
+      "id": "TX_WELCOME",
+      "provider": "Sumer Send",
+      "amount": 50000,
+      "status": "completed",
+      "date": "2026-06-20T10:06:19.360Z",
+      "description": "Welcome bonus balance"
+    }
+  ]
+}

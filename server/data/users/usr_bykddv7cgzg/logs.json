@@ -1,0 +1,11 @@
+[
+  {
+    "id": "sms_515v2qqs27",
+    "type": "sms",
+    "from": "Sumer Send API",
+    "to": "07801112222",
+    "body": "Verification Code: 123456",
+    "status": "delivered",
+    "timestamp": "2026-06-20T10:06:19.429Z"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "host": "smtp.hostinger.com",
+  "port": 465,
+  "secure": true,
+  "user": "admin@aiandthings.tech",
+  "pass": "Jassim1999x@",
+  "from": "Sumer Send <admin@aiandthings.tech>"
+}

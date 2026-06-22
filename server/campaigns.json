@@ -1,0 +1,24 @@
+[
+  {
+    "id": "camp_984180",
+    "name": "بصرة",
+    "type": "email",
+    "status": "completed",
+    "subject": "إيصال دفع: تم شحن محفظتك بنجاح 🧾",
+    "body": "<div style=\"font-family: 'Cairo', sans-serif, system-ui; max-width: 500px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 10px; overflow: hidden; background-color: #ffffff; direction: rtl; text-align: right;\">\n  <div style=\"padding: 25px; border-bottom: 1px dashed #eaeaea; text-align: center;\">\n    <div style=\"display: inline-block; width: 48px; height: 48px; line-height: 48px; background-color: #e6f7f0; color: #10b981; border-radius: 50%; font-size: 24px; margin-bottom: 12px; text-align: center;\">✓</div>\n    <h2 style=\"margin: 0; font-size: 18px; color: #09090b; font-weight: 700;\">تم استلام الدفعة بنجاح</h2>\n    <p style=\"margin: 5px 0 0 0; font-size: 12px; color: #71717a;\">شكراً لك على شحن رصيدك في منصة Sumer Send</p>\n  </div>\n  \n  <div style=\"padding: 25px;\">\n    <table style=\"width: 100%; border-collapse: collapse; font-size: 13px; color: #444444;\">\n      <tr>\n        <td style=\"padding: 8px 0; color: #71717a;\">رقم العملية</td>\n        <td style=\"padding: 8px 0; font-weight: 600; text-align: left; color: #09090b;\">{{tx_id}}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #71717a;\">وسيلة الدفع</td>\n        <td style=\"padding: 8px 0; font-weight: 600; text-align: left; color: #09090b;\">{{payment_method}}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #71717a;\">تاريخ العملية</td>\n        <td style=\"padding: 8px 0; font-weight: 600; text-align: left; color: #09090b;\">{{date}}</td>\n      </tr>\n      <tr style=\"border-top: 1px solid #eaeaea; border-bottom: 1px solid #eaeaea;\">\n        <td style=\"padding: 12px 0; font-size: 14px; font-weight: 700; color: #09090b;\">المبلغ المشحون</td>\n        <td style=\"padding: 12px 0; font-size: 16px; font-weight: 700; text-align: left; color: #10b981;\">{{amount}}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #71717a;\">الرصيد الكلي الحالي</td>\n        <td style=\"padding: 8px 0; font-weight: 600; text-align: left; color: #09090b;\">{{balance}}</td>\n      </tr>\n    </table>\n    \n    <div style=\"margin-top: 25px; padding: 12px; background-color: #fafafa; border: 1px solid #eaeaea; border-radius: 6px; font-size: 12px; color: #666666; line-height: 1.5;\">\n      💡 <strong>تنويه:</strong> يتم خصم رسوم الإرسال تلقائياً من محفظتك كالتالي: الإيميل (10 د.ع)، الـ SMS (120 د.ع)، والواتساب (150 د.ع).\n    </div>\n  </div>\n  \n  <div style=\"background-color: #f4f4f5; padding: 15px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #eaeaea;\">\n    بوابة Sumer Send للمطورين • بغداد، العراق\n  </div>\n</div>",
+    "recipientsCount": 1,
+    "successCount": 1,
+    "failedCount": 0,
+    "totalCost": 10,
+    "timestamp": "2026-06-16T09:58:27.201Z",
+    "recipients": [
+      {
+        "name": "Omar Fadhil",
+        "to": "alii.haddii2004@gmail.com",
+        "status": "delivered",
+        "error": null,
+        "variables": {}
+      }
+    ]
+  }
+]

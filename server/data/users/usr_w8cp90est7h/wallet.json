@@ -1,0 +1,13 @@
+{
+  "balance": 50000,
+  "transactions": [
+    {
+      "id": "TX_WELCOME",
+      "provider": "Sumer Send",
+      "amount": 50000,
+      "status": "completed",
+      "date": "2026-06-22T09:54:02.615Z",
+      "description": "Welcome bonus balance"
+    }
+  ]
+}

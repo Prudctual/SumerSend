@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "name": "Main Application Key",
+    "key": "sm_live_c0vy8grf9lylye5j",
+    "scope": "full",
+    "createdAt": "2026-06-20T10:06:19.360Z"
+  },
+  {
+    "id": "1781949979427",
+    "name": "Test Automation Key",
+    "key": "sm_live_c220b1e44a9fbe0f47c86e1b84667aac",
+    "scope": "full",
+    "createdAt": "2026-06-20T10:06:19.427Z"
+  }
+]

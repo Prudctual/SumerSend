@@ -1,0 +1,23 @@
+[
+  {
+    "id": "usr_bykddv7cgzg",
+    "email": "testuser1@example.com",
+    "passwordHash": "$2b$10$ge7Yqw2SMg/7GxS6g7Qxee8Md1n4ZgKimBXI9GoPHRqcB9e64ofTO",
+    "name": "Test User One",
+    "createdAt": "2026-06-20T10:06:19.359Z"
+  },
+  {
+    "id": "usr_demo",
+    "email": "demo@sumersend.com",
+    "passwordHash": "$2b$10$YS/PhNi1a5HbwqqFrpH6/OK8Zr60FWZa0323ADKWozZeO68rXirk6",
+    "name": "حساب تجريبي (Demo User)",
+    "createdAt": "2026-06-20T10:36:48.060Z"
+  },
+  {
+    "id": "usr_w8cp90est7h",
+    "email": "xgolo70@gmail.com",
+    "passwordHash": "$2b$10$EMxtz5V.0ANFmc1mhL/ArO.oK7broisqjg8JeA4DP/imHXdCY783W",
+    "name": "علي هادي",
+    "createdAt": "2026-06-22T09:54:02.614Z"
+  }
+]
