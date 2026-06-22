@@ -237,7 +237,7 @@ BEGIN
 
   -- Insert default wallet welcome transaction
   INSERT INTO public.transactions (id, user_id, provider, amount, status, description)
-  VALUES ('TX_WELCOME', NEW.id, 'Sumer Send', 50000, 'completed', 'Welcome bonus balance');
+  VALUES ('TX_WELCOME_' || NEW.id, NEW.id, 'Sumer Send', 50000, 'completed', 'Welcome bonus balance');
 
   -- Insert default security config
   INSERT INTO public.security_configs (user_id, phone, verified, require_campaign_2fa, require_apikey_2fa)
@@ -246,7 +246,7 @@ BEGIN
   -- Insert default API key
   INSERT INTO public.api_keys (id, user_id, name, key, scope)
   VALUES (
-    '1',
+    NEW.id || '_key_1',
     NEW.id,
     'Main Application Key',
     'sm_live_' || md5(random()::text || clock_timestamp()::text),
