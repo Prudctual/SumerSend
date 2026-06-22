@@ -29,7 +29,7 @@ authRouter.post('/signup', async (req, res) => {
     }
 
     const userId = 'usr_' + Math.random().toString(36).substring(2, 15);
-    const passwordHash = bcrypt.hashSync(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = {
       id: userId,
@@ -74,7 +74,8 @@ authRouter.post('/login', async (req, res) => {
   try {
     const user = await getUserByEmail(email);
 
-    if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+    const isPasswordValid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+    if (!user || !isPasswordValid) {
       return res.status(400).json({ error: 'Invalid email or password.' });
     }
 
