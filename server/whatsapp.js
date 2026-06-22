@@ -9,8 +9,8 @@ import { loadUsers } from './db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Resolve data paths dynamically for Vercel's read-only file system
-const DATA_DIR = process.env.VERCEL 
+// Resolve data paths dynamically for write-restricted environments (Vercel/Render)
+const DATA_DIR = (process.env.VERCEL || process.env.RENDER)
   ? path.join('/tmp', 'data') 
   : path.join(__dirname, 'data');
 
