@@ -80,7 +80,7 @@ async function run() {
       .from('transactions')
       .select('*')
       .eq('user_id', testUserId)
-      .eq('id', 'TX_WELCOME')
+      .eq('id', 'TX_WELCOME_' + testUserId)
       .maybeSingle();
 
     if (txError || !txData) {
@@ -126,6 +126,32 @@ async function run() {
         .eq('user_id', testUserId)
         .single();
       console.log(`   Updated balance: ${walletUpdated.balance} IQD (Expected: 47500).`);
+    }
+
+    console.log('\n3b. Testing atomic wallet refunding...');
+    const refundAmount = 2500;
+    const { data: refundResult, error: refundError } = await supabase.rpc('refund_wallet_atomic', {
+      p_user_id: testUserId,
+      p_amount: refundAmount,
+      p_description: 'Test Refund',
+      p_provider: 'SMS API',
+      p_tx_id: 'TX_TEST_REFUND'
+    });
+
+    if (refundError) {
+      console.log(`❌ Atomic refund call failed: ${refundError.message}`);
+    } else if (refundResult === false) {
+      console.log('❌ Atomic refund call returned false.');
+    } else {
+      console.log(`✅ Atomic refund call success: Refunded ${refundAmount} IQD.`);
+
+      // Verify wallet balance updated
+      const { data: walletRefunded } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', testUserId)
+        .single();
+      console.log(`   Updated balance after refund: ${walletRefunded.balance} IQD (Expected: 50000).`);
     }
 
     console.log('\n4. Cleaning up test user data...');
