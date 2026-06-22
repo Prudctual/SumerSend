@@ -31,7 +31,9 @@ import {
   saveSecurityConfig,
   loadApiKeys,
   saveApiKeys,
-  findUserByApiKey
+  findUserByApiKey,
+  refundWallet,
+  bootstrapUserData
 } from './db.js';
 
 dotenv.config();
@@ -339,6 +341,17 @@ app.delete('/api/logs', async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ error: 'Error clearing logs.' });
+  }
+});
+
+// GET /api/bootstrap
+app.get('/api/bootstrap', async (req, res) => {
+  try {
+    const data = await bootstrapUserData(req.user.id);
+    res.json(data);
+  } catch (err) {
+    console.error(`Bootstrap error for user ${req.user.id}:`, err);
+    res.status(500).json({ error: 'Failed to bootstrap dashboard data.' });
   }
 });
 
@@ -737,6 +750,10 @@ app.post('/api/whatsapp/logout', async (req, res) => {
 // ----------------------------------------------------
 
 // Middleware for public APIs
+// Simple in-memory API key cache with TTL (15 seconds) to boost throughput and avoid database read load on concurrent bursts
+const apiKeyCache = new Map();
+const CACHE_TTL_MS = 15000; // 15 seconds
+
 async function publicApiAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   
@@ -750,6 +767,16 @@ async function publicApiAuth(req, res, next) {
   }
 
   const apiKey = authHeader.split(' ')[1];
+  
+  // Check cache first
+  const cached = apiKeyCache.get(apiKey);
+  const now = Date.now();
+  if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+    req.apiKeyOwner = cached.user;
+    req.apiKeyObj = cached.key;
+    return next();
+  }
+
   try {
     const authResult = await findUserByApiKey(apiKey);
     
@@ -762,12 +789,31 @@ async function publicApiAuth(req, res, next) {
       });
     }
 
+    // Cache the authentication result
+    apiKeyCache.set(apiKey, {
+      user: authResult.user,
+      key: authResult.key,
+      timestamp: now
+    });
+
     req.apiKeyOwner = authResult.user;
     req.apiKeyObj = authResult.key;
     next();
   } catch (err) {
     return res.status(500).json({ error: 'Authentication processing error.' });
   }
+}
+
+// Input validation regex helpers
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(email) {
+  return EMAIL_REGEX.test(email);
+}
+
+// Basrah & general Iraqi phone prefix: Optional (+964, 00964, 0) followed by 75, 77, 78, 79 then 8 digits
+const IRAQI_PHONE_REGEX = /^(?:\+964|00964|0)?7[5789]\d{8}$/;
+function isValidIraqiPhone(phone) {
+  return IRAQI_PHONE_REGEX.test(phone);
 }
 
 // POST /v1/emails
@@ -783,58 +829,77 @@ app.post('/v1/emails', publicApiAuth, async (req, res) => {
       }
     });
   }
+
+  if (!isValidEmail(to)) {
+    return res.status(400).json({
+      error: {
+        message: 'Invalid recipient email address format.',
+        type: 'invalid_request_error'
+      }
+    });
+  }
   
   const cost = 10;
   
+  // 1. Charge wallet atomically first
+  const charged = await chargeWallet(userId, cost, `Email to ${to}`);
+  if (!charged) {
+    const failedLog = {
+      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+      type: 'email',
+      from: from || 'onboarding@sumersend.com',
+      to,
+      subject,
+      body: html,
+      status: 'failed',
+      error: 'Insufficient wallet balance. Please top up.',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, failedLog);
+    triggerWebhooks(userId, 'email.failed', failedLog);
+    return res.status(402).json({
+      error: {
+        message: 'Insufficient wallet balance. Please top up your wallet.',
+        type: 'insufficient_funds_error'
+      }
+    });
+  }
+
+  let config;
+  let transporter;
   try {
-    const wallet = await loadWallet(userId);
-    if (wallet.balance < cost) {
-      const failedLog = {
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
-        type: 'email',
-        from: from || 'onboarding@sumersend.com',
-        to,
-        subject,
-        body: html,
-        status: 'failed',
-        error: 'Insufficient wallet balance. Please top up.',
-        timestamp: new Date().toISOString()
-      };
-      await appendLog(userId, failedLog);
-      triggerWebhooks(userId, 'email.failed', failedLog);
-      return res.status(402).json({
-        error: {
-          message: 'Insufficient wallet balance. Please top up your wallet.',
-          type: 'insufficient_funds_error'
-        }
-      });
-    }
+    config = await loadSmtpConfig(userId);
+    transporter = createTransporter(config);
+  } catch (err) {
+    console.error('SMTP Config error:', err);
+  }
+  
+  if (!transporter) {
+    // Refund the user since sending didn't proceed
+    await refundWallet(userId, cost, `Refund: SMTP not configured for Email to ${to}`);
     
-    const config = await loadSmtpConfig(userId);
-    const transporter = createTransporter(config);
-    
-    if (!transporter) {
-      const failedLog = {
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
-        type: 'email',
-        from: from || config.from || 'onboarding@sumersend.com',
-        to,
-        subject,
-        body: html,
-        status: 'failed',
-        error: 'SMTP settings are not configured on the server.',
-        timestamp: new Date().toISOString()
-      };
-      await appendLog(userId, failedLog);
-      triggerWebhooks(userId, 'email.failed', failedLog);
-      return res.status(500).json({
-        error: {
-          message: 'SMTP settings are not configured on the server. Please setup SMTP in settings.',
-          type: 'server_configuration_error'
-        }
-      });
-    }
-    
+    const failedLog = {
+      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+      type: 'email',
+      from: from || (config && config.from) || 'onboarding@sumersend.com',
+      to,
+      subject,
+      body: html,
+      status: 'failed',
+      error: 'SMTP settings are not configured on the server.',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, failedLog);
+    triggerWebhooks(userId, 'email.failed', failedLog);
+    return res.status(500).json({
+      error: {
+        message: 'SMTP settings are not configured on the server. Please setup SMTP in settings.',
+        type: 'server_configuration_error'
+      }
+    });
+  }
+  
+  try {
     const info = await transporter.sendMail({
       from: from || config.from,
       to,
@@ -842,7 +907,6 @@ app.post('/v1/emails', publicApiAuth, async (req, res) => {
       html
     });
     
-    await chargeWallet(userId, cost, `Email to ${to}`);
     console.log(`Email delivered to ${to} for user ${userId}. Message ID: ${info.messageId}`);
     
     const successLog = {
@@ -861,6 +925,9 @@ app.post('/v1/emails', publicApiAuth, async (req, res) => {
   } catch (error) {
     console.error('Email delivery failed:', error);
     
+    // Refund the user
+    await refundWallet(userId, cost, `Refund: Delivery failure for Email to ${to}`);
+    
     const failedLog = {
       id: `msg_${Math.random().toString(36).substring(2, 15)}`,
       type: 'email',
@@ -874,7 +941,7 @@ app.post('/v1/emails', publicApiAuth, async (req, res) => {
     };
     await appendLog(userId, failedLog);
     triggerWebhooks(userId, 'email.failed', failedLog);
-
+    
     res.status(500).json({
       error: {
         message: error.message || 'SMTP delivery failure.',
@@ -892,37 +959,37 @@ app.post('/v1/sms', publicApiAuth, async (req, res) => {
   if (!to || !body) {
     return res.status(400).json({ error: 'to and body parameters are required.' });
   }
+
+  if (!isValidIraqiPhone(to)) {
+    return res.status(400).json({ error: 'Invalid recipient phone number format. Must be a valid Iraqi mobile number.' });
+  }
   
   const cost = 120;
   
-  try {
-    const wallet = await loadWallet(userId);
-    if (wallet.balance < cost) {
-      const failedLog = {
-        id: `sms_${Math.random().toString(36).substring(2, 15)}`,
-        type: 'sms',
-        from: 'Sumer Send API',
-        to,
-        body,
-        status: 'failed',
-        error: 'Insufficient wallet balance. Please top up.',
-        timestamp: new Date().toISOString()
-      };
-      await appendLog(userId, failedLog);
-      triggerWebhooks(userId, 'sms.failed', failedLog);
-      return res.status(402).json({
-        error: {
-          message: 'Insufficient wallet balance. Please top up your wallet.',
-          type: 'insufficient_funds_error'
-        }
-      });
-    }
-    
-    const charged = await chargeWallet(userId, cost, `SMS to ${to}`);
-    if (!charged) {
-      return res.status(500).json({ error: 'Failed to process transaction.' });
-    }
+  // 1. Charge wallet atomically first
+  const charged = await chargeWallet(userId, cost, `SMS to ${to}`);
+  if (!charged) {
+    const failedLog = {
+      id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+      type: 'sms',
+      from: 'Sumer Send API',
+      to,
+      body,
+      status: 'failed',
+      error: 'Insufficient wallet balance. Please top up.',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, failedLog);
+    triggerWebhooks(userId, 'sms.failed', failedLog);
+    return res.status(402).json({
+      error: {
+        message: 'Insufficient wallet balance. Please top up your wallet.',
+        type: 'insufficient_funds_error'
+      }
+    });
+  }
 
+  try {
     console.log(`SMS Simulated dispatch to ${to} for user ${userId}: ${body}`);
     
     const logEntry = {
@@ -938,6 +1005,8 @@ app.post('/v1/sms', publicApiAuth, async (req, res) => {
     triggerWebhooks(userId, 'sms.delivered', logEntry);
     res.json(logEntry);
   } catch (err) {
+    // Refund user on unexpected error
+    await refundWallet(userId, cost, `Refund: Delivery execution failure for SMS to ${to}`);
     res.status(500).json({ error: 'SMS sending execution failed.' });
   }
 });
@@ -949,6 +1018,10 @@ app.post('/v1/whatsapp', publicApiAuth, async (req, res) => {
   
   if (!to || !body) {
     return res.status(400).json({ error: 'to and body parameters are required.' });
+  }
+
+  if (!isValidIraqiPhone(to)) {
+    return res.status(400).json({ error: 'Invalid recipient phone number format. Must be a valid Iraqi mobile number.' });
   }
 
   const waStatus = getWhatsAppStatus(userId);
@@ -970,31 +1043,31 @@ app.post('/v1/whatsapp', publicApiAuth, async (req, res) => {
 
   const cost = 150;
   
+  // 1. Charge wallet atomically first
+  const charged = await chargeWallet(userId, cost, `WhatsApp to ${to}`);
+  if (!charged) {
+    const failedLog = {
+      id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+      type: 'whatsapp',
+      from: 'Sumer Send API',
+      to,
+      body,
+      status: 'failed',
+      error: 'Insufficient wallet balance. Please top up.',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, failedLog);
+    triggerWebhooks(userId, 'whatsapp.failed', failedLog);
+    return res.status(402).json({
+      error: {
+        message: 'Insufficient wallet balance. Please top up your wallet.',
+        type: 'insufficient_funds_error'
+      }
+    });
+  }
+
   try {
-    const wallet = await loadWallet(userId);
-    if (wallet.balance < cost) {
-      const failedLog = {
-        id: `wa_${Math.random().toString(36).substring(2, 15)}`,
-        type: 'whatsapp',
-        from: 'Sumer Send API',
-        to,
-        body,
-        status: 'failed',
-        error: 'Insufficient wallet balance. Please top up.',
-        timestamp: new Date().toISOString()
-      };
-      await appendLog(userId, failedLog);
-      triggerWebhooks(userId, 'whatsapp.failed', failedLog);
-      return res.status(402).json({
-        error: {
-          message: 'Insufficient wallet balance. Please top up your wallet.',
-          type: 'insufficient_funds_error'
-        }
-      });
-    }
-    
     await sendWhatsAppMessage(userId, to, body);
-    await chargeWallet(userId, cost, `WhatsApp to ${to}`);
     console.log(`WhatsApp Actual dispatch to ${to} for user ${userId}: ${body}`);
     
     const logEntry = {
@@ -1011,6 +1084,10 @@ app.post('/v1/whatsapp', publicApiAuth, async (req, res) => {
     res.json(logEntry);
   } catch (error) {
     console.error('WhatsApp sending failed:', error);
+    
+    // Refund user
+    await refundWallet(userId, cost, `Refund: Delivery failure for WhatsApp to ${to}`);
+
     const failedLog = {
       id: `wa_${Math.random().toString(36).substring(2, 15)}`,
       type: 'whatsapp',
@@ -1033,6 +1110,18 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Sumer Send Server running on port ${PORT}`);
     initializeAllWhatsAppConnections();
+
+    // Keep-alive / Self-ping routine to prevent Render containers from idling/sleeping
+    const selfPingUrl = process.env.RENDER_EXTERNAL_URL || `http://127.0.0.1:${PORT}`;
+    console.log(`Keep-alive self-pinging configured for: ${selfPingUrl}`);
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${selfPingUrl}/health`);
+        console.log(`[Keep-Alive] Pinged health endpoint: ${res.status} ${res.statusText}`);
+      } catch (err) {
+        console.warn(`[Keep-Alive] Ping failed:`, err.message);
+      }
+    }, 10 * 60 * 1000); // every 10 minutes (Render timeout is 15 minutes)
   });
 }
 

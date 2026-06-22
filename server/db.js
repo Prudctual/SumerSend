@@ -319,6 +319,46 @@ export async function chargeWallet(userId, amount, description, provider = 'Usag
   return !!data;
 }
 
+export async function refundWallet(userId, amount, description, provider = 'Usage') {
+  const txId = 'TX_REF' + Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Call the atomic postgres function to refund balance and log transaction under row-lock
+  const { data, error } = await supabase.rpc('refund_wallet_atomic', {
+    p_user_id: userId,
+    p_amount: amount,
+    p_description: description,
+    p_provider: provider,
+    p_tx_id: txId
+  });
+
+  if (error) {
+    console.error(`Error executing refund_wallet_atomic RPC for user ${userId}:`, error);
+    return false;
+  }
+  return !!data;
+}
+
+export async function bootstrapUserData(userId) {
+  const [logs, walletData, apiKeys, webhooks, securityConfig, smtpConfig] = await Promise.all([
+    loadLogs(userId),
+    loadWallet(userId),
+    loadApiKeys(userId),
+    loadWebhooks(userId),
+    loadSecurityConfig(userId),
+    loadSmtpConfig(userId)
+  ]);
+
+  return {
+    logs,
+    wallet: walletData,
+    apiKeys,
+    webhooks,
+    securityConfig,
+    smtpConfig
+  };
+}
+
+
 // =========================================================================
 // 5. Webhook Database Helper Methods
 // =========================================================================

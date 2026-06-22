@@ -172,58 +172,35 @@ export default function App() {
     });
   }, [token]);
 
-  // Load user data once authenticated
+  // Load user data once authenticated via a single bootstrap call to reduce network waterfalls and boost initial page load speed
   useEffect(() => {
     if (!token) return;
 
-    // Load logs
-    fetch('http://127.0.0.1:3000/api/logs')
+    fetch('http://127.0.0.1:3000/api/bootstrap')
       .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch');
+        if (!res.ok) throw new Error('Failed to bootstrap dashboard data');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data)) setLogs(data);
-      })
-      .catch(err => console.warn('Could not load logs:', err));
-
-    // Load wallet balance
-    fetch('http://127.0.0.1:3000/api/wallet')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch wallet');
-        return res.json();
-      })
-      .then(data => {
-        if (data && typeof data.balance === 'number') {
-          setWalletBalance(data.balance);
-          if (Array.isArray(data.transactions)) {
-            setTransactions(data.transactions);
+        if (data.logs && Array.isArray(data.logs)) {
+          setLogs(data.logs);
+        }
+        if (data.wallet) {
+          if (typeof data.wallet.balance === 'number') {
+            setWalletBalance(data.wallet.balance);
+          }
+          if (Array.isArray(data.wallet.transactions)) {
+            setTransactions(data.wallet.transactions);
           }
         }
+        if (data.apiKeys && Array.isArray(data.apiKeys)) {
+          setApiKeys(data.apiKeys);
+        }
+        if (data.webhooks && Array.isArray(data.webhooks)) {
+          setWebhooks(data.webhooks);
+        }
       })
-      .catch(err => console.warn('Could not load wallet:', err));
-
-    // Load API keys
-    fetch('http://127.0.0.1:3000/api/apikeys')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch API keys');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setApiKeys(data);
-      })
-      .catch(err => console.warn('Could not load api keys:', err));
-
-    // Load webhooks
-    fetch('http://127.0.0.1:3000/api/webhooks')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch webhooks');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setWebhooks(data);
-      })
-      .catch(err => console.warn('Could not load webhooks:', err));
+      .catch(err => console.error('Bootstrap data fetch failed:', err));
   }, [token]);
 
   // Guard routing and redirect guest users to signin screen

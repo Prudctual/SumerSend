@@ -292,3 +292,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
+-- =========================================================================
+-- Atomic Wallet Refunding Function (Ref: lock- concurrency prevention)
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.refund_wallet_atomic(
+  p_user_id text,
+  p_amount numeric,
+  p_description text,
+  p_provider text,
+  p_tx_id text
+) RETURNS boolean AS $$
+BEGIN
+  -- Lock the user's wallet row for update to prevent concurrent modification race conditions
+  PERFORM balance FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
+
+  -- Add the refunded amount back to balance
+  UPDATE public.wallets
+  SET balance = balance + p_amount
+  WHERE user_id = p_user_id;
+
+  -- Record the refund transaction log (amount is negative to indicate refund)
+  INSERT INTO public.transactions (id, user_id, provider, amount, status, description)
+  VALUES (p_tx_id, p_user_id, p_provider, -p_amount, 'completed', p_description);
+
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
