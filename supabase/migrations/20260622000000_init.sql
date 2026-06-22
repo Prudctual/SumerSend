@@ -181,48 +181,48 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_key ON public.api_keys(key);
 DROP POLICY IF EXISTS "Allow read access to users" ON public.users;
 DROP POLICY IF EXISTS "Allow update access to own user profile" ON public.users;
 DROP POLICY IF EXISTS "Allow insert access to users" ON public.users;
-CREATE POLICY "Allow read access to users" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Allow update access to own user profile" ON public.users FOR UPDATE USING (auth.uid()::text = id);
+CREATE POLICY "Allow read access to users" ON public.users FOR SELECT USING ((select auth.uid())::text = id);
+CREATE POLICY "Allow update access to own user profile" ON public.users FOR UPDATE USING ((select auth.uid())::text = id);
 
 -- SMTP Configs policies
 DROP POLICY IF EXISTS "Allow all access to own SMTP config" ON public.smtp_configs;
-CREATE POLICY "Allow all access to own SMTP config" ON public.smtp_configs FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own SMTP config" ON public.smtp_configs FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Logs policies
 DROP POLICY IF EXISTS "Allow all access to own logs" ON public.logs;
-CREATE POLICY "Allow all access to own logs" ON public.logs FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own logs" ON public.logs FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Wallets policies
 DROP POLICY IF EXISTS "Allow all access to own wallet" ON public.wallets;
-CREATE POLICY "Allow all access to own wallet" ON public.wallets FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own wallet" ON public.wallets FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Transactions policies
 DROP POLICY IF EXISTS "Allow all access to own transactions" ON public.transactions;
-CREATE POLICY "Allow all access to own transactions" ON public.transactions FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own transactions" ON public.transactions FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Webhooks policies
 DROP POLICY IF EXISTS "Allow all access to own webhooks" ON public.webhooks;
-CREATE POLICY "Allow all access to own webhooks" ON public.webhooks FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own webhooks" ON public.webhooks FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Webhook Logs policies
 DROP POLICY IF EXISTS "Allow all access to own webhook logs" ON public.webhook_logs;
-CREATE POLICY "Allow all access to own webhook logs" ON public.webhook_logs FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own webhook logs" ON public.webhook_logs FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Campaigns policies
 DROP POLICY IF EXISTS "Allow all access to own campaigns" ON public.campaigns;
-CREATE POLICY "Allow all access to own campaigns" ON public.campaigns FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own campaigns" ON public.campaigns FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Templates policies
 DROP POLICY IF EXISTS "Allow all access to own templates" ON public.templates;
-CREATE POLICY "Allow all access to own templates" ON public.templates FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own templates" ON public.templates FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- Security Configs policies
 DROP POLICY IF EXISTS "Allow all access to own security config" ON public.security_configs;
-CREATE POLICY "Allow all access to own security config" ON public.security_configs FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own security config" ON public.security_configs FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- API Keys policies
 DROP POLICY IF EXISTS "Allow all access to own API keys" ON public.api_keys;
-CREATE POLICY "Allow all access to own API keys" ON public.api_keys FOR ALL USING (auth.uid()::text = user_id);
+CREATE POLICY "Allow all access to own API keys" ON public.api_keys FOR ALL USING ((select auth.uid())::text = user_id);
 
 -- =========================================================================
 -- Triggers for Automatic Profile Provisioning
