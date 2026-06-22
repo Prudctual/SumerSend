@@ -235,6 +235,50 @@ export async function saveSmtpConfig(userId, config) {
 }
 
 // =========================================================================
+// 3.5. SMS Config Database Helper Methods
+// =========================================================================
+
+export async function loadSmsConfig(userId) {
+  const { data, error } = await supabase
+    .from('sms_configs')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      provider: 'mock',
+      apiKey: '',
+      apiSecret: '',
+      senderId: 'SumerSend'
+    };
+  }
+
+  return {
+    provider: data.provider || 'mock',
+    apiKey: data.api_key || '',
+    apiSecret: data.api_secret || '',
+    senderId: data.sender_id || 'SumerSend'
+  };
+}
+
+export async function saveSmsConfig(userId, config) {
+  const { error } = await supabase.from('sms_configs').upsert({
+    user_id: userId,
+    provider: config.provider,
+    api_key: config.apiKey,
+    api_secret: config.apiSecret,
+    sender_id: config.senderId,
+    updated_at: new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error saving SMS config for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+// =========================================================================
 // 4. Wallet Database Helper Methods (Ref: lock- atomic operations)
 // =========================================================================
 

@@ -1,29 +1,19 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
+import { makeWASocket, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import QRCode from 'qrcode';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { loadUsers } from './db.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Resolve data paths dynamically for write-restricted environments (Vercel/Render)
-const DATA_DIR = (process.env.VERCEL || process.env.RENDER)
-  ? path.join('/tmp', 'data') 
-  : path.join(__dirname, 'data');
+import { loadUsers, supabase } from './db.js';
+import { useSupabaseAuthState } from './wa_db_auth.js';
 
 const sockets = {};
 const qrs = {};
 const connections = {};
 
-// Logger
+// Logger (silent to avoid terminal clutter unless debugging)
 const logger = pino({ level: 'silent' });
 
 export async function connectToWhatsApp(userId) {
     if (!userId) return null;
-    console.log(`Starting connectToWhatsApp for user ${userId}...`);
+    console.log(`Starting connectToWhatsApp for user ${userId} using Supabase Auth State...`);
     
     try {
         if (sockets[userId]) {
@@ -35,14 +25,8 @@ export async function connectToWhatsApp(userId) {
             }
         }
         
-        const userDir = path.join(DATA_DIR, 'users', userId);
-        if (!fs.existsSync(userDir)) {
-            fs.mkdirSync(userDir, { recursive: true });
-        }
-        const authPath = path.join(userDir, 'baileys_auth_info');
-        
-        const { state, saveCreds } = await useMultiFileAuthState(authPath);
-        console.log(`useMultiFileAuthState loaded for user ${userId}`);
+        const { state, saveCreds } = await useSupabaseAuthState(userId);
+        console.log(`useSupabaseAuthState loaded for user ${userId}`);
         
         const sock = makeWASocket({
             auth: state,
@@ -70,18 +54,22 @@ export async function connectToWhatsApp(userId) {
                 const isLoggedOut = statusCode === DisconnectReason.loggedOut;
                 console.log(`WhatsApp connection closed for ${userId} due to `, lastDisconnect?.error, `, isLoggedOut: ${isLoggedOut}`);
                 
-                // Cleanup old socket events if possible
+                // Cleanup old socket events
                 try {
                     sock?.ev?.removeAllListeners('connection.update');
                     sock?.ev?.removeAllListeners('creds.update');
                 } catch (e) {}
 
                 if (isLoggedOut) {
-                    console.log(`WhatsApp logged out for ${userId}. Deleting credentials and generating new QR...`);
+                    console.log(`WhatsApp logged out for ${userId}. Deleting database credentials and generating new QR...`);
                     try {
-                        fs.rmSync(authPath, { recursive: true, force: true });
+                        const { error } = await supabase
+                            .from('whatsapp_sessions')
+                            .delete()
+                            .eq('user_id', userId);
+                        if (error) console.error(`Error deleting sessions on logout for ${userId}:`, error);
                     } catch (e) {
-                        console.error(`Error removing auth info for ${userId}:`, e);
+                        console.error(`Error removing database auth info for ${userId}:`, e);
                     }
                 }
                 
@@ -98,7 +86,7 @@ export async function connectToWhatsApp(userId) {
         return sock;
     } catch (err) {
         console.error(`Error in connectToWhatsApp for user ${userId}:`, err);
-        // Schedule a retry to handle file locking or temporary load issues
+        // Schedule a retry to handle temporary network issues
         console.log(`Scheduling retry to connect WhatsApp for user ${userId} in 10 seconds...`);
         setTimeout(() => connectToWhatsApp(userId), 10000);
         return null;
@@ -126,7 +114,7 @@ export async function sendWhatsAppMessage(userId, to, body) {
         throw new Error('WhatsApp is not connected.');
     }
     
-    // Format the phone number correctly for WhatsApp API (e.g., add country code if needed, and @s.whatsapp.net)
+    // Format the phone number correctly for WhatsApp API
     let jid = to;
     if (jid.startsWith('0')) {
         jid = '964' + jid.substring(1);
@@ -155,11 +143,12 @@ export async function logoutWhatsApp(userId) {
     connections[userId] = false;
     qrs[userId] = null;
     
-    const userDir = path.join(DATA_DIR, 'users', userId);
-    const authPath = path.join(userDir, 'baileys_auth_info');
-    
     try {
-        fs.rmSync(authPath, { recursive: true, force: true });
+        const { error } = await supabase
+            .from('whatsapp_sessions')
+            .delete()
+            .eq('user_id', userId);
+        if (error) console.error(`Error deleting sessions on logoutWhatsApp for ${userId}:`, error);
     } catch (e) {
         console.error(`Error removing auth info on logout for ${userId}:`, e);
     }
@@ -183,3 +172,4 @@ export async function initializeAllWhatsAppConnections() {
         console.error('Failed to initialize WhatsApp connections from database:', e);
     }
 }
+

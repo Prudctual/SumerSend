@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import { 
   getWhatsAppStatus, 
   sendWhatsAppMessage, 
@@ -10,6 +11,7 @@ import {
   initializeAllWhatsAppConnections 
 } from './whatsapp.js';
 import { authRouter, authMiddleware } from './auth.js';
+import { startQueueWorker } from './worker.js';
 import {
   loadLogs,
   saveLogs,
@@ -33,7 +35,8 @@ import {
   saveApiKeys,
   findUserByApiKey,
   refundWallet,
-  bootstrapUserData
+  bootstrapUserData,
+  supabase
 } from './db.js';
 
 dotenv.config();
@@ -43,6 +46,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// API Rate Limiting for Public /v1/ Endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many requests from this IP. Please try again after 15 minutes.'
+  }
+});
+app.use('/v1/', apiLimiter);
 
 function createTransporter(config) {
   if (!config.host || !config.user || !config.pass) {
@@ -865,90 +880,35 @@ app.post('/v1/emails', publicApiAuth, async (req, res) => {
     });
   }
 
-  let config;
-  let transporter;
-  try {
-    config = await loadSmtpConfig(userId);
-    transporter = createTransporter(config);
-  } catch (err) {
-    console.error('SMTP Config error:', err);
+  const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+  const { error: queueError } = await supabase.from('message_queue').insert({
+    id: msgId,
+    user_id: userId,
+    type: 'email',
+    recipient: to,
+    subject: subject,
+    body: html,
+    status: 'pending',
+    attempts: 0,
+    max_attempts: 3
+  });
+
+  if (queueError) {
+    console.error('[API] Failed to queue email:', queueError);
+    await refundWallet(userId, cost, `Refund: Queue failure for Email to ${to}`);
+    return res.status(500).json({ error: 'Failed to queue email.' });
   }
-  
-  if (!transporter) {
-    // Refund the user since sending didn't proceed
-    await refundWallet(userId, cost, `Refund: SMTP not configured for Email to ${to}`);
-    
-    const failedLog = {
-      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'email',
-      from: from || (config && config.from) || 'onboarding@sumersend.com',
-      to,
-      subject,
-      body: html,
-      status: 'failed',
-      error: 'SMTP settings are not configured on the server.',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, failedLog);
-    triggerWebhooks(userId, 'email.failed', failedLog);
-    return res.status(500).json({
-      error: {
-        message: 'SMTP settings are not configured on the server. Please setup SMTP in settings.',
-        type: 'server_configuration_error'
-      }
-    });
-  }
-  
-  try {
-    const info = await transporter.sendMail({
-      from: from || config.from,
-      to,
-      subject,
-      html
-    });
-    
-    console.log(`Email delivered to ${to} for user ${userId}. Message ID: ${info.messageId}`);
-    
-    const successLog = {
-      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'email',
-      from: from || config.from,
-      to,
-      subject,
-      body: html,
-      status: 'delivered',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, successLog);
-    triggerWebhooks(userId, 'email.delivered', successLog);
-    res.json(successLog);
-  } catch (error) {
-    console.error('Email delivery failed:', error);
-    
-    // Refund the user
-    await refundWallet(userId, cost, `Refund: Delivery failure for Email to ${to}`);
-    
-    const failedLog = {
-      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'email',
-      from: from || 'onboarding@sumersend.com',
-      to,
-      subject,
-      body: html,
-      status: 'failed',
-      error: error.message || 'SMTP delivery failure.',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, failedLog);
-    triggerWebhooks(userId, 'email.failed', failedLog);
-    
-    res.status(500).json({
-      error: {
-        message: error.message || 'SMTP delivery failure.',
-        type: 'provider_delivery_error'
-      }
-    });
-  }
+
+  res.json({
+    id: msgId,
+    type: 'email',
+    from: from || 'Sumer Send <onboarding@sumersend.com>',
+    to,
+    subject,
+    body: html,
+    status: 'queued',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // POST /v1/sms
@@ -989,26 +949,33 @@ app.post('/v1/sms', publicApiAuth, async (req, res) => {
     });
   }
 
-  try {
-    console.log(`SMS Simulated dispatch to ${to} for user ${userId}: ${body}`);
-    
-    const logEntry = {
-      id: `sms_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'sms',
-      from: 'Sumer Send API',
-      to,
-      body,
-      status: 'delivered',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, logEntry);
-    triggerWebhooks(userId, 'sms.delivered', logEntry);
-    res.json(logEntry);
-  } catch (err) {
-    // Refund user on unexpected error
-    await refundWallet(userId, cost, `Refund: Delivery execution failure for SMS to ${to}`);
-    res.status(500).json({ error: 'SMS sending execution failed.' });
+  const msgId = `sms_${Math.random().toString(36).substring(2, 15)}`;
+  const { error: queueError } = await supabase.from('message_queue').insert({
+    id: msgId,
+    user_id: userId,
+    type: 'sms',
+    recipient: to,
+    body,
+    status: 'pending',
+    attempts: 0,
+    max_attempts: 3
+  });
+
+  if (queueError) {
+    console.error('[API] Failed to queue SMS:', queueError);
+    await refundWallet(userId, cost, `Refund: Queue failure for SMS to ${to}`);
+    return res.status(500).json({ error: 'Failed to queue SMS.' });
   }
+
+  res.json({
+    id: msgId,
+    type: 'sms',
+    from: 'Sumer Send API',
+    to,
+    body,
+    status: 'queued',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // POST /v1/whatsapp
@@ -1066,42 +1033,33 @@ app.post('/v1/whatsapp', publicApiAuth, async (req, res) => {
     });
   }
 
-  try {
-    await sendWhatsAppMessage(userId, to, body);
-    console.log(`WhatsApp Actual dispatch to ${to} for user ${userId}: ${body}`);
-    
-    const logEntry = {
-      id: `wa_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'whatsapp',
-      from: 'Sumer Send API',
-      to,
-      body,
-      status: 'delivered',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, logEntry);
-    triggerWebhooks(userId, 'whatsapp.delivered', logEntry);
-    res.json(logEntry);
-  } catch (error) {
-    console.error('WhatsApp sending failed:', error);
-    
-    // Refund user
-    await refundWallet(userId, cost, `Refund: Delivery failure for WhatsApp to ${to}`);
+  const msgId = `wa_${Math.random().toString(36).substring(2, 15)}`;
+  const { error: queueError } = await supabase.from('message_queue').insert({
+    id: msgId,
+    user_id: userId,
+    type: 'whatsapp',
+    recipient: to,
+    body,
+    status: 'pending',
+    attempts: 0,
+    max_attempts: 3
+  });
 
-    const failedLog = {
-      id: `wa_${Math.random().toString(36).substring(2, 15)}`,
-      type: 'whatsapp',
-      from: 'Sumer Send API',
-      to,
-      body,
-      status: 'failed',
-      error: error.message || 'WhatsApp sending failed',
-      timestamp: new Date().toISOString()
-    };
-    await appendLog(userId, failedLog);
-    triggerWebhooks(userId, 'whatsapp.failed', failedLog);
-    return res.status(500).json({ error: 'WhatsApp sending failed' });
+  if (queueError) {
+    console.error('[API] Failed to queue WhatsApp message:', queueError);
+    await refundWallet(userId, cost, `Refund: Queue failure for WhatsApp to ${to}`);
+    return res.status(500).json({ error: 'Failed to queue WhatsApp message.' });
   }
+
+  res.json({
+    id: msgId,
+    type: 'whatsapp',
+    from: 'Sumer Send API',
+    to,
+    body,
+    status: 'queued',
+    timestamp: new Date().toISOString()
+  });
 });
 
 
@@ -1110,6 +1068,7 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Sumer Send Server running on port ${PORT}`);
     initializeAllWhatsAppConnections();
+    startQueueWorker();
 
     // Keep-alive / Self-ping routine to prevent Render containers from idling/sleeping
     const selfPingUrl = process.env.RENDER_EXTERNAL_URL || `http://127.0.0.1:${PORT}`;
