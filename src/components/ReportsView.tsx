@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { ScrollReveal, BentoCard } from './LandingView';
 
 interface ReportsViewProps {
   lang: 'en' | 'ar';
@@ -1000,20 +1001,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+    <ScrollReveal>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
       
       {/* Title & Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ 
-            fontSize: '32px', 
+            fontSize: '26px', 
             fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+            letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
             lineHeight: 1.15,
             marginBottom: '8px',
             color: 'var(--text-primary)'
           }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
         </div>
 
         {/* Time Range Selector */}
@@ -1070,85 +1072,133 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Key Metric Highlight Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
             
             {/* Total Sent */}
-            <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalSent}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(37, 99, 235, 0.08)' }}>
-                  <Send size={15} color="var(--accent-color)" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card sms-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.totalSent}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-                {stats.total.toLocaleString()}
-              </div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill neutral" style={{ fontSize: '10px' }}>
-                  <span>Email: {stats.emailTotal} • SMS: {stats.smsTotal} • WA: {stats.waTotal}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat">{stats.total.toLocaleString()}</span>
+                <span className="bento-trend-badge neutral">
+                  <span>IQD</span>
                 </span>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  Email: {stats.emailTotal} • SMS: {stats.smsTotal} • WA: {stats.waTotal}
+                </span>
+                <button className="bento-details-btn" onClick={() => handleSubTabChange('channels')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </BentoCard>
 
             {/* Success Rate */}
-            <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.successRate}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)' }}>
-                  <Activity size={15} color="var(--success-color)" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card delivery-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.successRate}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--success-color)', letterSpacing: '-0.5px' }}>
-                {stats.totalSuccessRate}%
-              </div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill up">
-                  <CheckCircle2 size={11} />
-                  <span>{lang === 'ar' ? 'ضمن حدود الـ SLA' : 'Optimal SLA'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat" style={{ color: 'var(--success-color)' }}>{stats.totalSuccessRate}%</span>
+                <span className="bento-trend-badge up">
+                  <CheckCircle2 size={10} />
+                  <span>99%</span>
                 </span>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'ar' ? 'ضمن حدود الـ SLA' : 'Optimal SLA'}
+                </span>
+                <button className="bento-details-btn" onClick={() => handleSubTabChange('channels')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </BentoCard>
 
             {/* Avg Latency */}
-            <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.avgLatency}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)' }}>
-                  <Clock size={15} color="#f59e0b" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card wa-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Clock size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.avgLatency}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-                1.4 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>{t.sec}</span>
-              </div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill neutral" style={{ fontSize: '10px' }}>
-                  <span>Email: {stats.avgEmailLatency}{t.ms} • SMS: {stats.avgSmsLatency}{t.sec}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat">
+                  1.4 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>{t.sec}</span>
+                </span>
+                <span className="bento-trend-badge neutral">
+                  <span>Sec</span>
                 </span>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  Email: {stats.avgEmailLatency}{t.ms} • SMS: {stats.avgSmsLatency}{t.sec}
+                </span>
+                <button className="bento-details-btn" onClick={() => handleSubTabChange('channels')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </BentoCard>
 
             {/* Total Cost */}
-            <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalCost}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(120, 120, 120, 0.08)' }}>
-                  <CreditCard size={15} color="var(--text-secondary)" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card email-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CreditCard size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.totalCost}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-                {stats.totalCostValue.toLocaleString()}{' '}
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>IQD</span>
-              </div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill neutral">
-                  <span>{lang === 'ar' ? 'بالدينار العراقي' : 'In Iraqi Dinars'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat" style={{ fontSize: '24px' }}>
+                  {stats.totalCostValue.toLocaleString()}{' '}
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>IQD</span>
+                </span>
+                <span className="bento-trend-badge neutral">
+                  <span>IQD</span>
                 </span>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'ar' ? 'بالدينار العراقي' : 'In Iraqi Dinars'}
+                </span>
+                <button className="bento-details-btn" onClick={() => handleSubTabChange('costs')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </BentoCard>
           </div>
 
           {/* Interactive Comparison Chart Card */}
-          <div className="card" style={{ padding: '24px', borderRadius: '6px', overflow: 'visible' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px', overflow: 'visible' }}>
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{t.volumeOverTime}</h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{t.volumeSub}</p>
@@ -1299,10 +1349,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Regional Networks & Domain Share breakdown */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
             
             {/* Iraqi Telecom Distribution */}
-            <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.operatorDist}</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1342,7 +1392,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
 
             {/* Email Domain Share */}
-            <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
                 {lang === 'ar' ? 'توزيع نطاقات البريد الإلكتروني للمستقبلين' : 'Recipient Email Domains share'}
               </h3>
@@ -1386,9 +1436,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Quick actions links */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px', borderInlineStart: '4px solid var(--accent-color)' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px', borderInlineStart: '4px solid var(--accent-color)' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>{t.quickIntegration}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               <button onClick={() => setCurrentTab('billing')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'inherit', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }} className="hover-link">
                 <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                 <span>{t.billingLink}</span>
@@ -1416,7 +1466,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Email Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }} />
@@ -1424,12 +1474,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   {lang === 'ar' ? 'قناة البريد الإلكتروني (Email API Bridge)' : 'Email API Bridge channel'}
                 </h3>
               </div>
-              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--success-bg)' }}>
+              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '8px', backgroundColor: 'var(--success-bg)' }}>
                 {lang === 'ar' ? 'متصل وموثق' : 'DKIM Connected'}
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '16px' }}>
               <div>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'حجم الإرسال الفعلي' : 'Delivered Count'}</span>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>{stats.emailTotal}</div>
@@ -1450,14 +1500,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </div>
             </div>
             
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Info size={14} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
               <span>{lang === 'ar' ? 'يتم توقيع كافة رسائل المعاملات تلقائياً عبر مفتاح النطاق الموثق لمنع تصنيفها كرسائل غير مرغوب فيها.' : 'All emails are automatically signed via corporate domain key, maintaining 99.9% inbox delivery.'}</span>
             </div>
           </div>
 
           {/* SMS Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
@@ -1465,12 +1515,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   {lang === 'ar' ? 'رسائل التفعيل ورموز التحقق (SMS OTP Gateway)' : 'SMS OTP Gateway channel'}
                 </h3>
               </div>
-              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--success-bg)' }}>
+              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '8px', backgroundColor: 'var(--success-bg)' }}>
                 {lang === 'ar' ? 'الشبكات متصلة' : 'Carriers Connected'}
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '16px' }}>
               <div>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'حجم الإرسال الفعلي' : 'Delivered Count'}</span>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>{stats.smsTotal}</div>
@@ -1489,14 +1539,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </div>
             </div>
             
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Info size={14} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
               <span>{lang === 'ar' ? 'يتم التوجيه المباشر بالاتفاق مع مزودي الاتصالات الرئيسيين (زين، آسياسيل، كورك) لضمان تسليم الـ OTP خلال أقل من 3 ثوان.' : 'Direct tunnels with major carriers (Zain, Asiacell, Korek) guarantee instant OTP popups on target devices.'}</span>
             </div>
           </div>
 
           {/* WhatsApp Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }} />
@@ -1504,12 +1554,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   {lang === 'ar' ? 'الواتساب التفاعلي للأعمال (WhatsApp Business API)' : 'WhatsApp Business API channel'}
                 </h3>
               </div>
-              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--success-bg)' }}>
+              <span style={{ fontSize: '11px', color: '#28a948', fontWeight: 600, padding: '2px 8px', borderRadius: '8px', backgroundColor: 'var(--success-bg)' }}>
                 {lang === 'ar' ? 'متصل ونشط' : 'API Node Connected'}
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '16px' }}>
               <div>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'حجم الإرسال الفعلي' : 'Delivered Count'}</span>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>{stats.waTotal}</div>
@@ -1528,7 +1578,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </div>
             </div>
             
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Info size={14} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
               <span>{lang === 'ar' ? 'يدعم إرسال وسائط تفاعلية متعددة، وأزرار الاستجابة السريعة، وعينات النماذج المسبقة المعتمدة للمؤسسات.' : 'Supports interactive media templates, quick replies, buttons, and verified business template layouts.'}</span>
             </div>
@@ -1542,10 +1592,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Cost Allocation Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
             
             {/* Spend Breakdown card */}
-            <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
                 {lang === 'ar' ? 'توزيع التكاليف على القنوات (IQD)' : 'Cost Allocation by Channel (IQD)'}
               </h3>
@@ -1587,7 +1637,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
 
             {/* Wallet Summary card */}
-            <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.costSummary}</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1617,7 +1667,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Transactions Table block */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
               {lang === 'ar' ? 'سجل العمليات المالية الأخيرة للمحفظة' : 'Recent Wallet Transactions'}
             </h3>
@@ -1649,7 +1699,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                             color: '#28a948', 
                             backgroundColor: 'var(--success-bg)', 
                             padding: '2px 6px', 
-                            borderRadius: '4px',
+                            borderRadius: '8px',
                             fontWeight: 600
                           }}>{lang === 'ar' ? 'ناجحة' : 'Completed'}</span>
                         </td>
@@ -1670,7 +1720,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Custom PDF Exporter module */}
-          <div className="card" style={{ padding: '24px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-primary)' }}>{t.customReport}</h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
               {lang === 'ar' ? 'حدد البيانات والتواريخ المطلوبة لتوليد وتصدير ملف تقارير PDF بتصميم متناسق.' : 'Define dates and variables below to generate custom printed reports for corporate review.'}
@@ -1738,7 +1788,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               {exportSuccess && (
                 <div style={{ 
                   padding: '12px 16px', 
-                  borderRadius: '6px', 
+                  borderRadius: '8px', 
                   backgroundColor: 'var(--success-bg)', 
                   border: '1px solid var(--success-color)', 
                   color: 'var(--success-text)', 
@@ -1759,7 +1809,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Invoices List block */}
-          <div className="card" style={{ padding: '20px', borderRadius: '6px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.invoiceList}</h3>
             
             <div style={{ overflowX: 'auto' }}>
@@ -1787,7 +1837,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                           color: '#28a948', 
                           backgroundColor: 'var(--success-bg)', 
                           padding: '2px 6px', 
-                          borderRadius: '4px',
+                          borderRadius: '8px',
                           fontWeight: 600
                         }}>{lang === 'ar' ? 'مدفوعة' : 'Paid'}</span>
                       </td>
@@ -1811,6 +1861,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
       )}
       </div>
-    </div>
+      </div>
+    </ScrollReveal>
   );
 };

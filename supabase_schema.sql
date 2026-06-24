@@ -167,6 +167,34 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
 -- Enable RLS on api_keys
 ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 
+-- Create subscribers table
+CREATE TABLE IF NOT EXISTS public.subscribers (
+    id text PRIMARY KEY,
+    user_id text REFERENCES public.users(id) ON DELETE CASCADE,
+    email text NOT NULL,
+    name text,
+    status text NOT NULL DEFAULT 'active',
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    CONSTRAINT unique_user_email UNIQUE (user_id, email)
+);
+
+-- Enable RLS on subscribers
+ALTER TABLE public.subscribers ENABLE ROW LEVEL SECURITY;
+
+-- Create subscriber_settings table
+CREATE TABLE IF NOT EXISTS public.subscriber_settings (
+    user_id text PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    welcome_enabled boolean DEFAULT false,
+    welcome_subject text DEFAULT 'Welcome to our newsletter!',
+    welcome_body text DEFAULT 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.',
+    updated_at timestamptz DEFAULT now()
+);
+
+-- Enable RLS on subscriber_settings
+ALTER TABLE public.subscriber_settings ENABLE ROW LEVEL SECURITY;
+
+
 -- =========================================================================
 -- Performance Indexes (Ref: query-missing-indexes & schema-partial-indexes)
 -- =========================================================================
@@ -179,6 +207,9 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON public.campaigns(user_id);
 CREATE INDEX IF NOT EXISTS idx_templates_user_id ON public.templates(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON public.api_keys(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_key ON public.api_keys(key);
+CREATE INDEX IF NOT EXISTS idx_subscribers_user_id ON public.subscribers(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON public.subscribers(email);
+
 
 -- =========================================================================
 -- Row Level Security (RLS) Policies (Ref: security-rls)
@@ -231,6 +262,15 @@ CREATE POLICY "Allow all access to own security config" ON public.security_confi
 DROP POLICY IF EXISTS "Allow all access to own API keys" ON public.api_keys;
 CREATE POLICY "Allow all access to own API keys" ON public.api_keys FOR ALL USING ((select auth.uid())::text = user_id);
 
+-- Subscribers policies
+DROP POLICY IF EXISTS "Allow all access to own subscribers" ON public.subscribers;
+CREATE POLICY "Allow all access to own subscribers" ON public.subscribers FOR ALL USING ((select auth.uid())::text = user_id);
+
+-- Subscriber Settings policies
+DROP POLICY IF EXISTS "Allow all access to own subscriber settings" ON public.subscriber_settings;
+CREATE POLICY "Allow all access to own subscriber settings" ON public.subscriber_settings FOR ALL USING ((select auth.uid())::text = user_id);
+
+
 -- =========================================================================
 -- Triggers for Automatic Profile Provisioning
 -- =========================================================================
@@ -265,8 +305,13 @@ BEGIN
     'full'
   );
 
+  -- Insert default subscriber settings
+  INSERT INTO public.subscriber_settings (user_id, welcome_enabled, welcome_subject, welcome_body)
+  VALUES (NEW.id, false, 'Welcome to our newsletter!', 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.');
+
   RETURN NEW;
 END;
+
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to run on user insertion

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Globe, Plus, CheckCircle, Clock, Trash2, AlertCircle, Copy, Info } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
+import { GuideBanner } from './GuideBanner';
 
 interface DomainsViewProps {
   lang: 'en' | 'ar';
@@ -114,69 +115,28 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
         <div style={{ marginBottom: '20px' }} className="flex-between">
           <div>
             <h1 style={{ 
-              fontSize: '32px', 
+              fontSize: '26px', 
               fontWeight: 800, 
-              letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+              letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
               lineHeight: 1.15,
               marginBottom: '8px',
               color: 'var(--text-primary)'
             }}>{t.title}</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
           </div>
-          <button 
-            className="btn" 
-            style={{ 
-              fontSize: '12px', 
-              padding: '8px 16px',
-              borderRadius: '999px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--panel-bg)',
-              fontWeight: 600
-            }} 
-            onClick={() => setShowGuide(!showGuide)}
-          >
-            {showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}
-          </button>
         </div>
       )}
 
-      {/* Guide Trigger inside card if header is hidden */}
-      {hideHeader && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
-          <button 
-            className="btn" 
-            style={{ 
-              fontSize: '11px', 
-              padding: '4px 10px',
-              borderRadius: '6px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--panel-bg)',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }} 
-            onClick={() => setShowGuide(!showGuide)}
-          >
-            <Info size={12} />
-            <span>{showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}</span>
-          </button>
-        </div>
-      )}
+      <GuideBanner
+        lang={lang}
+        show={showGuide}
+        onClose={() => setShowGuide(false)}
+        title={t.guideTitle}
+        description={t.guideText}
+      />
 
-      {showGuide && (
-        <BentoCard className="card" style={{ marginBottom: '20px', padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.03, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.guideText}</p>
-          </div>
-        </BentoCard>
-      )}
-
-      {/* Add Domain Form */}
-      <BentoCard className="card" style={{ marginBottom: '24px', padding: '24px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
-        <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <BentoCard className="card" style={{ marginBottom: '24px', padding: '24px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
+        <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: 1, minWidth: '250px' }}>
             <label className="form-label" style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>{lang === 'en' ? 'Domain Name' : 'اسم النطاق (Domain)'}</label>
             <input
@@ -188,16 +148,16 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
               style={{
                 width: '100%',
                 height: '42px',
-                borderRadius: '6px',
+                borderRadius: '99px',
                 border: '1px solid var(--border-color)',
-                padding: '0 12px',
+                padding: '0 20px',
                 backgroundColor: 'rgba(0,0,0,0.01)',
                 fontSize: '14px',
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ height: '42px', minWidth: '130px', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+          <button type="submit" className="btn btn-primary" style={{ height: '42px', minWidth: '130px', borderRadius: '99px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
             <Plus size={16} />
             <span>{t.addBtn}</span>
           </button>
@@ -211,16 +171,16 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
       </BentoCard>
 
       {/* Linked Domains List (Refactored to Premium Cards) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {domains.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
             <Globe size={32} style={{ marginBottom: '10px', color: 'var(--text-muted)', opacity: 0.5 }} />
             <p style={{ margin: 0 }}>{t.empty}</p>
           </div>
         ) : (
           domains.map((domain) => (
-            <div key={domain.id} className="flat-card" style={{ padding: '20px', borderRadius: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+            <div key={domain.id} className="flat-card" style={{ padding: '20px', borderRadius: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div className="card-icon-circle" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-color)' }}>
                     <Globe size={16} />
@@ -235,7 +195,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                  <span className={`status-pill ${domain.status === 'verified' ? 'success' : 'warning'}`}>
+                  <span className={`status-pill ${domain.status === 'verified' ? 'success' : 'warning'}`} style={{ borderRadius: '99px' }}>
                     {domain.status === 'verified' ? (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <CheckCircle size={12} />
@@ -253,7 +213,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
                     {domain.status === 'pending' && (
                       <button
                         className="btn btn-primary"
-                        style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '99px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => handleVerify(domain.id)}
                         disabled={verifyingId !== null}
                       >
@@ -269,7 +229,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
                     )}
                     <button
                       className="btn btn-danger"
-                      style={{ padding: '8px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '8px 12px', borderRadius: '99px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       onClick={() => handleDelete(domain.id)}
                       title="Delete Domain"
                     >
@@ -281,7 +241,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
 
               {/* Render DNS records instructions if pending */}
               {domain.status === 'pending' && (
-                <div style={{ marginTop: '20px', padding: '16px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', animation: 'fadeIn 0.2s ease' }}>
+                <div style={{ marginTop: '20px', padding: '20px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '16px', animation: 'fadeIn 0.2s ease' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--warning-text)', marginBottom: '6px' }}>
                     {t.instructionsTitle}
                   </h4>
@@ -291,16 +251,16 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {domain.cnames.map((cname: any, idx: number) => (
-                      <div key={idx} className="dns-cname-box" style={{ margin: 0, padding: '10px 14px' }}>
+                      <div key={idx} className="dns-cname-box" style={{ margin: 0, padding: '12px 16px', borderRadius: '12px' }}>
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
                           <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#ff3366', fontWeight: 'bold', width: '60px', flexShrink: 0 }}>{cname.type}</span>
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: '150px' }}>
                             <span style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Host / Name</span>
-                            <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{cname.host}</span>
+                            <span dir="ltr" style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{cname.host}</span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: '200px' }}>
                             <span style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Value</span>
-                            <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>{cname.value}</span>
+                            <span dir="ltr" style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>{cname.value}</span>
                           </div>
                         </div>
                         
@@ -308,7 +268,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
                           <button
                             className="btn"
                             title="Copy Host"
-                            style={{ padding: '6px 8px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', display: 'flex', alignItems: 'center' }}
+                            style={{ padding: '6px 12px', borderRadius: '99px', backgroundColor: 'var(--panel-bg)', display: 'flex', alignItems: 'center' }}
                             onClick={() => {
                               navigator.clipboard.writeText(cname.host);
                               window.dispatchEvent(new CustomEvent('sumer-toast', {
@@ -323,7 +283,7 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
                           <button
                             className="btn"
                             title="Copy Value"
-                            style={{ padding: '6px 8px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', display: 'flex', alignItems: 'center' }}
+                            style={{ padding: '6px 12px', borderRadius: '99px', backgroundColor: 'var(--panel-bg)', display: 'flex', alignItems: 'center' }}
                             onClick={() => {
                               navigator.clipboard.writeText(cname.value);
                               window.dispatchEvent(new CustomEvent('sumer-toast', {

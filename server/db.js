@@ -803,3 +803,158 @@ export async function findUserByApiKey(apiKey) {
 
   return { user, key };
 }
+
+// =========================================================================
+// 12. Subscribers Database Helper Methods
+// =========================================================================
+
+export async function loadSubscribers(userId) {
+  const { data, error } = await supabase
+    .from('subscribers')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(`Error loading subscribers for user ${userId}:`, error);
+    return [];
+  }
+  return data.map(s => ({
+    id: s.id,
+    email: s.email,
+    name: s.name,
+    status: s.status,
+    createdAt: s.created_at,
+    updatedAt: s.updated_at
+  }));
+}
+
+export async function addSubscriber(userId, subscriber) {
+  const { error } = await supabase.from('subscribers').upsert({
+    id: subscriber.id || `sub_${Math.random().toString(36).substring(2, 15)}`,
+    user_id: userId,
+    email: subscriber.email.toLowerCase().trim(),
+    name: subscriber.name,
+    status: subscriber.status || 'active',
+    created_at: subscriber.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    console.error(`Error adding subscriber for user ${userId}:`, error);
+    throw error;
+  }
+  return true;
+}
+
+export async function updateSubscriberStatus(userId, id, status) {
+  const { error } = await supabase
+    .from('subscribers')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('id', id);
+
+  if (error) {
+    console.error(`Error updating subscriber ${id} for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteSubscriber(userId, id) {
+  const { error } = await supabase
+    .from('subscribers')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', id);
+
+  if (error) {
+    console.error(`Error deleting subscriber ${id} for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteSubscribersBulk(userId, ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return true;
+  const { error } = await supabase
+    .from('subscribers')
+    .delete()
+    .eq('user_id', userId)
+    .in('id', ids);
+
+  if (error) {
+    console.error(`Error bulk deleting subscribers for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+
+export async function loadSubscriberSettings(userId) {
+  const { data, error } = await supabase
+    .from('subscriber_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`Error loading subscriber settings for user ${userId}:`, error);
+  }
+
+  if (!data) {
+    return {
+      welcomeEnabled: false,
+      welcomeSubject: 'Welcome to our newsletter!',
+      welcomeBody: 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.'
+    };
+  }
+
+  return {
+    welcomeEnabled: !!data.welcome_enabled,
+    welcomeSubject: data.welcome_subject || 'Welcome to our newsletter!',
+    welcomeBody: data.welcome_body || 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.'
+  };
+}
+
+export async function saveSubscriberSettings(userId, settings) {
+  const { error } = await supabase.from('subscriber_settings').upsert({
+    user_id: userId,
+    welcome_enabled: settings.welcomeEnabled,
+    welcome_subject: settings.welcomeSubject,
+    welcome_body: settings.welcomeBody,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    console.error(`Error saving subscriber settings for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function bulkAddSubscribers(userId, subscribers) {
+  if (!Array.isArray(subscribers) || subscribers.length === 0) return true;
+  
+  const dbSubscribers = subscribers.map(s => ({
+    id: s.id || `sub_${Math.random().toString(36).substring(2, 15)}`,
+    user_id: userId,
+    email: s.email.toLowerCase().trim(),
+    name: s.name || null,
+    status: s.status || 'active',
+    created_at: s.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error } = await supabase
+    .from('subscribers')
+    .upsert(dbSubscribers, { onConflict: 'user_id, email' });
+
+  if (error) {
+    console.error(`Error bulk adding subscribers for user ${userId}:`, error);
+    throw error;
+  }
+  return true;
+}
+
+

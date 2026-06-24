@@ -31,6 +31,7 @@ import { TemplateBuilder } from './TemplateBuilder';
 
 interface SettingsViewProps {
   lang: 'en' | 'ar';
+  theme?: 'light' | 'dark';
   setEmailBody: (body: string) => void;
   setEmailSubject: (sub: string) => void;
   setMsgBody: (body: string) => void;
@@ -44,6 +45,7 @@ interface SettingsViewProps {
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
   lang, 
+  theme,
   setEmailBody, 
   setEmailSubject,
   setMsgBody,
@@ -701,156 +703,101 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <ScrollReveal>
-      {(!controlledSubTab || ['security', 'templates', 'system'].includes(controlledSubTab)) && (
-        <>
-          {/* View Header */}
-          <div style={{ marginBottom: '20px' }} className="flex-between">
-            <div>
-              <h1 style={{ 
-                fontSize: '26px', 
-                fontWeight: 800, 
-                letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-                lineHeight: 1.15,
-                marginBottom: '6px',
-                color: 'var(--text-primary)'
-              }}>{t.title}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
-            </div>
-          </div>
 
-          {/* Main Sub-Tab Selectors */}
-          <div className="vercel-tabs-container" style={{ overflowX: 'auto', marginBottom: '20px' }}>
-            <button 
-              onClick={() => {
-                setActiveSubTab('security');
-                setCurrentTab('security');
-              }}
-              className={`vercel-tab-btn ${activeSubTab === 'security' ? 'active' : ''}`}
-            >
-              <Shield size={15} />
-              <span>{lang === 'en' ? 'Security & 2FA' : 'الأمان والتحقق ثنائي العامل'}</span>
-            </button>
-            <button 
-              onClick={() => {
-                setActiveSubTab('templates');
-                setCurrentTab('templates');
-              }}
-              className={`vercel-tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
-            >
-              <BookOpen size={15} />
-              <span>{t.templatesTab}</span>
-            </button>
-            <button 
-              onClick={() => {
-                setActiveSubTab('system');
-                setCurrentTab('system');
-              }}
-              className={`vercel-tab-btn ${activeSubTab === 'system' ? 'active' : ''}`}
-            >
-              <Info size={15} />
-              <span>{t.systemTab}</span>
-            </button>
-          </div>
-        </>
-      )}
 
       {/* 1. SMTP TAB */}
       {activeSubTab === 'smtp' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
-            <button 
-              type="button"
-              className="btn" 
-              style={{ fontSize: '11px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }} 
-              onClick={() => setShowGuide(!showGuide)}
-            >
-              <Info size={12} />
-              <span>{showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}</span>
-            </button>
-          </div>
-          {showGuide && (
-            <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '16px', marginBottom: '20px', overflow: 'hidden' }}>
-              {/* Left Info Column */}
-              <div className="onboarding-split-info" style={{ padding: '24px' }}>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 500, margin: '0 0 16px 0', textAlign: 'start' }}>
-                    {t.guideText}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
-                    {lang === 'ar' ? 'المنفذ: 587 (TLS)' : 'Port: 587 (TLS)'}
-                  </span>
-                  <span className="sumer-badge" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
-                    {lang === 'ar' ? 'التتشغيل: STARTTLS' : 'Encryption: STARTTLS'}
-                  </span>
-                </div>
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-              {/* Right Visual Column */}
-              <div className="onboarding-split-visual" style={{ padding: '20px' }}>
-                <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {lang === 'ar' ? 'بيانات اتصال SMTP' : 'SMTP Server Config'}
-                    </span>
-                    <span style={{ 
-                      fontSize: '9px', 
-                      fontWeight: 700,
-                      color: 'var(--success-text)',
-                      backgroundColor: 'var(--success-bg)',
-                      padding: '1px 6px',
-                      borderRadius: '4px'
-                    }}>
-                      {lang === 'ar' ? 'متصل' : 'Online'}
-                    </span>
+          {/* Guide Card */}
+          {showGuide && (
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="service-icon smtp">
+                    <Mail size={18} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الخادم:' : 'Server:'}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>smtp.sumersend.com</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المنفذ:' : 'Port:'}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>587</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المستخدم:' : 'User:'}</span>
-                      <span style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>mail@mystore.iq</span>
-                    </div>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 750, margin: 0 }}>{t.guideTitle}</h3>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      {lang === 'ar' ? 'إعداد خادم البريد الإلكتروني' : 'Mail Server Configuration'}
+                    </span>
                   </div>
                 </div>
+                <button 
+                  type="button"
+                  className="btn" 
+                  style={{ fontSize: '11px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', flexShrink: 0 }} 
+                  onClick={() => setShowGuide(false)}
+                >
+                  <span>✕</span>
+                </button>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.65, margin: '0 0 18px 0', maxWidth: '720px' }}>
+                {t.guideText}
+              </p>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.15)' }}>
+                  {lang === 'ar' ? 'المنفذ: 587 (TLS)' : 'Port: 587 (TLS)'}
+                </span>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+                  {lang === 'ar' ? 'التشفير: STARTTLS' : 'Encryption: STARTTLS'}
+                </span>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(124, 58, 237, 0.08)', color: '#7c3aed', border: '1px solid rgba(124, 58, 237, 0.15)' }}>
+                  {lang === 'ar' ? 'البروتوكول: SMTP' : 'Protocol: SMTP'}
+                </span>
               </div>
             </BentoCard>
           )}
 
+          {!showGuide && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                type="button"
+                className="btn" 
+                style={{ fontSize: '11px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '8px' }} 
+                onClick={() => setShowGuide(true)}
+              >
+                <Info size={12} />
+                <span>{lang === 'en' ? 'Show Guide' : 'عرض الدليل'}</span>
+              </button>
+            </div>
+          )}
+
           {statusMsg && (
             <div style={{ 
-              padding: '12px 16px', 
-              borderRadius: '6px', 
+              padding: '14px 18px', 
+              borderRadius: '12px', 
               fontSize: '13px', 
-              marginBottom: '20px', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px', 
-              backgroundColor: statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-              color: statusMsg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
-              border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+              gap: '10px', 
+              backgroundColor: statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+              color: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
+              border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}`
             }}>
               {statusMsg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
               <span>{statusMsg.text}</span>
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', alignItems: 'start' }}>
             
             {/* SMTP form */}
-            <div className="card" style={{ flex: 2, minWidth: '320px', padding: '24px' }}>
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Settings size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'ar' ? 'بيانات اتصال الخادم' : 'Server Credentials'}
+                </h3>
+              </div>
+
               <form onSubmit={handleSave}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">{t.hostLabel}</label>
+                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.hostLabel}</label>
                     <input
                       type="text"
                       className="form-input"
@@ -858,11 +805,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       onChange={(e) => setHost(e.target.value)}
                       placeholder="e.g. smtp.gmail.com"
                       required
+                      style={{ borderRadius: '10px', height: '40px' }}
                     />
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">{t.portLabel}</label>
+                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.portLabel}</label>
                     <input
                       type="text"
                       className="form-input"
@@ -870,26 +818,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       onChange={(e) => setPort(e.target.value)}
                       placeholder="587"
                       required
+                      style={{ borderRadius: '10px', height: '40px', fontFamily: "'Inter', monospace" }}
                     />
                   </div>
                 </div>
 
-                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', padding: '12px 14px', backgroundColor: 'var(--bg-color)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                   <input
                     type="checkbox"
                     id="secure-checkbox"
                     checked={secure}
                     onChange={(e) => setSecure(e.target.checked)}
-                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                   />
-                  <label htmlFor="secure-checkbox" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <label htmlFor="secure-checkbox" style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
                     {t.secureLabel}
                   </label>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">{t.userLabel}</label>
+                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.userLabel}</label>
                     <input
                       type="email"
                       className="form-input"
@@ -903,23 +852,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       }}
                       placeholder="username@gmail.com"
                       required
+                      style={{ borderRadius: '10px', height: '40px' }}
                     />
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">{t.passLabel}</label>
+                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.passLabel}</label>
                     <input
                       type="password"
                       className="form-input"
                       value={pass}
                       onChange={(e) => setPass(e.target.value)}
                       placeholder={pass ? '••••••••' : 'Enter SMTP password'}
+                      style={{ borderRadius: '10px', height: '40px' }}
                     />
                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '24px' }}>
-                  <label className="form-label">{t.fromLabel}</label>
+                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.fromLabel}</label>
                   <input
                     type="text"
                     className="form-input"
@@ -927,6 +878,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     onChange={(e) => setFrom(e.target.value)}
                     placeholder='e.g. "Sumer Send" <onboarding@sumersend.com>'
                     required
+                    style={{ borderRadius: '10px', height: '40px' }}
                   />
                 </div>
 
@@ -934,7 +886,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   type="submit" 
                   className="btn btn-primary" 
                   disabled={isSaving}
-                  style={{ width: '100%', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                  style={{ width: '100%', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer', borderRadius: '10px', height: '42px', fontSize: '13px' }}
                 >
                   {isSaving ? (
                     <>
@@ -949,21 +901,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   )}
                 </button>
               </form>
-            </div>
+            </BentoCard>
 
             {/* Test connection */}
-            <div className="card" style={{ flex: 1, minWidth: '280px', padding: '24px' }}>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                <Shield size={22} color="var(--accent-color)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 600 }}>{t.testTitle}</h3>
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <Send size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{t.testTitle}</h3>
               </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.55 }}>
                 {t.testDesc}
               </p>
 
               <form onSubmit={handleTestConnection}>
                 <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label className="form-label">{t.testRecLabel}</label>
+                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.testRecLabel}</label>
                   <input
                     type="email"
                     className="form-input"
@@ -971,6 +925,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     onChange={(e) => setTestRecipient(e.target.value)}
                     placeholder="recipient@gmail.com"
                     required
+                    style={{ borderRadius: '10px', height: '40px' }}
                   />
                 </div>
 
@@ -978,7 +933,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   type="submit" 
                   className="btn" 
                   disabled={isTesting}
-                  style={{ width: '100%', opacity: isTesting ? 0.7 : 1, cursor: isTesting ? 'not-allowed' : 'pointer' }}
+                  style={{ width: '100%', opacity: isTesting ? 0.7 : 1, cursor: isTesting ? 'not-allowed' : 'pointer', borderRadius: '10px', height: '42px', fontSize: '13px' }}
                 >
                   {isTesting ? (
                     <>
@@ -993,172 +948,180 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   )}
                 </button>
               </form>
-            </div>
+            </BentoCard>
           </div>
         </div>
       )}
 
       {/* 1.5 WHATSAPP TAB */}
       {activeSubTab === 'whatsapp' && (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div className="card" style={{ flex: 1, minWidth: '320px', padding: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <Smartphone size={48} color={waStatus.connected ? 'var(--success-color)' : 'var(--text-muted)'} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+          {/* Main WhatsApp Connection Card */}
+          <BentoCard style={{ padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div className="service-icon whatsapp">
+                <MessageSquare size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 750, margin: 0 }}>
+                  {lang === 'en' ? 'WhatsApp Dispatcher' : 'خادم إرسال واتساب'}
+                </h3>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {waStatus.connected
+                    ? (lang === 'ar' ? 'الحالة: متصل ونشط' : 'Status: Connected & Active')
+                    : (lang === 'ar' ? 'الحالة: غير متصل' : 'Status: Disconnected')}
+                </span>
+              </div>
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>
-              {lang === 'en' ? 'WhatsApp Dispatcher' : 'خادم إرسال واتساب'}
-            </h3>
             
             {waStatus.connected ? (
-              <div>
-                <div style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '8px', 
-                  padding: '8px 16px', backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                  color: 'var(--success-color)', borderRadius: '20px', fontWeight: 600,
-                  marginBottom: '24px'
-                }}>
-                  <CheckCircle size={16} />
-                  <span>{lang === 'en' ? 'Connected & Ready' : 'متصل وجاهز للإرسال'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="verified-banner">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'rgba(37, 211, 102, 0.1)', color: '#25d366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CheckCircle size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#10b981', display: 'block' }}>
+                      {lang === 'en' ? 'Connected & Ready' : 'متصل وجاهز للإرسال'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', lineHeight: 1.45 }}>
+                      {lang === 'en' 
+                        ? 'Your WhatsApp account is securely connected via Baileys WebSocket. You can now dispatch real WhatsApp messages using the /v1/whatsapp endpoint or from the Playground.'
+                        : 'حساب واتساب الخاص بك متصل بنجاح عبر Baileys WebSocket. يمكنك الآن إرسال رسائل حقيقية عبر مسار /v1/whatsapp أو منصة الاختبار.'}
+                    </span>
+                  </div>
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
-                  {lang === 'en' 
-                    ? 'Your WhatsApp account is securely connected via Baileys WebSocket. You can now dispatch real WhatsApp messages using the /v1/whatsapp endpoint or from the Playground.'
-                    : 'حساب واتساب الخاص بك متصل بنجاح عبر Baileys WebSocket. يمكنك الآن إرسال رسائل حقيقية عبر مسار /v1/whatsapp أو منصة الاختبار.'}
-                </p>
                 <button 
-                  className="btn btn-outline" 
+                  className="btn" 
                   onClick={handleWaLogout}
                   disabled={waLoading}
-                  style={{ color: 'var(--danger-color)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                  style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '10px', height: '42px', fontSize: '13px', fontWeight: 600 }}
                 >
                   {waLoading ? '...' : (lang === 'en' ? 'Disconnect Session' : 'قطع الاتصال')}
                 </button>
               </div>
             ) : (
-              <div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0, lineHeight: 1.6 }}>
                   {lang === 'en' 
                     ? 'To enable real WhatsApp messaging, scan the QR code below using your WhatsApp mobile app (Linked Devices).'
                     : 'لتفعيل إرسال رسائل واتساب حقيقية، قم بمسح الرمز (QR Code) أدناه باستخدام تطبيق واتساب على هاتفك (الأجهزة المرتبطة).'}
                 </p>
                 
                 {waStatus.qr ? (
-                  <div className="phone-mockup" style={{ marginBottom: '20px' }}>
-                    <div className="mockup-phone-screen">
-                      <div className="mockup-phone-notch"></div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: 'var(--bg-color)' }}>
-                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '1px', marginBottom: '16px' }}>
-                          {lang === 'en' ? 'Scan QR Code' : 'امسح الرمز'}
-                        </span>
-                        <div className="qr-pulse-overlay" style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #eaeaea', display: 'inline-block', overflow: 'hidden' }}>
-                          <div className="qr-pulse-line"></div>
-                          <img src={waStatus.qr} alt="WhatsApp QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
-                        </div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '16px', textAlign: 'center', padding: '0 10px', lineHeight: 1.4 }}>
-                          {lang === 'en' ? 'Open WhatsApp > Linked Devices > Link a Device' : 'افتح واتساب > الأجهزة المرتبطة > ربط جهاز'}
-                        </span>
-                      </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '28px', backgroundColor: 'var(--bg-color)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '1px' }}>
+                      {lang === 'en' ? 'Scan QR Code' : 'امسح الرمز'}
+                    </span>
+                    <div className="qr-pulse-overlay" style={{ background: '#fff', padding: '14px', borderRadius: '14px', border: '1px solid #eaeaea', display: 'inline-block', overflow: 'hidden', position: 'relative' }}>
+                      <div className="qr-pulse-line"></div>
+                      <img src={waStatus.qr} alt="WhatsApp QR Code" style={{ width: '200px', height: '200px', display: 'block' }} />
                     </div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5, maxWidth: '280px' }}>
+                      {lang === 'en' ? 'Open WhatsApp > Linked Devices > Link a Device' : 'افتح واتساب > الأجهزة المرتبطة > ربط جهاز'}
+                    </span>
                   </div>
                 ) : (
-                  <div style={{ padding: '40px 20px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', marginBottom: '20px' }}>
+                  <div style={{ padding: '48px 20px', backgroundColor: 'var(--bg-color)', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
                     <span className="spinner-icon" style={{ display: 'inline-block', width: '24px', height: '24px', border: '3px solid var(--text-muted)', borderTopColor: 'var(--text-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
-                    <p style={{ marginTop: '12px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    <p style={{ marginTop: '14px', color: 'var(--text-muted)', fontSize: '13px' }}>
                       {lang === 'en' ? 'Generating QR Code...' : 'جاري توليد رمز الاستجابة...'}
                     </p>
                   </div>
                 )}
                 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                  <button 
-                    className="btn btn-outline" 
-                    onClick={fetchWaStatus}
-                  >
-                    {lang === 'en' ? 'Refresh Status' : 'تحديث الحالة'}
-                  </button>
-                </div>
+                <button 
+                  className="btn" 
+                  onClick={fetchWaStatus}
+                  style={{ borderRadius: '10px', height: '42px', fontSize: '13px' }}
+                >
+                  {lang === 'en' ? 'Refresh Status' : 'تحديث الحالة'}
+                </button>
               </div>
             )}
-          </div>
-          
-          <div className="onboarding-split-card" style={{ flex: 1, minWidth: '320px', borderRadius: '16px', overflow: 'hidden' }}>
-            {/* Left Info Column */}
-            <div className="onboarding-split-info" style={{ padding: '24px' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <Shield size={20} color="var(--accent-color)" />
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{lang === 'en' ? 'Baileys WebSockets Engine' : 'محرك Baileys WebSockets'}</h3>
-                </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px', textAlign: 'start' }}>
-                  {lang === 'en'
-                    ? 'Sumer Send uses the lightweight Baileys library instead of Puppeteer. This connects directly to WhatsApp servers via WebSockets, using 90% less memory and providing instant dispatch speeds.'
-                    : 'تستخدم سومر سيند مكتبة Baileys الخفيفة بدلاً من Puppeteer. هذا المحرك يتصل مباشرة بسيرفرات واتساب عبر الـ WebSockets مما يوفر 90% من استهلاك الذاكرة ويوفر سرعة إرسال لحظية.'}
-                </p>
-              </div>
-              
-              <div style={{ padding: '12px', backgroundColor: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', textAlign: 'start' }}>
-                  <AlertCircle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#b45309', margin: '0 0 2px 0' }}>{lang === 'en' ? 'Anti-Spam Warning' : 'تحذير مكافحة الاسبام'}</h4>
-                    <p style={{ fontSize: '11px', color: '#92400e', margin: 0, lineHeight: 1.4 }}>
-                      {lang === 'en'
-                        ? 'Avoid sending bulk spam. Meta may ban numbers sending unsolicited links.'
-                        : 'تجنب إرسال الرسائل المزعجة. قد تقوم Meta بحظر الأرقام التي ترسل روابط غير مرغوب فيها.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          </BentoCard>
 
-            {/* Right Column: WebSocket Memory Ticker */}
-            <div className="onboarding-split-visual" style={{ padding: '20px' }}>
-              <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {lang === 'ar' ? 'أداء محرك الواتساب' : 'WhatsApp Engine Metrics'}
-                  </span>
-                  <span style={{ 
-                    fontSize: '9px', 
-                    fontWeight: 700,
-                    color: 'var(--success-text)',
-                    backgroundColor: 'var(--success-bg)',
-                    padding: '1px 6px',
-                    borderRadius: '4px'
-                  }}>
-                    {lang === 'ar' ? 'نشط' : 'Active'}
-                  </span>
+          {/* Engine Info & Warning */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Baileys Engine Info */}
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Layers size={16} />
                 </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'البروتوكول:' : 'Protocol:'}</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>WebSockets (WS)</span>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'en' ? 'Baileys WebSockets Engine' : 'محرك Baileys WebSockets'}
+                </h4>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 20px 0' }}>
+                {lang === 'en'
+                  ? 'Sumer Send uses the lightweight Baileys library instead of Puppeteer. This connects directly to WhatsApp servers via WebSockets, using 90% less memory and providing instant dispatch speeds.'
+                  : 'تستخدم سومر سيند مكتبة Baileys الخفيفة بدلاً من Puppeteer. هذا المحرك يتصل مباشرة بسيرفرات واتساب عبر الـ WebSockets مما يوفر 90% من استهلاك الذاكرة ويوفر سرعة إرسال لحظية.'}
+              </p>
+
+              {/* Performance comparison */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ padding: '2px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>Baileys</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'استهلاك الذاكرة' : 'Memory usage'}</span>
+                    </span>
+                    <span className="tabular-nums-stat" style={{ color: '#10b981', fontWeight: 700 }}>12 MB</span>
                   </div>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                      <span>{lang === 'ar' ? 'استهلاك الذاكرة (Baileys):' : 'RAM usage (Baileys):'}</span>
-                      <span className="tabular-nums-stat" style={{ color: 'var(--success-color)' }}>12 MB</span>
-                    </div>
-                    <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '10%', backgroundColor: 'var(--success-color)' }} />
-                    </div>
+                  <div style={{ height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: '10%', backgroundColor: '#10b981', borderRadius: '3px', transition: 'width 0.6s ease' }} />
                   </div>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                      <span>{lang === 'ar' ? 'استهلاك الذاكرة (Puppeteer):' : 'RAM usage (Puppeteer):'}</span>
-                      <span className="tabular-nums-stat" style={{ color: 'var(--danger-color)' }}>120 MB</span>
-                    </div>
-                    <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--danger-color)' }} />
-                    </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ padding: '2px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '12px', backgroundColor: 'rgba(239, 68, 68, 0.08)', color: '#ef4444' }}>Puppeteer</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'استهلاك الذاكرة' : 'Memory usage'}</span>
+                    </span>
+                    <span className="tabular-nums-stat" style={{ color: '#ef4444', fontWeight: 700 }}>120 MB</span>
+                  </div>
+                  <div style={{ height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: '100%', backgroundColor: '#ef4444', borderRadius: '3px', transition: 'width 0.6s ease' }} />
                   </div>
                 </div>
               </div>
-            </div>
+            </BentoCard>
+
+            {/* Anti-Spam Warning Card */}
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                  <AlertCircle size={16} />
+                </div>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'en' ? 'Anti-Spam Warning' : 'تحذير مكافحة الاسبام'}
+                </h4>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 20px 0' }}>
+                {lang === 'en'
+                  ? 'Avoid sending bulk spam. Meta may ban numbers sending unsolicited links. Always ensure your messages are solicited and comply with WhatsApp Business policies.'
+                  : 'تجنب إرسال الرسائل المزعجة. قد تقوم Meta بحظر الأرقام التي ترسل روابط غير مرغوب فيها. تأكد دائماً أن رسائلك مرغوبة ومتوافقة مع سياسات واتساب للأعمال.'}
+              </p>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                  {lang === 'ar' ? 'البروتوكول: WebSocket' : 'Protocol: WebSocket'}
+                </span>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(37, 211, 102, 0.08)', color: '#25d366', border: '1px solid rgba(37, 211, 102, 0.15)' }}>
+                  {lang === 'ar' ? 'المحرك: Baileys' : 'Engine: Baileys'}
+                </span>
+                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(124, 58, 237, 0.08)', color: '#7c3aed', border: '1px solid rgba(124, 58, 237, 0.15)' }}>
+                  {lang === 'ar' ? 'المنطقة: البصرة' : 'Region: Basra Hub'}
+                </span>
+              </div>
+            </BentoCard>
           </div>
         </div>
       )}
+
+
+
 
       {/* 2. TEMPLATES GALLERY TAB */}
       {activeSubTab === 'templates' && (
@@ -1180,73 +1143,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div>
                 {/* Category Selectors */}
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '25px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '4px',
-                    padding: '4px',
-                    backgroundColor: 'var(--panel-muted)',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)'
-                  }}>
+                  <div className="template-tab-container">
                     <button 
                       onClick={() => setActiveCategory('email')}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px', 
-                        fontSize: '13px', 
-                        padding: '6px 16px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        backgroundColor: activeCategory === 'email' ? 'var(--panel-bg)' : 'transparent',
-                        color: activeCategory === 'email' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: activeCategory === 'email' ? 600 : 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: activeCategory === 'email' ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' : 'none'
-                      }}
+                      className={`template-tab-btn email-tab ${activeCategory === 'email' ? 'active' : ''}`}
                     >
                       <Mail size={14} />
                       <span>{t.categoryEmail}</span>
                     </button>
                     <button 
                       onClick={() => setActiveCategory('sms')}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px', 
-                        fontSize: '13px', 
-                        padding: '6px 16px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        backgroundColor: activeCategory === 'sms' ? 'var(--panel-bg)' : 'transparent',
-                        color: activeCategory === 'sms' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: activeCategory === 'sms' ? 600 : 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: activeCategory === 'sms' ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' : 'none'
-                      }}
+                      className={`template-tab-btn sms-tab ${activeCategory === 'sms' ? 'active' : ''}`}
                     >
                       <Phone size={14} />
                       <span>{t.categorySms}</span>
                     </button>
                     <button 
                       onClick={() => setActiveCategory('whatsapp')}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px', 
-                        fontSize: '13px', 
-                        padding: '6px 16px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        backgroundColor: activeCategory === 'whatsapp' ? 'var(--panel-bg)' : 'transparent',
-                        color: activeCategory === 'whatsapp' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: activeCategory === 'whatsapp' ? 600 : 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: activeCategory === 'whatsapp' ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' : 'none'
-                      }}
+                      className={`template-tab-btn whatsapp-tab ${activeCategory === 'whatsapp' ? 'active' : ''}`}
                     >
                       <MessageSquare size={14} />
                       <span>{t.categoryWa}</span>
@@ -1255,7 +1169,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                   <button
                     onClick={() => { setEditingTemplate(null); setIsBuildingTemplate(true); }}
-                    className="btn"
+                    className="create-template-btn"
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -1263,12 +1177,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       fontSize: '13px', 
                       padding: '8px 16px', 
                       fontWeight: 650,
-                      backgroundColor: 'var(--text-primary)',
-                      color: 'var(--bg-color)',
-                      border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease'
                     }}
                   >
                     <Plus size={14} />
@@ -1449,12 +1359,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
 
                   {/* Right side live preview pane */}
-                  <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '450px' }}>
+                  <BentoCard style={{ padding: '28px', display: 'flex', flexDirection: 'column', minHeight: '450px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FileText size={18} color="var(--accent-color)" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                          <FileText size={16} />
+                        </div>
                         <div>
-                          <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                          <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
                             {lang === 'ar' ? selectedTemplate.nameAr : selectedTemplate.nameEn}
                           </h3>
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: {selectedTemplate.id}</span>
@@ -2127,7 +2039,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </BentoCard>
                 </div>
               </div>
             );
@@ -2139,166 +2051,207 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* 3. SYSTEM & SERVICES TAB */}
       {activeSubTab === 'system' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Architecture / flow overview */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 750, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={18} color="var(--accent-color)" />
-              <span>{lang === 'ar' ? 'البنية التحتية وهندسة الإرسال' : 'Sumer Send Infrastructure Architecture'}</span>
-            </h3>
+          <BentoCard style={{ padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                <Layers size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 750, margin: 0 }}>
+                  {lang === 'ar' ? 'البنية التحتية وهندسة الإرسال' : 'Infrastructure Architecture'}
+                </h3>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {lang === 'ar' ? 'المنطقة: بغداد، العراق' : 'Region: Baghdad, Iraq'}
+                </span>
+              </div>
+            </div>
             
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '20px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '24px', maxWidth: '720px' }}>
               {lang === 'ar' 
                 ? 'تعتمد المنصة على موزع بريد خلفي (Local SMTP Dispatcher) لإرسال رسائل الإيميل الحقيقية مباشرة إلى صندوق البريد الوارد للمستخدمين، وتتكامل برمجياً عبر بوابات الـ API المحلية لشبكات الجيل الرابع في العراق لإيصال رسائل الهاتف المحمول الفورية بمرونة تامة.' 
                 : 'Sumer Send triggers SMTP servers running in the background to forward actual transactional mails, and hooks directly into localized 4G telecom network aggregators inside Iraq for rapid SMS & WhatsApp notification updates.'}
             </p>
 
-            {/* Simulated diagram */}
+            {/* Premium Flow Diagram */}
             <div style={{ 
               backgroundColor: 'var(--bg-color)', 
-              borderRadius: '8px', 
-              padding: '25px', 
+              borderRadius: '12px', 
+              padding: '28px', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
               flexWrap: 'wrap', 
-              gap: '15px',
+              gap: '16px',
               border: '1px solid var(--border-color)'
             }}>
-              <div style={{ padding: '10px 14px', border: '1px solid var(--text-primary)', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', fontSize: '12px', fontWeight: 'bold' }}>
-                SDK / API Calls
+              {/* SDK Node */}
+              <div className="flow-node">
+                <Monitor size={18} />
+                <span>SDK / API Calls</span>
+                <span className="flow-node-label">{lang === 'ar' ? 'نقطة الاتصال' : 'Entry Point'}</span>
               </div>
-              <div style={{ color: 'var(--text-muted)' }}>➔</div>
+
+              <div className="flow-arrow">→</div>
               
-              <div style={{ padding: '10px 14px', border: '1px solid var(--accent-color)', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-color)', textAlign: 'center' }}>
-                Sumer Send Gateways<br/><span style={{ fontSize: '10px', fontWeight: 'normal' }}>Region: Baghdad</span>
+              {/* Gateway Hub Node */}
+              <div className="flow-node node-primary">
+                <Settings size={18} />
+                <span>Sumer Send</span>
+                <span className="flow-node-label">{lang === 'ar' ? 'الموزع المركزي' : 'Central Hub'}</span>
               </div>
-              <div style={{ color: 'var(--text-muted)' }}>➔</div>
+
+              <div className="flow-arrow">→</div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', fontSize: '10px', fontWeight: 500 }}>
-                  <Mail size={12} style={{ color: 'var(--text-secondary)' }} />
-                  <span>SMTP Server (Node / Port 3000)</span>
+              {/* Service Endpoints */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="flow-node node-smtp" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon smtp"><Mail size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>SMTP Mail Engine</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Port 3000</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', fontSize: '10px', fontWeight: 500 }}>
-                  <MessageSquare size={12} style={{ color: 'var(--text-secondary)' }} />
-                  <span>Zain Cash & SMS Aggregator</span>
+                <div className="flow-node node-zain" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon zain"><Phone size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>Zain Iraq SMS</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Gateway API</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', fontSize: '10px', fontWeight: 500 }}>
-                  <Smartphone size={12} style={{ color: 'var(--text-secondary)' }} />
-                  <span>Asiacell / Korek Mobile Bridge</span>
+                <div className="flow-node node-asia" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon asia"><Phone size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>Asiacell Bridge</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Mobile API</span>
+                  </div>
+                </div>
+                <div className="flow-node node-korek" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon korek"><Phone size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>Korek Telecom</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Gateway API</span>
+                  </div>
+                </div>
+                <div className="flow-node node-whatsapp" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon whatsapp"><MessageSquare size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>WhatsApp Cloud</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Basra Hub</span>
+                  </div>
+                </div>
+                <div className="flow-node node-zaincash" style={{ flexDirection: 'row', gap: '10px', padding: '10px 14px' }}>
+                  <div className="service-icon zaincash"><Shield size={14} /></div>
+                  <div style={{ textAlign: 'start' }}>
+                    <span style={{ fontSize: '11.5px' }}>Zain Cash</span>
+                    <span className="flow-node-label" style={{ display: 'block' }}>Payment API</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </BentoCard>
 
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
             
             {/* Status indicators */}
-            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>{t.gatewayStatus}</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>SMTP Mail Engine (Port 3000)</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل ونشط' : 'Online & Active'}
-                  </span>
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                <div className="service-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <Monitor size={16} />
                 </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Zain Iraq SMS Gateway</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل' : 'Connected'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Asiacell Iraq Gateway</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل' : 'Connected'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Korek Telecom Gateway</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل' : 'Connected'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>WhatsApp Cloud (Basra Hub)</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل ونشط' : 'Online & Active'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Zain Cash API Gateway</span>
-                  <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-text)', display: 'inline-block' }}></span>
-                    {lang === 'ar' ? 'متصل' : 'Connected'}
-                  </span>
-                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{t.gatewayStatus}</h3>
               </div>
-            </div>
+              
+              <div>
+                {[
+                  { label: lang === 'ar' ? 'محرك البريد SMTP' : 'SMTP Mail Engine', sub: 'Port 3000', icon: <Mail size={14} />, status: lang === 'ar' ? 'متصل ونشط' : 'Online & Active' },
+                  { label: lang === 'ar' ? 'بوابة زين العراق' : 'Zain Iraq SMS', sub: 'Gateway', icon: <Phone size={14} />, status: lang === 'ar' ? 'متصل' : 'Connected' },
+                  { label: lang === 'ar' ? 'بوابة آسيا سيل' : 'Asiacell Iraq', sub: 'Gateway', icon: <Phone size={14} />, status: lang === 'ar' ? 'متصل' : 'Connected' },
+                  { label: lang === 'ar' ? 'بوابة كورك' : 'Korek Telecom', sub: 'Gateway', icon: <Phone size={14} />, status: lang === 'ar' ? 'متصل' : 'Connected' },
+                  { label: lang === 'ar' ? 'واتساب كلاود' : 'WhatsApp Cloud', sub: 'Basra Hub', icon: <MessageSquare size={14} />, status: lang === 'ar' ? 'متصل ونشط' : 'Online & Active' },
+                  { label: lang === 'ar' ? 'زين كاش' : 'Zain Cash API', sub: 'Payment', icon: <Shield size={14} />, status: lang === 'ar' ? 'متصل' : 'Connected' },
+                ].map((item, i) => (
+                  <div key={i} className="gateway-row">
+                    <div className="gateway-row-label">
+                      {item.icon}
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: '13px' }}>{item.label}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.sub}</span>
+                      </div>
+                    </div>
+                    <div className="gateway-row-status">
+                      <span className="status-dot-active"></span>
+                      <span>{item.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
 
             {/* Rates & pricing */}
-            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>{t.tariffTitle}</h3>
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Layers size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{t.tariffTitle}</h3>
+              </div>
               
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table className="rates-table">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                    <th style={{ textAlign: lang === 'ar' ? 'right' : 'left', paddingBottom: '8px' }}>
-                      {lang === 'ar' ? 'الخدمة / القناة' : 'Service / Channel'}
-                    </th>
-                    <th style={{ textAlign: lang === 'ar' ? 'left' : 'right', paddingBottom: '8px' }}>
-                      {lang === 'ar' ? 'التعرفة والرسوم' : 'Tariff Cost'}
-                    </th>
+                  <tr>
+                    <th>{lang === 'ar' ? 'الخدمة / القناة' : 'Service / Channel'}</th>
+                    <th style={{ textAlign: 'end' }}>{lang === 'ar' ? 'التعرفة' : 'Tariff'}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
-                      {lang === 'ar' ? 'البريد الإلكتروني (Email API)' : 'Email API Delivery'}
+                  <tr>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="service-icon smtp"><Mail size={13} /></div>
+                        <span style={{ fontWeight: 500 }}>{lang === 'ar' ? 'البريد الإلكتروني' : 'Email API'}</span>
+                      </div>
                     </td>
-                    <td style={{ padding: '12px 0', color: 'var(--accent-color)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      10 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
-                      {lang === 'ar' ? 'رسائل الجوال القصيرة (SMS Gateway)' : 'Local SMS Delivery'}
-                    </td>
-                    <td style={{ padding: '12px 0', color: 'var(--success-text)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      120 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
+                    <td style={{ textAlign: 'end' }}>
+                      <span className="rate-value" style={{ color: '#3b82f6' }}>10</span>
+                      <span className="rate-unit">{lang === 'ar' ? 'د.ع / رسالة' : 'IQD / msg'}</span>
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
-                      {lang === 'ar' ? 'رسائل الواتساب للشركات (WhatsApp)' : 'WhatsApp Messaging'}
+                  <tr>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="service-icon zain"><Phone size={13} /></div>
+                        <span style={{ fontWeight: 500 }}>{lang === 'ar' ? 'رسائل الجوال' : 'Local SMS'}</span>
+                      </div>
                     </td>
-                    <td style={{ padding: '12px 0', color: 'var(--warning-text)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      150 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
+                    <td style={{ textAlign: 'end' }}>
+                      <span className="rate-value" style={{ color: '#10b981' }}>120</span>
+                      <span className="rate-unit">{lang === 'ar' ? 'د.ع / رسالة' : 'IQD / msg'}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="service-icon whatsapp"><MessageSquare size={13} /></div>
+                        <span style={{ fontWeight: 500 }}>{lang === 'ar' ? 'رسائل الواتساب' : 'WhatsApp'}</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'end' }}>
+                      <span className="rate-value" style={{ color: '#f59e0b' }}>150</span>
+                      <span className="rate-unit">{lang === 'ar' ? 'د.ع / رسالة' : 'IQD / msg'}</span>
                     </td>
                   </tr>
                 </tbody>
               </table>
               
-              <div style={{ marginTop: '20px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              <div style={{ marginTop: '20px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, padding: '12px 14px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 {lang === 'ar'
                   ? '* تعتمد الفوترة والخصم الفعلي من رصيد المحفظة بالعملة المحلية مباشرة (الـ دينار عراقي IQD).'
                   : '* Billing is calculated and deducted in real-time in Iraqi Dinar (IQD) from your linked wallet balance.'}
               </div>
-            </div>
+            </BentoCard>
 
           </div>
 
@@ -2306,36 +2259,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {activeSubTab === 'security' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Security Overview Header */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 750, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Shield size={18} color="var(--accent-color)" />
-              <span>{lang === 'ar' ? 'إعدادات الحماية والتحقق ثنائي العامل (2FA)' : 'Security & 2FA Configuration'}</span>
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+          <BentoCard style={{ padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div className={`security-shield-badge ${securityVerified ? 'active' : 'inactive'}`}>
+                <Shield size={22} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 750, margin: 0 }}>
+                  {lang === 'ar' ? 'إعدادات الحماية والتحقق ثنائي العامل (2FA)' : 'Security & 2FA Configuration'}
+                </h3>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                  {securityVerified 
+                    ? (lang === 'ar' ? '🟢 الحساب مؤمّن ومحمي' : '🟢 Account secured & protected')
+                    : (lang === 'ar' ? '🟡 يتطلب ربط رقم الهاتف' : '🟡 Phone linking required')}
+                </span>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0, maxWidth: '720px' }}>
               {lang === 'ar'
                 ? 'اربط رقم هاتفك المحمول لتأمين حساب المطور الخاص بك. يتيح لك التحقق الثنائي (2FA) فرض تأكيد فوري بالرمز قبل تنفيذ العمليات الحساسة مثل إطلاق الحملات الجماعية أو إصدار رموز API جديدة.'
                 : 'Link your mobile phone number to secure your developer account. Enforcing 2FA requires entering an SMS-delivered verification code before performing critical actions like launching bulk campaigns or creating new API keys.'}
             </p>
-          </div>
+          </BentoCard>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '25px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
             {/* Phone Linking Card */}
-            <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
-                {lang === 'ar' ? 'ربط وتأكيد رقم الهاتف' : 'Link & Verify Mobile Number'}
-              </h4>
+            <BentoCard style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Phone size={16} />
+                </div>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'ar' ? 'ربط وتأكيد رقم الهاتف' : 'Link & Verify Mobile Number'}
+                </h4>
+              </div>
 
               {securityError && (
-                <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ padding: '12px 14px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.06)', color: '#ef4444', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.12)' }}>
                   <AlertCircle size={14} />
                   <span>{securityError}</span>
                 </div>
               )}
 
               {securitySuccess && (
-                <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ padding: '12px 14px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.06)', color: '#10b981', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.12)' }}>
                   <CheckCircle size={14} />
                   <span>{securitySuccess}</span>
                 </div>
@@ -2344,15 +2313,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {securityVerified ? (
                 /* VERIFIED STATE */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'rgba(76,217,100,0.05)', border: '1px solid rgba(76,217,100,0.2)', borderRadius: '6px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={18} />
+                  <div className="verified-banner">
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Check size={20} />
                     </div>
                     <div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>
                         {lang === 'ar' ? 'رقم الهاتف الموثق' : 'Verified Phone Number'}
                       </span>
-                      <h5 style={{ fontSize: '15px', fontWeight: 700, margin: '2px 0 0 0', direction: 'ltr', textAlign: 'left' }}>
+                      <h5 style={{ fontSize: '16px', fontWeight: 700, margin: '2px 0 0 0', direction: 'ltr', textAlign: 'left', fontFamily: "'Inter', 'SF Mono', monospace", letterSpacing: '1px' }}>
                         {securityPhone}
                       </h5>
                     </div>
@@ -2362,7 +2331,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="button"
                     className="btn"
                     onClick={handleUnlinkPhone}
-                    style={{ borderColor: 'var(--danger-text)', color: 'var(--danger-text)', width: '100%', fontSize: '13px', padding: '8px', fontWeight: 600 }}
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444', width: '100%', fontSize: '13px', padding: '10px', fontWeight: 600, borderRadius: '10px' }}
                   >
                     {lang === 'ar' ? 'إلغاء ربط رقم الهاتف' : 'Unlink Phone Number'}
                   </button>
@@ -2371,7 +2340,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 /* UNVERIFIED STATE / FLOW */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
+                    <label className="form-label" style={{ marginBottom: '8px', display: 'block', fontSize: '12px' }}>
                       {lang === 'ar' ? 'رقم الهاتف العراقي (آسيا سيل، زين، كورك)' : 'Iraqi Mobile Number (AsiaCell, Zain, Korek)'}
                     </label>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -2382,14 +2351,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         value={securityPhone}
                         onChange={(e) => setSecurityPhone(e.target.value)}
                         disabled={isVerifyingOtp}
-                        style={{ height: '38px', direction: 'ltr', textAlign: 'left' }}
+                        style={{ height: '42px', direction: 'ltr', textAlign: 'left', borderRadius: '10px', fontSize: '14px', fontFamily: "'Inter', monospace" }}
                       />
                       <button
                         type="button"
                         className="btn btn-primary"
                         onClick={handleSendSecurityOtp}
                         disabled={countdown > 0}
-                        style={{ fontSize: '12px', whiteSpace: 'nowrap', padding: '0 12px' }}
+                        style={{ fontSize: '12px', whiteSpace: 'nowrap', padding: '0 16px', borderRadius: '10px' }}
                       >
                         {countdown > 0 
                           ? `${countdown}s` 
@@ -2399,56 +2368,63 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
 
                   {isVerifyingOtp && (
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
+                        <label className="form-label" style={{ marginBottom: '8px', display: 'block', fontSize: '12px' }}>
                           {lang === 'ar' ? 'رمز التحقق (OTP) المكون من 6 أرقام' : '6-Digit Verification Code (OTP)'}
                         </label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input
                             type="text"
-                            className="form-input"
+                            className="form-input otp-input"
                             maxLength={6}
                             placeholder="••••••"
                             value={securityOtp}
                             onChange={(e) => setSecurityOtp(e.target.value)}
-                            style={{ height: '38px', letterSpacing: '6px', fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}
                           />
                           <button
                             type="button"
                             className="btn btn-primary"
                             onClick={handleConfirmSecurityOtp}
-                            style={{ fontSize: '12px', padding: '0 16px' }}
+                            style={{ fontSize: '12px', padding: '0 20px', borderRadius: '10px' }}
                           >
                             {lang === 'ar' ? 'تأكيد' : 'Confirm'}
                           </button>
                         </div>
                       </div>
-                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        {lang === 'ar'
-                          ? '💡 تنويه: يظهر رمز الرمز المرسل كإشعار رسالة نصية فورية في الهاتف الافتراضي المحاكي على الجانب الأيمن من الشاشة.'
-                          : '💡 Tip: The verification code will appear as a simulated lockscreen SMS notification on the right-side phone mockup.'}
-                      </p>
+                      <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <Info size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                        <span>
+                          {lang === 'ar'
+                            ? 'تنويه: يظهر رمز التحقق المرسل كإشعار رسالة نصية فورية في الهاتف الافتراضي المحاكي على الجانب الأيمن من الشاشة.'
+                            : 'The verification code will appear as a simulated lockscreen SMS notification on the right-side phone mockup.'}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </BentoCard>
 
             {/* 2FA Policies Card */}
-            <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
-                {lang === 'ar' ? 'سياسة الحماية والتحقق الثنائي' : '2FA Verification Security Policies'}
-              </h4>
+            <BentoCard style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="service-icon" style={{ background: 'rgba(124, 58, 237, 0.08)', color: '#7c3aed' }}>
+                  <Shield size={16} />
+                </div>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'ar' ? 'سياسة الحماية والتحقق الثنائي' : '2FA Verification Policies'}
+                </h4>
+              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Policy 1: Campaign Launch */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                <div className={`policy-card ${requireCampaign2FA ? 'enabled' : ''}`}>
                   <div style={{ flex: 1 }}>
                     <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-primary)' }}>
-                      {lang === 'ar' ? 'فرض التحقق عند إطلاق الحملات الإعلانية' : 'Require 2FA for Campaign Launches'}
+                      {lang === 'ar' ? 'فرض التحقق عند إطلاق الحملات' : 'Require 2FA for Campaigns'}
                     </strong>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', lineHeight: 1.4 }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'block', marginTop: '5px', lineHeight: 1.45 }}>
                       {lang === 'ar'
                         ? 'إرسال رمز تحقق وتأكيده قبل بث وتوصيل الحملات الدعائية الجماعية.'
                         : 'Sends an SMS OTP code which must be verified before launching any bulk campaigns.'}
@@ -2466,15 +2442,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
 
                 {/* Policy 2: API Keys creation */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                <div className={`policy-card ${requireApiKey2FA ? 'enabled' : ''}`}>
                   <div style={{ flex: 1 }}>
                     <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-primary)' }}>
-                      {lang === 'ar' ? 'فرض التحقق عند إنشاء مفاتيح الـ API' : 'Require 2FA for API Key Generation'}
+                      {lang === 'ar' ? 'فرض التحقق عند إنشاء مفاتيح API' : 'Require 2FA for API Keys'}
                     </strong>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', lineHeight: 1.4 }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'block', marginTop: '5px', lineHeight: 1.45 }}>
                       {lang === 'ar'
-                        ? 'حماية مفاتيح البرمجة والتوكن بطلب تأكيد الموبايل عند إصدار أي مفتاح جديد.'
-                        : 'Demands OTP verification on your mobile before exposing new API authorization keys.'}
+                        ? 'إرسال رمز تحقق وتأكيده قبل إنشاء أو تجديد أي مفاتيح API برمجية.'
+                        : 'Sends an SMS OTP code which must be verified before generating or rotating API keys.'}
                     </span>
                   </div>
                   <label className="switch-control" style={{ marginTop: '4px', flexShrink: 0 }}>
@@ -2490,8 +2466,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               {!securityVerified && (
-                <div style={{ padding: '10px 12px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <Info size={14} />
+                <div style={{ padding: '12px 14px', borderRadius: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', gap: '10px', alignItems: 'center', lineHeight: 1.4 }}>
+                  <Info size={14} style={{ flexShrink: 0 }} />
                   <span>
                     {lang === 'ar'
                       ? 'يرجى تأكيد رقم هاتفك أولاً لتفعيل خيارات التحقق الثنائي.'
@@ -2499,7 +2475,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </span>
                 </div>
               )}
-            </div>
+            </BentoCard>
           </div>
         </div>
       )}

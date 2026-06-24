@@ -19,7 +19,8 @@ import {
   Megaphone,
   Coins,
   Activity,
-  TrendingUp
+  TrendingUp,
+  Lock
 } from 'lucide-react';
 import { templatesDb } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
@@ -1006,71 +1007,123 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
             
             {/* Total Campaigns */}
-            <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalCampaigns}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(37, 99, 235, 0.08)' }}>
-                  <Megaphone size={15} color="var(--accent-color)" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card wa-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Megaphone size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.totalCampaigns}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{stats.total}</div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill neutral">
-                  <span>{lang === 'en' ? 'All-time campaigns' : 'إجمالي الحملات الكلي'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat">{stats.total}</span>
+                <span className="bento-trend-badge neutral">
+                  <span>+0%</span>
                 </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'en' ? 'All-time campaigns' : 'إجمالي الحملات الكلي'}
+                </span>
+                <button className="bento-details-btn" onClick={() => setCampaignSubTab('campaigns')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
               </div>
             </BentoCard>
 
             {/* Messages Sent */}
-            <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.messagesSent}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)' }}>
-                  <Send size={15} color="var(--success-color)" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card sms-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.messagesSent}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{stats.sent}</div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill up">
-                  <TrendingUp size={11} />
-                  <span>{lang === 'en' ? 'Successful delivery' : 'توصيل ناجح بالكامل'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat">{stats.sent}</span>
+                <span className="bento-trend-badge up">
+                  <TrendingUp size={10} />
+                  <span>18%</span>
                 </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'en' ? 'Successful delivery' : 'توصيل ناجح بالكامل'}
+                </span>
+                <button className="bento-details-btn" onClick={() => setCampaignSubTab('campaigns')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
               </div>
             </BentoCard>
 
             {/* Success Rate */}
-            <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.successRate}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(92, 107, 192, 0.08)' }}>
-                  <Activity size={15} color="#5c6bc0" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card delivery-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.successRate}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{stats.successRate}%</div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill up">
-                  <CheckCircle2 size={11} />
-                  <span>{lang === 'en' ? 'Within SLA target' : 'ضمن أهداف الخدمة'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat">{stats.successRate}%</span>
+                <span className="bento-trend-badge up">
+                  <CheckCircle2 size={10} />
+                  <span>99%</span>
                 </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'en' ? 'Within SLA target' : 'ضمن أهداف الخدمة'}
+                </span>
+                <button className="bento-details-btn" onClick={() => setCampaignSubTab('campaigns')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
               </div>
             </BentoCard>
 
             {/* Total Expenses */}
-            <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.spent}</span>
-                <div className="card-icon-circle" style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)' }}>
-                  <Coins size={15} color="#ff9800" />
+            <BentoCard 
+              className="dashboard-card bento-metric-card email-card" 
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '140px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Coins size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+                  <span className="bento-header-title">{t.spent}</span>
                 </div>
+                <button className="bento-options-btn">•••</button>
               </div>
-              <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-                {stats.spent.toLocaleString()}{' '}
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>{t.iqd}</span>
-              </div>
-              <div style={{ marginTop: '8px' }}>
-                <span className="trend-pill neutral">
-                  <span>{lang === 'en' ? 'Accumulated cost' : 'الإنفاق التراكمي المجمع'}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+                <span className="bento-value tabular-nums-stat" style={{ fontSize: '24px' }}>
+                  {stats.spent.toLocaleString()}{' '}
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>{t.iqd}</span>
                 </span>
+                <span className="bento-trend-badge neutral">
+                  <span>IQD</span>
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 'auto' }}>
+                <span className="bento-desc">
+                  {lang === 'en' ? 'Accumulated cost' : 'الإنفاق التراكمي المجمع'}
+                </span>
+                <button className="bento-details-btn" onClick={() => setCampaignSubTab('campaigns')}>
+                  <span>{lang === 'en' ? 'See Details' : 'عرض التفاصيل'}</span>
+                  <span>→</span>
+                </button>
               </div>
             </BentoCard>
           </div>
@@ -1093,7 +1146,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
           {campaignSubTab === 'campaigns' ? (
             /* Campaigns History */
-            <div className="card" style={{ padding: '24px' }}>
+            <BentoCard className="card" glowColor="59, 130, 246" style={{ padding: '24px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>{t.historyTitle}</h3>
               
               {campaigns.length === 0 ? (
@@ -1155,7 +1208,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   </table>
                 </div>
               )}
-            </div>
+            </BentoCard>
           ) : (
             /* Template Management tab rendering */
             <div>
@@ -1313,7 +1366,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                 </div>
               ) : (
                 /* FORM COMPOSER VIEW */
-                <form onSubmit={handleSaveTemplate} className="card" style={{ padding: '24px' }}>
+                <form onSubmit={handleSaveTemplate} className="card" style={{ padding: '24px', borderRadius: '24px' }}>
                   <div className="flex-between" style={{ marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
                       {editingTemplateId 
@@ -1621,7 +1674,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             <span>{lang === 'en' ? 'Back to Campaigns' : 'العودة لقائمة الحملات'}</span>
           </button>
 
-          <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
             <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '16px' }}>
               <div>
                 <span className="badge badge-success" style={{ textTransform: 'uppercase', fontSize: '10px', marginBottom: '6px', display: 'inline-block' }}>{selectedCampaign.type}</span>
@@ -1669,7 +1722,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </div>
 
           {/* Recipients Table list inside campaign detail */}
-          <div className="card" style={{ padding: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>{lang === 'en' ? 'Campaign Dispatch Matrix' : 'جدول توزيع وتسليم الرسائل'}</h3>
             <div className="table-container">
               <table className="v-table">
@@ -1705,7 +1758,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
       {/* VIEW 3: CAMPAIGN BUILDER WIZARD */}
       {viewState === 'create' && (
-        <div className="card" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        <BentoCard className="card" glowColor="37, 99, 235" style={{ padding: '24px', borderRadius: '24px', maxWidth: '800px', margin: '0 auto' }}>
           {/* Wizard Steps indicator bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
             {[1, 2, 3, 4].map(s => (
@@ -2000,12 +2053,12 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               </button>
             )}
           </div>
-        </div>
+        </BentoCard>
       )}
 
       {/* VIEW 4: LIVE DISPATCHING PROGRESS */}
       {viewState === 'progress' && activeCampaign && (
-        <div className="card" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        <BentoCard className="card" glowColor="16, 185, 129" style={{ padding: '24px', borderRadius: '24px', maxWidth: '800px', margin: '0 auto' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px', display: 'flex', gap: '10px', alignItems: 'center' }}>
             <span className="pulse-dot" style={{ display: execProgress < 100 ? 'inline-block' : 'none' }}></span>
             <span>{t.progressTitle}</span>
@@ -2087,7 +2140,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               </button>
             </div>
           )}
-        </div>
+        </BentoCard>
       )}
 
       {is2faModalOpen && (
@@ -2097,8 +2150,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'var(--gray-alpha-500)',
-          backdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(12px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -2112,7 +2165,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             boxShadow: 'var(--shadow-large)',
             border: '1px solid var(--border-color)',
             backgroundColor: 'var(--panel-bg)',
-            borderRadius: '12px',
+            borderRadius: '24px',
             animation: 'fadeIn 0.2s ease-out'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -2125,10 +2178,9 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
                 border: '1px solid var(--border-color)'
               }}>
-                🔒
+                <Lock size={16} color="var(--text-primary)" />
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>

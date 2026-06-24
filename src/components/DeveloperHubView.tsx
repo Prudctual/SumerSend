@@ -1068,9 +1068,9 @@ echo "Webhook Processed";
           <div style={{ marginBottom: '20px' }} className="flex-between">
             <div>
               <h1 style={{ 
-                fontSize: '32px', 
+                fontSize: '26px', 
                 fontWeight: 800, 
-                letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+                letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
                 lineHeight: 1.15,
                 marginBottom: '8px',
                 color: 'var(--text-primary)'
@@ -1113,7 +1113,7 @@ echo "Webhook Processed";
       {activeSubTab === 'quickstart' && (
         <div>
           {/* Onboarding Progress Dashboard */}
-          <BentoCard className="card" style={{ padding: '20px 24px', marginBottom: '20px', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
+          <BentoCard className="card" style={{ padding: '20px 24px', marginBottom: '20px', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '120px', height: '120px', background: 'var(--accent-color)', opacity: 0.05, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
             <div style={{ position: 'absolute', bottom: '-10px', left: '-10px', width: '100px', height: '100px', background: '#0070f3', opacity: 0.03, borderRadius: '50%', filter: 'blur(35px)', pointerEvents: 'none' }}></div>
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -1138,7 +1138,7 @@ echo "Webhook Processed";
           <div className="devhub-layout">
             <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Step 1: Create API Keys */}
-              <div className="card card-checklist" style={{ padding: '20px', border: isStep1Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
+              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep1Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
                 <div className="flex-between">
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep1Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep1Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
@@ -1170,7 +1170,7 @@ echo "Webhook Processed";
               </div>
 
               {/* Step 2: Setup Dispatcher Bridge */}
-              <div className="card card-checklist" style={{ padding: '20px', border: isStep2Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
+              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep2Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
                 <div className="flex-between">
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep2Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep2Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
@@ -1196,7 +1196,7 @@ echo "Webhook Processed";
               </div>
 
               {/* Step 3: Execute Live Test Request */}
-              <div className="card card-checklist" style={{ padding: '20px', border: isStep3Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
+              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep3Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'start', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep3Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep3Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
@@ -1296,7 +1296,7 @@ echo "Webhook Processed";
               </div>
 
               {/* Step 4: Register Webhook Endpoint */}
-              <div className="card card-checklist" style={{ padding: '20px', border: isStep4Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
+              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep4Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
                 <div className="flex-between">
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep4Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep4Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
@@ -1324,7 +1324,7 @@ echo "Webhook Processed";
 
             {/* Quick documentation info sidebar */}
             <div style={{ flex: 0.8, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: '100px' }}>
-              <div className="card" style={{ padding: '24px' }}>
+              <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FileText size={18} color="var(--accent-color)" />
                   <span>{lang === 'en' ? 'API Documentation' : 'المواصفات الفنية للـ API'}</span>
@@ -1340,7 +1340,7 @@ echo "Webhook Processed";
                 </button>
               </div>
 
-              <BentoCard className="card" style={{ padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
+              <BentoCard className="card" style={{ padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'var(--success-text)', opacity: 0.05, borderRadius: '50%', filter: 'blur(25px)', pointerEvents: 'none' }}></div>
                 <div style={{ position: 'relative', zIndex: 1 }}>
                   <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>
@@ -1374,7 +1374,7 @@ echo "Webhook Processed";
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t.apiKeySubtitle}</p>
           </div>
 
-          <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '16px', marginBottom: '20px', overflow: 'hidden' }}>
+          <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '24px', marginBottom: '20px', overflow: 'hidden' }}>
             {/* Left Info Column */}
             <div className="onboarding-split-info" style={{ padding: '24px' }}>
               <div>
@@ -1430,7 +1430,7 @@ echo "Webhook Processed";
           </BentoCard>
 
           {/* Create API Key Form */}
-          <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+          <div className="card" style={{ marginBottom: '20px', padding: '24px', borderRadius: '24px' }}>
             <form onSubmit={handleCreateKey} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div style={{ flex: 2, minWidth: '220px' }}>
                 <label className="form-label">{t.keyLabel}</label>
@@ -1562,7 +1562,7 @@ echo "Webhook Processed";
       {activeSubTab === 'webhooks' && (
         <div>
           {/* Visual Webhook flow diagram */}
-          <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Layers size={18} color="var(--accent-color)" />
               <span>{t.wfTitle}</span>
@@ -1596,7 +1596,7 @@ echo "Webhook Processed";
           <div className="devhub-layout">
             <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Webhook Configuration form */}
-              <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
+              <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
                 <form onSubmit={handleCreateWebhook}>
                   <div style={{ marginBottom: '16px' }}>
                     <label className="form-label">{t.endpointLabel}</label>
@@ -1741,7 +1741,7 @@ echo "Webhook Processed";
 
               {/* Webhook HMAC calculations signature guides */}
               {webhooks.length > 0 && (
-                <div className="card" style={{ padding: '24px' }}>
+                <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
                   <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Key size={16} color="var(--accent-color)" />
                     <span>{t.wvcTitle}</span>
@@ -1778,7 +1778,7 @@ echo "Webhook Processed";
             </div>
 
             {/* WEBHOOK SIMULATOR / DEBUGGER TOOL */}
-            <div className="card" style={{ flex: 0.8, padding: '24px', position: 'sticky', top: '100px' }}>
+            <div className="card" style={{ flex: 0.8, padding: '24px', borderRadius: '24px', position: 'sticky', top: '100px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Play size={16} color="var(--accent-color)" />
                 <span>{t.simTitle}</span>
@@ -1878,7 +1878,7 @@ echo "Webhook Processed";
           </div>
 
           {/* Webhook Delivery Logs Table */}
-          <div className="card" style={{ marginTop: '24px', padding: '24px' }}>
+          <div className="card" style={{ marginTop: '24px', padding: '24px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Webhook size={16} color="var(--accent-color)" />
               <span>{lang === 'en' ? 'Live Webhook Logs & Delivery Traces' : 'سجل استدعاء الويب هوك المباشر'}</span>
@@ -1939,7 +1939,7 @@ echo "Webhook Processed";
           </div>
 
           <div className="codebuilder-layout">
-            <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="card" style={{ padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label className="form-label">{t.cbChannelLabel}</label>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
@@ -2021,7 +2021,7 @@ echo "Webhook Processed";
             </div>
 
             {/* Code Output Card */}
-            <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+            <div className="card" style={{ padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column' }}>
               <div className="flex-between" style={{ marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Code size={16} color="var(--accent-color)" />
@@ -2231,7 +2231,7 @@ echo "Webhook Processed";
           </div>
 
           {/* API Specifications Docs details */}
-          <div className="card" id="docs" style={{ padding: '24px' }}>
+          <div className="card" id="docs" style={{ padding: '24px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.cbDocsTitle}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>{t.cbDocsDesc}</p>
 
@@ -2298,7 +2298,7 @@ echo "Webhook Processed";
             boxShadow: 'var(--shadow-large)',
             border: '1px solid var(--border-color)',
             backgroundColor: 'var(--panel-bg)',
-            borderRadius: '12px',
+            borderRadius: '24px',
             animation: 'fadeIn 0.2s ease-out'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>

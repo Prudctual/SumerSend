@@ -3001,45 +3001,107 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   </span>
                 </div>
 
-                <input
-                  type="text"
-                  value={variablePreviewValues[v.key] || ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setVariablePreviewValues(prev => ({ ...prev, [v.key]: val }));
-                    
-                    setVariables(prev => prev.map(item => {
-                      if (item.key === v.key) {
-                        return {
-                          ...item,
-                          defaultValAr: isAr ? val : item.defaultValAr,
-                          defaultValEn: !isAr ? val : item.defaultValEn
-                        };
-                      }
-                      return item;
-                    }));
-                  }}
-                  placeholder={isAr ? 'قيمة المعاينة التلقائية...' : 'Test preview value...'}
-                  style={{
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    width: '100%',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '5px',
-                    backgroundColor: 'var(--panel-bg)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--accent-color)';
-                    e.target.style.boxShadow = '0 0 0 1px var(--accent-bg)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--border-color)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                {(() => {
+                  const isLongText = (
+                    v.key.toLowerCase().includes('desc') || 
+                    v.key.toLowerCase().includes('text') || 
+                    v.key.toLowerCase().includes('body') ||
+                    v.key.toLowerCase().includes('content') ||
+                    v.labelAr.includes('وصف') || 
+                    v.labelAr.includes('نص') || 
+                    v.labelAr.includes('محتوى') ||
+                    (v.labelEn || '').toLowerCase().includes('desc') || 
+                    (v.labelEn || '').toLowerCase().includes('text') ||
+                    (v.labelEn || '').toLowerCase().includes('body') ||
+                    (v.labelEn || '').toLowerCase().includes('content')
+                  );
+
+                  return isLongText ? (
+                    <textarea
+                      value={variablePreviewValues[v.key] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setVariablePreviewValues(prev => ({ ...prev, [v.key]: val }));
+                        
+                        setVariables(prev => prev.map(item => {
+                          if (item.key === v.key) {
+                            return {
+                              ...item,
+                              defaultValAr: isAr ? val : item.defaultValAr,
+                              defaultValEn: !isAr ? val : item.defaultValEn
+                            };
+                          }
+                          return item;
+                        }));
+                      }}
+                      placeholder={isAr ? 'قيمة المعاينة التلقائية...' : 'Test preview value...'}
+                      rows={2}
+                      style={{
+                        padding: '8px 10px',
+                        fontSize: '11px',
+                        width: '100%',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '5px',
+                        backgroundColor: 'var(--panel-bg)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        transition: 'all 0.15s ease',
+                        resize: 'vertical',
+                        fontFamily: 'inherit',
+                        lineHeight: 1.4
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-color)';
+                        e.target.style.boxShadow = '0 0 0 1px var(--accent-bg)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-color)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={variablePreviewValues[v.key] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setVariablePreviewValues(prev => ({ ...prev, [v.key]: val }));
+                        
+                        setVariables(prev => prev.map(item => {
+                          if (item.key === v.key) {
+                            return {
+                              ...item,
+                              defaultValAr: isAr ? val : item.defaultValAr,
+                              defaultValEn: !isAr ? val : item.defaultValEn
+                            };
+                          }
+                          return item;
+                        }));
+                      }}
+                      placeholder={isAr ? 'قيمة المعاينة التلقائية...' : 'Test preview value...'}
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: '11px',
+                        width: '100%',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '5px',
+                        backgroundColor: 'var(--panel-bg)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        transition: 'all 0.15s ease',
+                        height: '32px'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-color)';
+                        e.target.style.boxShadow = '0 0 0 1px var(--accent-bg)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-color)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  );
+                })()}
               </div>
             ))}
           </div>

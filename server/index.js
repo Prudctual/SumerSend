@@ -36,7 +36,15 @@ import {
   findUserByApiKey,
   refundWallet,
   bootstrapUserData,
-  supabase
+  supabase,
+  loadSubscribers,
+  addSubscriber,
+  updateSubscriberStatus,
+  deleteSubscriber,
+  deleteSubscribersBulk,
+  loadSubscriberSettings,
+  saveSubscriberSettings,
+  bulkAddSubscribers
 } from './db.js';
 
 dotenv.config();
@@ -759,6 +767,233 @@ app.post('/api/whatsapp/logout', async (req, res) => {
   res.json({ success: true });
 });
 
+// ----------------------------------------------------
+// Private Subscribers API (Dashboard View)
+// ----------------------------------------------------
+
+app.get('/api/subscribers', async (req, res) => {
+  try {
+    const list = await loadSubscribers(req.user.id);
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load subscribers.' });
+  }
+});
+
+app.post('/api/subscribers', async (req, res) => {
+  const { email, name } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email address format.' });
+  }
+
+  try {
+    const { data: existingSub } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (existingSub) {
+      return res.status(400).json({ error: 'Subscriber with this email is already registered.' });
+    }
+
+    const sub = {
+      id: `sub_${Math.random().toString(36).substring(2, 15)}`,
+      email,
+      name,
+      status: 'active',
+      createdAt: new Date().toISOString()
+    };
+    await addSubscriber(req.user.id, sub);
+    res.status(201).json(sub);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add subscriber.' });
+  }
+});
+
+app.put('/api/subscribers/:id/status', async (req, res) => {
+  const { status } = req.body;
+  if (!status || !['active', 'unsubscribed'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status value. Must be active or unsubscribed.' });
+  }
+
+  try {
+    const success = await updateSubscriberStatus(req.user.id, req.params.id, status);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to update subscriber status.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update subscriber status.' });
+  }
+});
+
+app.delete('/api/subscribers/:id', async (req, res) => {
+  try {
+    const success = await deleteSubscriber(req.user.id, req.params.id);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to delete subscriber.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete subscriber.' });
+  }
+});
+
+app.delete('/api/subscribers/bulk', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'No subscriber IDs provided.' });
+  }
+  try {
+    const success = await deleteSubscribersBulk(req.user.id, ids);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to bulk delete subscribers.' });
+    }
+    res.json({ success: true, deletedCount: ids.length });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to bulk delete subscribers.' });
+  }
+});
+
+app.get('/api/subscribers/settings', async (req, res) => {
+  try {
+    const settings = await loadSubscriberSettings(req.user.id);
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load subscriber settings.' });
+  }
+});
+
+app.post('/api/subscribers/settings', async (req, res) => {
+  const { welcomeEnabled, welcomeSubject, welcomeBody } = req.body;
+  try {
+    const success = await saveSubscriberSettings(req.user.id, {
+      welcomeEnabled: !!welcomeEnabled,
+      welcomeSubject: welcomeSubject || 'Welcome to our newsletter!',
+      welcomeBody: welcomeBody || 'Hello {name},\n\nThank you for subscribing!\n\nBest regards.'
+    });
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to save settings.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save settings.' });
+  }
+});
+
+app.post('/api/subscribers/bulk', async (req, res) => {
+  const { subscribers, sendWelcome } = req.body;
+  if (!Array.isArray(subscribers) || subscribers.length === 0) {
+    return res.status(400).json({ error: 'No subscribers provided. Must be an array.' });
+  }
+
+  const userId = req.user.id;
+
+  try {
+    const validSubs = [];
+    const seenEmails = new Set();
+
+    for (const s of subscribers) {
+      if (!s.email) continue;
+      const normalizedEmail = s.email.toLowerCase().trim();
+      if (!isValidEmail(normalizedEmail)) continue;
+      if (seenEmails.has(normalizedEmail)) continue;
+
+      seenEmails.add(normalizedEmail);
+      validSubs.push({
+        id: `sub_${Math.random().toString(36).substring(2, 15)}`,
+        email: normalizedEmail,
+        name: s.name ? s.name.trim() : null,
+        status: 'active',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    if (validSubs.length === 0) {
+      return res.status(400).json({ error: 'No valid subscribers with correct email formats were provided.' });
+    }
+
+    // Perform bulk upsert
+    await bulkAddSubscribers(userId, validSubs);
+
+    // Queue welcome emails if selected and enabled
+    let welcomeQueuedCount = 0;
+    let walletShortage = false;
+
+    if (sendWelcome) {
+      const settings = await loadSubscriberSettings(userId);
+      if (settings.welcomeEnabled) {
+        const smtpConfig = await loadSmtpConfig(userId);
+        const fromSender = smtpConfig.from || 'Sumer Send <onboarding@sumersend.com>';
+        const welcomeSubject = settings.welcomeSubject;
+
+        for (const sub of validSubs) {
+          const cost = 10;
+          const charged = await chargeWallet(userId, cost, `Bulk Welcome Email to ${sub.email}`);
+
+          let welcomeBody = settings.welcomeBody;
+          welcomeBody = welcomeBody.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+
+          if (!charged) {
+            walletShortage = true;
+            const failedLog = {
+              id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+              type: 'email',
+              from: fromSender,
+              to: sub.email,
+              subject: welcomeSubject,
+              body: welcomeBody,
+              status: 'failed',
+              error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
+              timestamp: new Date().toISOString()
+            };
+            await appendLog(userId, failedLog);
+            triggerWebhooks(userId, 'email.failed', failedLog);
+          } else {
+            const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+            const { error: queueError } = await supabase.from('message_queue').insert({
+              id: msgId,
+              user_id: userId,
+              type: 'email',
+              recipient: sub.email,
+              subject: welcomeSubject,
+              body: welcomeBody,
+              status: 'pending',
+              attempts: 0,
+              max_attempts: 3
+            });
+
+            if (queueError) {
+              console.error('[API] Failed to queue welcome email in bulk:', queueError);
+              await refundWallet(userId, cost, `Refund: Queue failure for Bulk Welcome Email to ${sub.email}`);
+            } else {
+              welcomeQueuedCount++;
+            }
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      importedCount: validSubs.length,
+      welcomeQueuedCount,
+      walletShortage,
+      message: `Successfully imported ${validSubs.length} subscribers.`
+    });
+
+  } catch (err) {
+    console.error('Bulk import API error:', err);
+    res.status(500).json({ error: 'Failed to bulk import subscribers.' });
+  }
+});
+
+
 
 // ----------------------------------------------------
 // Protected /v1/ Public APIs (Authenticate via API keys)
@@ -1060,6 +1295,176 @@ app.post('/v1/whatsapp', publicApiAuth, async (req, res) => {
     status: 'queued',
     timestamp: new Date().toISOString()
   });
+});
+
+// POST /v1/subscribers/subscribe (Public Opt-In API)
+app.post('/v1/subscribers/subscribe', async (req, res) => {
+  let apiKey = '';
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    apiKey = authHeader.split(' ')[1];
+  } else if (req.query.apiKey) {
+    apiKey = req.query.apiKey;
+  } else if (req.body.apiKey) {
+    apiKey = req.body.apiKey;
+  }
+
+  if (!apiKey) {
+    return res.status(401).json({
+      error: {
+        message: 'Missing API key. Provide apiKey via Authorization Bearer header, query string, or body.',
+        type: 'invalid_client_error'
+      }
+    });
+  }
+
+  // Find user by API key
+  let user;
+  try {
+    const authResult = await findUserByApiKey(apiKey);
+    if (!authResult) {
+      return res.status(401).json({
+        error: {
+          message: 'Invalid API key.',
+          type: 'invalid_client_error'
+        }
+      });
+    }
+    user = authResult.user;
+  } catch (err) {
+    return res.status(500).json({ error: 'Authentication processing error.' });
+  }
+
+  const { email, name } = req.body;
+  if (!email) {
+    return res.status(400).json({
+      error: {
+        message: 'Email address is required.',
+        type: 'invalid_request_error'
+      }
+    });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      error: {
+        message: 'Invalid email address format.',
+        type: 'invalid_request_error'
+      }
+    });
+  }
+
+  const userId = user.id;
+
+  try {
+    // 1. Check if subscriber already exists for this user
+    const { data: existingSub, error: checkError } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    let subId = '';
+    let isNewSubscription = false;
+
+    if (existingSub) {
+      subId = existingSub.id;
+      if (existingSub.status !== 'active') {
+        // Reactivate subscription
+        await supabase
+          .from('subscribers')
+          .update({ status: 'active', name: name || existingSub.name, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .eq('id', subId);
+        isNewSubscription = true;
+      }
+    } else {
+      subId = `sub_${Math.random().toString(36).substring(2, 15)}`;
+      await addSubscriber(userId, {
+        id: subId,
+        email: email,
+        name: name,
+        status: 'active'
+      });
+      isNewSubscription = true;
+    }
+
+    // Trigger webhook notification
+    triggerWebhooks(userId, 'subscriber.subscribed', {
+      id: subId,
+      email: email.toLowerCase().trim(),
+      name: name || '',
+      status: 'active',
+      timestamp: new Date().toISOString()
+    });
+
+    // 2. Queue Welcome Email if enabled and it's a new subscription
+    if (isNewSubscription) {
+      const settings = await loadSubscriberSettings(userId);
+      if (settings.welcomeEnabled) {
+        const cost = 10;
+        const charged = await chargeWallet(userId, cost, `Welcome Email to ${email}`);
+        
+        const welcomeSubject = settings.welcomeSubject;
+        let welcomeBody = settings.welcomeBody;
+        welcomeBody = welcomeBody.replace(/{name}/g, name || 'there').replace(/{email}/g, email);
+
+        if (!charged) {
+          const failedLog = {
+            id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+            type: 'email',
+            from: 'Sumer Send <onboarding@sumersend.com>',
+            to: email,
+            subject: welcomeSubject,
+            body: welcomeBody,
+            status: 'failed',
+            error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
+            timestamp: new Date().toISOString()
+          };
+          await appendLog(userId, failedLog);
+          triggerWebhooks(userId, 'email.failed', failedLog);
+        } else {
+          const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+          const smtpConfig = await loadSmtpConfig(userId);
+          const fromSender = smtpConfig.from || 'Sumer Send <onboarding@sumersend.com>';
+
+          const { error: queueError } = await supabase.from('message_queue').insert({
+            id: msgId,
+            user_id: userId,
+            type: 'email',
+            recipient: email,
+            subject: welcomeSubject,
+            body: welcomeBody,
+            status: 'pending',
+            attempts: 0,
+            max_attempts: 3
+          });
+
+          if (queueError) {
+            console.error('[API] Failed to queue welcome email:', queueError);
+            await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscribed successfully.',
+      subscriber: {
+        id: subId,
+        email: email.toLowerCase().trim(),
+        name: name || ''
+      }
+    });
+
+  } catch (err) {
+    console.error('Subscription public API error:', err);
+    res.status(500).json({ error: 'Failed to complete subscription request.' });
+  }
 });
 
 

@@ -102,6 +102,19 @@ async function run() {
       console.log(`✅ Trigger success: Primary API Key created: ${keyData.key.substring(0, 15)}...`);
     }
 
+    // Check Subscriber Settings
+    const { data: subSettingsData, error: subSettingsError } = await supabase
+      .from('subscriber_settings')
+      .select('*')
+      .eq('user_id', testUserId)
+      .maybeSingle();
+
+    if (subSettingsError || !subSettingsData) {
+      console.log('❌ Trigger fail: Default Subscriber Settings not found.');
+    } else {
+      console.log('✅ Trigger success: Default Subscriber Settings created.');
+    }
+
     console.log('\n3. Testing atomic wallet charging...');
     const chargeAmount = 2500;
     const { data: chargeResult, error: chargeError } = await supabase.rpc('charge_wallet_atomic', {

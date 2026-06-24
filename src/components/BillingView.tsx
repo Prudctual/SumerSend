@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ScrollReveal, BentoCard } from './LandingView';
+import { GuideBanner } from './GuideBanner';
 
 interface BillingViewProps {
   lang: 'en' | 'ar';
@@ -37,6 +38,88 @@ export const BillingView: React.FC<BillingViewProps> = ({
   
   const [autoTopUp, setAutoTopUp] = useState(false);
   const [txFilter, setTxFilter] = useState<'all' | 'topup' | 'usage'>('all');
+
+  const [pinDigits, setPinDigits] = useState(['', '', '', '']);
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+
+  const handlePinDigitChange = (index: number, val: string) => {
+    const newVal = val.replace(/[^0-9]/g, '').slice(-1);
+    const newDigits = [...pinDigits];
+    newDigits[index] = newVal;
+    setPinDigits(newDigits);
+    setPin(newDigits.join(''));
+
+    if (newVal && index < 3) {
+      const nextInput = document.getElementById(`pin-input-${index + 1}`);
+      if (nextInput) (nextInput as HTMLInputElement).focus();
+    }
+  };
+
+  const handlePinDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !pinDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`pin-input-${index - 1}`);
+      if (prevInput) {
+        (prevInput as HTMLInputElement).focus();
+        const newDigits = [...pinDigits];
+        newDigits[index - 1] = '';
+        setPinDigits(newDigits);
+        setPin(newDigits.join(''));
+      }
+    }
+  };
+
+  const handleOtpDigitChange = (index: number, val: string) => {
+    const newVal = val.replace(/[^0-9]/g, '').slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = newVal;
+    setOtpDigits(newDigits);
+    setOtp(newDigits.join(''));
+
+    if (newVal && index < 5) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      if (nextInput) (nextInput as HTMLInputElement).focus();
+    }
+  };
+
+  const handleOtpDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      if (prevInput) {
+        (prevInput as HTMLInputElement).focus();
+        const newDigits = [...otpDigits];
+        newDigits[index - 1] = '';
+        setOtpDigits(newDigits);
+        setOtp(newDigits.join(''));
+      }
+    }
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      closeAllModals();
+    }
+  };
+
+  const closeAllModals = () => {
+    setShowZainModal(false);
+    setShowFastPayModal(false);
+    setStep(1);
+    setPinDigits(['', '', '', '']);
+    setOtpDigits(['', '', '', '', '', '']);
+    setPin('');
+    setOtp('');
+    setError('');
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeAllModals();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const translations = {
     en: {
@@ -272,14 +355,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
   // Premium Modal Styles
   const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(12px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 9999, padding: '20px', animation: 'fadeIn 0.2s ease-out'
   };
 
   const modalContentStyle = (color: string): React.CSSProperties => ({
     backgroundColor: 'var(--bg-color)',
-    borderRadius: '12px', width: '100%', maxWidth: '400px',
+    borderRadius: '24px', width: '100%', maxWidth: '400px',
     border: '1px solid var(--border-color)',
     boxShadow: 'var(--card-shadow-hover)',
     overflow: 'hidden', transform: 'translateY(0)',
@@ -300,86 +383,64 @@ export const BillingView: React.FC<BillingViewProps> = ({
           }}>{t.title}</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
         </div>
-        <button 
-          className="btn" 
-          style={{ 
-            fontSize: '12px', 
-            padding: '8px 16px',
-            borderRadius: '999px',
-            border: '1px solid var(--border-color)',
-            backgroundColor: 'var(--panel-bg)',
-            fontWeight: 600
-          }} 
-          onClick={() => setShowGuide(!showGuide)}
-        >
-          {showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}
-        </button>
       </div>
 
-      {showGuide && (
-        <div className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '16px' }}>
-          {/* Left Info Column */}
-          <div className="onboarding-split-info" style={{ padding: '24px' }}>
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 500, margin: '0 0 20px 0', textAlign: 'start' }}>
-                {t.guideText}
-              </p>
+      <GuideBanner
+        lang={lang}
+        show={showGuide}
+        onClose={() => setShowGuide(false)}
+        title={t.guideTitle}
+        description={t.guideText}
+        badges={
+          <>
+            <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
+              {lang === 'ar' ? 'البريد: 10 د.ع' : 'Email: 10 IQD'}
+            </span>
+            <span className="sumer-badge" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
+              {lang === 'ar' ? 'رسائل SMS: 120 د.ع' : 'SMS: 120 IQD'}
+            </span>
+            <span className="sumer-badge" style={{ backgroundColor: 'rgba(37, 211, 102, 0.06)', color: '#12b050', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
+              {lang === 'ar' ? 'الواتساب: 150 د.ع' : 'WhatsApp: 150 IQD'}
+            </span>
+          </>
+        }
+        visualContent={
+          <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', textAlign: 'start' }}>
+              {lang === 'ar' ? 'مقارنة تعرفة الشبكات' : 'Operator Gateway Rates'}
             </div>
-            
-            {/* Rates Badges */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-                {lang === 'ar' ? 'البريد: 10 د.ع' : 'Email: 10 IQD'}
-              </span>
-              <span className="sumer-badge" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-                {lang === 'ar' ? 'رسائل SMS: 120 د.ع' : 'SMS: 120 IQD'}
-              </span>
-              <span className="sumer-badge" style={{ backgroundColor: 'rgba(37, 211, 102, 0.06)', color: '#12b050', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-                {lang === 'ar' ? 'الواتساب: 150 د.ع' : 'WhatsApp: 150 IQD'}
-              </span>
-            </div>
-          </div>
-
-          {/* Right Column with Visual comparison bar charts */}
-          <div className="onboarding-split-visual" style={{ padding: '20px', borderTopRightRadius: '16px', borderBottomRightRadius: '16px' }}>
-            <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', textAlign: 'start' }}>
-                {lang === 'ar' ? 'مقارنة تعرفة الشبكات' : 'Operator Gateway Rates'}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: '#ffcc00' }}>Zain SMS</span>
+                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
+                </div>
+                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '80%', backgroundColor: '#ffcc00' }} />
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                    <span style={{ color: '#ffcc00' }}>Zain SMS</span>
-                    <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
-                  </div>
-                  <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: '80%', backgroundColor: '#ffcc00' }} />
-                  </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: '#ff3366' }}>AsiaCell SMS</span>
+                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
                 </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                    <span style={{ color: '#ff3366' }}>AsiaCell SMS</span>
-                    <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
-                  </div>
-                  <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: '80%', backgroundColor: '#ff3366' }} />
-                  </div>
+                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '80%', backgroundColor: '#ff3366' }} />
                 </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                    <span style={{ color: '#25d366' }}>WhatsApp API</span>
-                    <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>150 IQD</span>
-                  </div>
-                  <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: '100%', backgroundColor: '#25d366' }} />
-                  </div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: '#25d366' }}>WhatsApp API</span>
+                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>150 IQD</span>
+                </div>
+                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '100%', backgroundColor: '#25d366' }} />
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        }
+      />
 
       {/* Tab Switcher */}
       <div className="vercel-tabs-container" style={{ marginBottom: '24px', overflowX: 'auto' }}>
@@ -405,7 +466,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '20px' }}>
             
             {/* Balance Card */}
-            <BentoCard className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+            <BentoCard className="card" glowColor="37, 99, 235" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '24px' }}>
               <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.05, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -423,11 +484,11 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn btn-primary" onClick={() => setShowZainModal(true)} style={{ flex: 1, gap: '8px', padding: '12px', background: '#ffcc00', color: '#000', border: '1px solid #e6b800', borderRadius: '6px', boxShadow: 'none' }}>
+                <button className="btn btn-primary" onClick={() => setShowZainModal(true)} style={{ flex: 1, gap: '8px', padding: '12px', background: '#ffcc00', color: '#000', border: '1px solid #e6b800', borderRadius: '99px', boxShadow: 'none' }}>
                   <Plus size={18} />
                   <span style={{ fontWeight: 700 }}>{t.zainCash}</span>
                 </button>
-                <button className="btn btn-primary" onClick={() => setShowFastPayModal(true)} style={{ flex: 1, gap: '8px', padding: '12px', background: '#ff3366', color: '#fff', border: '1px solid #d91c4d', borderRadius: '6px', boxShadow: 'none' }}>
+                <button className="btn btn-primary" onClick={() => setShowFastPayModal(true)} style={{ flex: 1, gap: '8px', padding: '12px', background: '#ff3366', color: '#fff', border: '1px solid #d91c4d', borderRadius: '99px', boxShadow: 'none' }}>
                   <Plus size={18} />
                   <span style={{ fontWeight: 700 }}>{t.fastPay}</span>
                 </button>
@@ -435,7 +496,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
             </BentoCard>
 
             {/* Analytics Card */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '24px', borderRadius: '16px' }}>
+            <BentoCard className="card" glowColor="59, 130, 246" style={{ display: 'flex', flexDirection: 'column', padding: '24px', borderRadius: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'start' }}>
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.usageTitle}</span>
@@ -477,14 +538,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </BentoCard>
           </div>
 
           {/* Middle Row: Settings & Pricing */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '20px' }}>
             
             {/* Auto Top-up & Wallets */}
-            <div className="card" style={{ borderRadius: '16px' }}>
+            <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <Settings size={16} color="var(--text-secondary)" />
                 <span style={{ fontSize: '15px' }}>{t.autoTopUpTitle} & {t.savedWallets}</span>
@@ -511,15 +572,15 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   <CreditCard size={20} color="#ffcc00" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '14px' }}>Zain Cash</div>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{t.zainCash}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>0780 **** 567</div>
                 </div>
-                <button className="btn" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
+                <button className="btn" style={{ padding: '6px 12px', fontSize: '12px' }}>{lang === 'en' ? 'Edit' : 'تعديل'}</button>
               </div>
             </div>
 
             {/* Pricing Summary */}
-            <div className="card" style={{ borderRadius: '16px' }}>
+            <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <Shield size={16} color="var(--text-secondary)" />
                 <span style={{ fontSize: '15px' }}>{t.pricingTitle}</span>
@@ -529,7 +590,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(0, 112, 243, 0.05)', border: '1px solid rgba(0, 112, 243, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ padding: '8px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}><Mail size={18} color="#0070f3" /></div>
-                    <span style={{ fontWeight: 600, fontSize: '14px' }}>Email Delivery</span>
+                    <span style={{ fontWeight: 600, fontSize: '14px' }}>{lang === 'en' ? 'Email Delivery' : 'البريد الإلكتروني'}</span>
                   </div>
                   <span style={{ fontWeight: 700, fontSize: '15px', color: '#0070f3' }}>{t.emailTariff}</span>
                 </div>
@@ -537,7 +598,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ padding: '8px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}><MessageSquare size={18} color="#10b981" /></div>
-                    <span style={{ fontWeight: 600, fontSize: '14px' }}>SMS OTP</span>
+                    <span style={{ fontWeight: 600, fontSize: '14px' }}>{lang === 'en' ? 'SMS OTP' : 'رسائل الهاتف القصيرة (OTP)'}</span>
                   </div>
                   <span style={{ fontWeight: 700, fontSize: '15px', color: '#10b981' }}>{t.smsTariff}</span>
                 </div>
@@ -545,7 +606,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ padding: '8px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}><Phone size={18} color="#f59e0b" /></div>
-                    <span style={{ fontWeight: 600, fontSize: '14px' }}>WhatsApp Business</span>
+                    <span style={{ fontWeight: 600, fontSize: '14px' }}>{lang === 'en' ? 'WhatsApp Business' : 'رسائل الواتساب'}</span>
                   </div>
                   <span style={{ fontWeight: 700, fontSize: '15px', color: '#f59e0b' }}>{t.waTariff}</span>
                 </div>
@@ -585,7 +646,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                       <th>{t.amountText}</th>
                       <th>{t.status}</th>
                       <th>{t.date}</th>
-                      <th style={{ textAlign: lang === 'en' ? 'right' : 'left' }}>Action</th>
+                      <th style={{ textAlign: lang === 'en' ? 'right' : 'left' }}>{lang === 'en' ? 'Action' : 'العملية'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -638,7 +699,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Architecture diagram */}
-          <div className="card" style={{ padding: '24px', borderRadius: '16px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 750, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Layers size={18} color="var(--accent-color)" />
               <span>{lang === 'ar' ? 'البنية التحتية وهندسة الإرسال' : 'Sumer Send Infrastructure Architecture'}</span>
@@ -691,7 +752,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             
             {/* Status indicators */}
-            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px', borderRadius: '16px' }}>
+            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>
                 {lang === 'ar' ? 'حالة بوابات وقنوات الاتصال' : 'Gateway Service Connectivity'}
               </h3>
@@ -740,7 +801,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
             </div>
 
             {/* Rates & pricing */}
-            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px', borderRadius: '16px' }}>
+            <div className="card" style={{ flex: 1, minWidth: '300px', padding: '24px', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>
                 {lang === 'ar' ? 'تفاصيل تعرفة الشبكات المحلية' : 'Local Operators Tariff Rates'}
               </h3>
@@ -842,7 +903,33 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">{t.walletPin}</label>
-                    <input type="password" maxLength={4} className="form-input" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="••••" style={{ letterSpacing: '8px', textAlign: 'center', padding: '12px', fontSize: '20px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', direction: 'ltr' }}>
+                      {pinDigits.map((digit, idx) => (
+                        <input
+                          key={`pin-${idx}`}
+                          id={`pin-input-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          className="form-input"
+                          value={digit}
+                          onChange={(e) => handlePinDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handlePinDigitKeyDown(idx, e)}
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            padding: '10px 0',
+                            borderRadius: '8px',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   <button type="submit" disabled={isProcessing} style={{ width: '100%', padding: '14px', borderRadius: '6px', backgroundColor: '#ffcc00', border: '1px solid #e6b800', color: '#000', fontWeight: 700, fontSize: '15px', marginTop: '8px', cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.7 : 1, transition: 'transform 0.1s', transform: isProcessing ? 'scale(0.98)' : 'scale(1)' }}>
@@ -864,7 +951,33 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <input type="text" maxLength={6} className="form-input" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="••••••" style={{ letterSpacing: '12px', textAlign: 'center', fontSize: '24px', fontWeight: 800, padding: '16px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', direction: 'ltr' }}>
+                      {otpDigits.map((digit, idx) => (
+                        <input
+                          key={`otp-${idx}`}
+                          id={`otp-input-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          className="form-input"
+                          value={digit}
+                          onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleOtpDigitKeyDown(idx, e)}
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '18px',
+                            fontWeight: 700,
+                            padding: '10px 0',
+                            borderRadius: '8px',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   <button type="submit" disabled={isVerifying} style={{ width: '100%', padding: '14px', borderRadius: '6px', backgroundColor: '#ffcc00', border: '1px solid #e6b800', color: '#000', fontWeight: 700, fontSize: '15px', cursor: isVerifying ? 'not-allowed' : 'pointer', opacity: isVerifying ? 0.7 : 1 }}>
@@ -883,8 +996,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
       {/* FastPay Simulator Modal */}
       {showFastPayModal && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle('#ff3366')}>
+        <div style={modalOverlayStyle} onClick={handleOverlayClick}>
+          <div style={modalContentStyle('#ff3366')} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: '20px', backgroundColor: '#ff3366', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '-0.5px' }}>FastPay</span>
               <button onClick={() => { setShowFastPayModal(false); setStep(1); setError(''); }} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>✕</button>
@@ -928,7 +1041,33 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">{t.walletPin}</label>
-                    <input type="password" maxLength={4} className="form-input" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="••••" style={{ letterSpacing: '8px', textAlign: 'center', padding: '12px', fontSize: '20px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', direction: 'ltr' }}>
+                      {pinDigits.map((digit, idx) => (
+                        <input
+                          key={`pin-${idx}`}
+                          id={`pin-input-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          className="form-input"
+                          value={digit}
+                          onChange={(e) => handlePinDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handlePinDigitKeyDown(idx, e)}
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            padding: '10px 0',
+                            borderRadius: '8px',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   <button type="submit" disabled={isProcessing} style={{ width: '100%', padding: '14px', borderRadius: '6px', backgroundColor: '#ff3366', border: '1px solid #d91c4d', color: '#fff', fontWeight: 700, fontSize: '15px', marginTop: '8px', cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.7 : 1, transition: 'transform 0.1s', transform: isProcessing ? 'scale(0.98)' : 'scale(1)' }}>
@@ -950,7 +1089,33 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <input type="text" maxLength={6} className="form-input" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="••••••" style={{ letterSpacing: '12px', textAlign: 'center', fontSize: '24px', fontWeight: 800, padding: '16px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', direction: 'ltr' }}>
+                      {otpDigits.map((digit, idx) => (
+                        <input
+                          key={`otp-${idx}`}
+                          id={`otp-input-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          className="form-input"
+                          value={digit}
+                          onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleOtpDigitKeyDown(idx, e)}
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '18px',
+                            fontWeight: 700,
+                            padding: '10px 0',
+                            borderRadius: '8px',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   <button type="submit" disabled={isVerifying} style={{ width: '100%', padding: '14px', borderRadius: '6px', backgroundColor: '#ff3366', border: '1px solid #d91c4d', color: '#fff', fontWeight: 700, fontSize: '15px', cursor: isVerifying ? 'not-allowed' : 'pointer', opacity: isVerifying ? 0.7 : 1 }}>

@@ -14,6 +14,8 @@ import { MessagingView } from './components/MessagingView';
 import { LandingView } from './components/LandingView';
 import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
+import { SubscribersView } from './components/SubscribersView';
+
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('landing');
@@ -26,8 +28,8 @@ export default function App() {
 
     const tabOrder = [
       'landing', 'dashboard', 'messaging', 'playground', 'campaigns', 
-      'logs', 'reports', 'settings', 'domains', 'apikeys', 'api', 'webhooks', 'quickstart', 
-      'code', 'smtp', 'whatsapp', 'billing', 'security', 'templates', 'system', 'auth-signin', 'auth-signup'
+      'templates', 'subscribers-list', 'subscribers-settings', 'logs', 'reports', 'settings', 'domains', 'apikeys', 'api', 'webhooks', 'quickstart', 
+      'code', 'smtp', 'whatsapp', 'billing', 'security', 'system', 'auth-signin', 'auth-signup'
     ];
     const oldIdx = tabOrder.indexOf(currentTab);
     const newIdx = tabOrder.indexOf(newTab);
@@ -43,7 +45,56 @@ export default function App() {
     }
     (document as any).startViewTransition(options);
   };
+
   const [lang, setLang] = useState<'en' | 'ar'>('ar'); // Default to Arabic for Iraqi market!
+
+  const renderBreadcrumb = () => {
+    const mainSection = lang === 'ar' ? 'الخدمات الأساسية' : 'Core Services';
+    const devSection = lang === 'ar' ? 'بوابة المطور' : 'Developer Hub';
+    const settingsSection = lang === 'ar' ? 'إعدادات المنصة' : 'Platform Settings';
+
+    switch (currentTab) {
+      case 'dashboard':
+        return `${mainSection} > ${lang === 'ar' ? 'لوحة التحكم' : 'Overview'}`;
+      case 'messaging':
+      case 'playground':
+        return `${mainSection} > ${lang === 'ar' ? 'منصة الاختبار (Playground)' : 'API Playground'}`;
+      case 'campaigns':
+        return `${mainSection} > ${lang === 'ar' ? 'إرسال الحملات' : 'Campaigns'}`;
+      case 'templates':
+        return `${mainSection} > ${lang === 'ar' ? 'معرض القوالب' : 'Templates Gallery'}`;
+      case 'logs':
+        return `${mainSection} > ${lang === 'ar' ? 'سجلات الإرسال' : 'Logs & Traces'}`;
+      case 'reports':
+        return `${mainSection} > ${lang === 'ar' ? 'التقارير التفصيلية' : 'Detailed Reports'}`;
+      
+      case 'billing':
+        return `${settingsSection} > ${lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing'}`;
+      case 'security':
+        return `${settingsSection} > ${lang === 'ar' ? 'الأمان والـ 2FA' : 'Security & 2FA'}`;
+      case 'system':
+        return `${settingsSection} > ${lang === 'ar' ? 'حالة النظام والتعرفة' : 'System Rates & Status'}`;
+      case 'smtp':
+        return `${settingsSection} > ${lang === 'ar' ? 'إرسال البريد SMTP' : 'SMTP Server Config'}`;
+      case 'whatsapp':
+        return `${settingsSection} > ${lang === 'ar' ? 'ربط جلسة واتساب' : 'WhatsApp Sync'}`;
+      
+      case 'apikeys':
+      case 'api':
+        return `${devSection} > ${lang === 'ar' ? 'مفاتيح الـ API' : 'API Keys'}`;
+      case 'domains':
+        return `${devSection} > ${lang === 'ar' ? 'النطاقات والـ DNS' : 'Verified Domains'}`;
+      case 'webhooks':
+        return `${devSection} > ${lang === 'ar' ? 'الويب هوكس (Webhooks)' : 'Webhooks Setup'}`;
+      case 'code':
+        return `${devSection} > ${lang === 'ar' ? 'منشئ الأكواد التفاعلي' : 'Interactive Code Builder'}`;
+      case 'settings':
+        return `${devSection} > ${lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub'}`;
+      
+      default:
+        return lang === 'ar' ? 'الرئيسية' : 'Home';
+    }
+  };
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('sumer_theme') as 'light' | 'dark') || 'light';
   });
@@ -54,6 +105,7 @@ export default function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('sumer_token'));
   const [user, setUser] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const handleSuccessOverlay = () => {
@@ -197,6 +249,19 @@ export default function App() {
     document.documentElement.style.setProperty('--sidebar-width', width);
   }, [sidebarCollapsed]);
 
+  // Collapse sidebar automatically on smaller screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setSidebarCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
   // Verify token and restore session on mount
   useEffect(() => {
     if (!token) {
@@ -286,18 +351,24 @@ export default function App() {
     let baseTab = currentTab;
     let subTab = '';
     
-    if (['domains', 'api', 'smtp', 'whatsapp', 'webhooks', 'quickstart', 'code'].includes(currentTab)) {
+    if (['settings', 'apikeys', 'domains', 'webhooks', 'code', 'api'].includes(currentTab)) {
       baseTab = 'settings';
-      subTab = currentTab;
-    } else if (['playground', 'campaigns'].includes(currentTab)) {
-      baseTab = 'messaging';
-      subTab = currentTab;
-    } else if (currentTab === 'reports') {
-      baseTab = 'logs';
-      subTab = 'analytics';
-    } else if (['security', 'templates', 'system'].includes(currentTab)) {
+      subTab = (currentTab === 'settings' || currentTab === 'api') ? 'apikeys' : currentTab;
+    } else if (['security', 'smtp', 'whatsapp', 'system'].includes(currentTab)) {
       baseTab = 'security';
-      subTab = currentTab;
+      subTab = currentTab === 'security' ? 'smtp' : currentTab;
+    } else if (['playground', 'campaigns', 'messaging'].includes(currentTab)) {
+      baseTab = 'messaging';
+      subTab = currentTab === 'messaging' ? 'playground' : currentTab;
+    } else if (['logs', 'reports'].includes(currentTab)) {
+      baseTab = 'logs';
+      subTab = currentTab === 'logs' ? 'logs' : 'analytics';
+    } else if (currentTab === 'templates') {
+      baseTab = 'templates';
+      subTab = 'templates';
+    } else if (['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab)) {
+      baseTab = 'subscribers';
+      subTab = (currentTab === 'subscribers' || currentTab === 'subscribers-list') ? 'list' : 'settings';
     }
 
     switch (baseTab) {
@@ -351,6 +422,7 @@ export default function App() {
         return (
           <SettingsIntegrationsView
             lang={lang}
+            theme={theme}
             initialTab={subTab as any}
             domains={domains}
             setDomains={setDomains}
@@ -370,10 +442,26 @@ export default function App() {
             setPlaygroundChannel={handlePlaygroundChannelChange}
           />
         );
+      case 'templates':
+        return (
+          <SettingsView
+            lang={lang}
+            theme={theme}
+            setEmailBody={setEmailBody}
+            setEmailSubject={setEmailSubject}
+            setMsgBody={setMsgBody}
+            setPlaygroundChannel={handlePlaygroundChannelChange}
+            setCurrentTab={handleTabChange}
+            setLogs={setLogs}
+            setPhoneNotifications={setPhoneNotifications}
+            controlledSubTab="templates"
+          />
+        );
       case 'security':
         return (
           <SettingsView
             lang={lang}
+            theme={theme}
             setEmailBody={setEmailBody}
             setEmailSubject={setEmailSubject}
             setMsgBody={setMsgBody}
@@ -392,6 +480,14 @@ export default function App() {
             setWalletBalance={setWalletBalance}
             transactions={transactions}
             setTransactions={setTransactions}
+          />
+        );
+      case 'subscribers':
+        return (
+          <SubscribersView 
+            lang={lang} 
+            apiKeys={apiKeys} 
+            initialSubTab={subTab as 'list' | 'settings'}
           />
         );
       default:
@@ -504,30 +600,166 @@ export default function App() {
       />
       
       <main id="main-content" className="main-content" style={{ paddingTop: 'var(--header-height)' }}>
-        <div className="top-navbar">
-          <div className="breadcrumb">
-            <span className="breadcrumb-parent">Sumer Send</span>
-            <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-active">
-              {currentTab === 'dashboard' && (lang === 'en' ? 'Dashboard' : 'لوحة التحكم')}
-              {currentTab === 'messaging' && (lang === 'en' ? 'Messaging & Campaigns' : 'المراسلة والحملات')}
-              {currentTab === 'playground' && (lang === 'en' ? 'Messaging > API Playground' : 'المراسلة > منصة الاختبار')}
-              {currentTab === 'campaigns' && (lang === 'en' ? 'Messaging > Campaigns' : 'المراسلة > الحملات')}
-              {currentTab === 'settings' && (lang === 'en' ? 'Developer Hub' : 'بوابة المطور والـ API')}
-              {currentTab === 'apikeys' && (lang === 'en' ? 'Developer Hub > API Keys' : 'بوابة المطور > مفاتيح الـ API')}
-              {currentTab === 'api' && (lang === 'en' ? 'Developer Hub > API Keys' : 'بوابة المطور > مفاتيح الـ API')}
-              {currentTab === 'domains' && (lang === 'en' ? 'Developer Hub > Domains' : 'بوابة المطور > النطاقات والـ DNS')}
-              {currentTab === 'smtp' && (lang === 'en' ? 'Developer Hub > SMTP Server' : 'بوابة المطور > إرسال البريد SMTP')}
-              {currentTab === 'whatsapp' && (lang === 'en' ? 'Developer Hub > WhatsApp Sync' : 'بوابة المطور > ربط جلسة واتساب')}
-              {currentTab === 'webhooks' && (lang === 'en' ? 'Developer Hub > Webhooks' : 'بوابة المطور > الويب هوكس')}
-              {currentTab === 'code' && (lang === 'en' ? 'Developer Hub > Code Builder' : 'بوابة المطور > منشئ الأكواد')}
-              {currentTab === 'logs' && (lang === 'en' ? 'Logs & Traces' : 'سجلات الإرسال')}
-              {currentTab === 'reports' && (lang === 'en' ? 'Logs & Analytics > Reports' : 'السجلات والتحليلات > التقارير التفصيلية')}
-              {currentTab === 'billing' && (lang === 'en' ? 'Wallet & Billing' : 'المحفظة والشحن')}
-              {currentTab === 'security' && (lang === 'en' ? 'Security & Settings > Security' : 'الأمان والإعدادات > الأمان')}
-              {currentTab === 'templates' && (lang === 'en' ? 'Security & Settings > Templates' : 'الأمان والإعدادات > معرض القوالب')}
-              {currentTab === 'system' && (lang === 'en' ? 'Security & Settings > System Rates' : 'الأمان والإعدادات > حالة النظام والتعرفة')}
+        <div className="top-navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Left: Active Tab Title & Subtitle */}
+          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+              {currentTab === 'dashboard' ? (lang === 'ar' ? 'لوحة التحكم' : 'Overview') : 
+               ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns') :
+               currentTab === 'templates' ? (lang === 'ar' ? 'معرض القوالب' : 'Templates Gallery') :
+               ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'السجلات والتحليلات' : 'Logs & Analytics') :
+               currentTab === 'billing' ? (lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing') :
+               (lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub')}
+            </h2>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>
+              {currentTab === 'dashboard' ? (lang === 'ar' ? 'إحصائيات فورية ولقطات أداء لبوابتك العريقة' : 'Real-time metrics & performance stats') :
+               ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'إرسال واختبار الرسائل عبر القنوات' : 'Carrier API transmissions') :
+               currentTab === 'templates' ? (lang === 'ar' ? 'إدارة وتخصيص قوالب الإشعارات' : 'Carrier templates catalog') :
+               ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'تحليل حجم الحركة وسجلات النظام' : 'Outbound traces analytics') :
+               currentTab === 'billing' ? (lang === 'ar' ? 'شحن الرصيد والتعرفة المحلية' : 'Recharge gateways & local rates') :
+               (lang === 'ar' ? 'إعدادات المنصة ومفاتيح الربط' : 'API connection keys & DNS')}
             </span>
+          </div>
+
+          {/* Center: Search Capsule Shortcut */}
+          <div className="navbar-search-container" onClick={() => setIsSearchOpen(true)}>
+            <SearchIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            <span className="navbar-search-text">{lang === 'ar' ? 'بحث سريع... (⌘F)' : 'Search here... (⌘F)'}</span>
+            <span className="navbar-search-badge">⌘F</span>
+          </div>
+
+          {/* Right: Notifications & Profile Widget */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
+            {/* Notification Bell */}
+            <button className="navbar-notification-btn" title={lang === 'ar' ? 'الإشعارات' : 'Notifications'}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span className="navbar-notification-dot"></span>
+            </button>
+
+            {/* Profile Dropdown Trigger */}
+            {user && (
+              <div 
+                className="navbar-profile-widget" 
+                onClick={() => setProfileOpen(!profileOpen)}
+              >
+                <div className="navbar-profile-info">
+                  <span className="navbar-profile-name">{user.name || 'Jasim Kareem'}</span>
+                  <span className="navbar-profile-role">{lang === 'ar' ? 'مطور' : 'Developer'}</span>
+                </div>
+                <div className="navbar-profile-avatar">
+                  {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                </div>
+                <ChevronDown size={14} style={{ color: 'var(--text-secondary)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+
+                {/* Profile Dropdown Menu */}
+                {profileOpen && (
+                  <>
+                    {/* Invisible overlay to close on click outside */}
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); setProfileOpen(false); }}
+                      style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 98,
+                        background: 'transparent',
+                        cursor: 'default'
+                      }}
+                    />
+                    <div 
+                      className="profile-dropdown-container"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        top: '46px',
+                        left: lang === 'ar' ? '0' : 'auto',
+                        right: lang === 'ar' ? 'auto' : '0',
+                        position: 'absolute',
+                        zIndex: 99,
+                        minWidth: '220px',
+                        animation: 'fadeIn 0.15s ease'
+                      }}
+                    >
+                      <div className="profile-dropdown-header" style={{ padding: '12px 16px' }}>
+                        <div className="profile-dropdown-user-name" style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
+                          {user.name || 'Jasim Kareem'}
+                        </div>
+                        <div className="profile-dropdown-user-email" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {user.email || 'mj9034812@gmail.com'}
+                        </div>
+                      </div>
+
+                      <div className="profile-dropdown-divider" />
+
+                      <div className="profile-dropdown-section" style={{ padding: '6px' }}>
+                        <button 
+                          onClick={() => { handleTabChange('security'); setProfileOpen(false); }}
+                          className="profile-dropdown-item"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: '8px' }}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                          <span>{lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}</span>
+                        </button>
+
+                        <div className="profile-dropdown-control-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          <span>{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
+                          <div className="profile-dropdown-segmented" style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--panel-muted)', padding: '2px', borderRadius: '6px' }}>
+                            <button 
+                              onClick={() => setTheme('light')}
+                              className={`profile-dropdown-segmented-btn ${theme === 'light' ? 'active' : ''}`}
+                              style={{ border: 'none', background: theme === 'light' ? 'var(--panel-bg)' : 'transparent', color: theme === 'light' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+                            >
+                              <SunMoon size={11} />
+                            </button>
+                            <button 
+                              onClick={() => setTheme('dark')}
+                              className={`profile-dropdown-segmented-btn ${theme === 'dark' ? 'active' : ''}`}
+                              style={{ border: 'none', background: theme === 'dark' ? 'var(--panel-bg)' : 'transparent', color: theme === 'dark' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+                            >
+                              <SunMoon size={11} style={{ transform: 'rotate(180deg)' }} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="profile-dropdown-control-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          <span>{lang === 'ar' ? 'اللغة' : 'Language'}</span>
+                          <div className="profile-dropdown-segmented" style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--panel-muted)', padding: '2px', borderRadius: '6px' }}>
+                            <button 
+                              onClick={() => setLang('ar')}
+                              className={`profile-dropdown-segmented-btn ${lang === 'ar' ? 'active' : ''}`}
+                              style={{ border: 'none', background: lang === 'ar' ? 'var(--panel-bg)' : 'transparent', color: lang === 'ar' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}
+                            >
+                              عربي
+                            </button>
+                            <button 
+                              onClick={() => setLang('en')}
+                              className={`profile-dropdown-segmented-btn ${lang === 'en' ? 'active' : ''}`}
+                              style={{ border: 'none', background: lang === 'en' ? 'var(--panel-bg)' : 'transparent', color: lang === 'en' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}
+                            >
+                              EN
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-dropdown-divider" />
+
+                      <button 
+                        onClick={() => { setProfileOpen(false); handleLogout(); }}
+                        className="profile-dropdown-item profile-dropdown-logout-item"
+                        style={{ width: '100%', border: 'none', display: 'flex', alignItems: 'center', padding: '8px 12px', fontSize: '12px', cursor: 'pointer', background: 'transparent' }}
+                      >
+                        <LogOut size={14} style={{ marginInlineEnd: '8px' }} />
+                        <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

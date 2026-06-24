@@ -1,8 +1,5 @@
-
-
-
 import React from 'react';
-import { Mail, MessageSquare, Phone, TrendingUp, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
+import { Mail, MessageSquare, Phone, TrendingUp, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, X, Sparkles, Plus } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
 
 interface DashboardViewProps {
@@ -163,6 +160,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [showWhatsapp, setShowWhatsapp] = React.useState(true);
   const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
 
+  // State variables for interactive calendar strip
+  const [selectedDayIdx, setSelectedDayIdx] = React.useState<number>(3); // Default to today (index 3)
+
+  const calendarDays = React.useMemo(() => {
+    const days = [];
+    const now = new Date();
+    // Generate 5 days: 3 days prior, today (index 3), and tomorrow (index 4)
+    for (let i = -3; i <= 1; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      days.push({
+        num: d.getDate(),
+        name: d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-IQ', { weekday: 'short' }),
+        isToday: i === 0,
+        date: d
+      });
+    }
+    return days;
+  }, [lang]);
+
   // Calculate stats based on logs
   const emailCount = logs.filter(log => log.type === 'email' && log.status === 'delivered').length;
   const smsCount = logs.filter(log => log.type === 'sms' && log.status === 'delivered').length;
@@ -171,6 +187,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalSent = logs.length;
   const totalDelivered = logs.filter(log => log.status === 'delivered').length;
   const deliveryRateValue = totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 100;
+
+  const emailTotal = logs.filter(log => log.type === 'email').length;
+  const smsTotal = logs.filter(log => log.type === 'sms').length;
+  const waTotal = logs.filter(log => log.type === 'whatsapp').length;
+
+  const emailSuccessRate = emailTotal > 0 ? Math.round((emailCount / emailTotal) * 100) : 100;
+  const smsSuccessRate = smsTotal > 0 ? Math.round((smsCount / smsTotal) * 100) : 100;
+  const waSuccessRate = waTotal > 0 ? Math.round((waCount / waTotal) * 100) : 100;
 
   // Simulate operator stats based on Iraqi phone number prefixes
   // Zain: 078, 077
@@ -429,44 +453,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     if (activeY.length === 0) return height / 2;
     return activeY.reduce((sum, v) => sum + v, 0) / activeY.length;
   };
-  return (
-    <ScrollReveal>
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ 
-          fontSize: '26px', 
-          fontWeight: 800, 
-          letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-          lineHeight: 1.15,
-          marginBottom: '6px',
-          color: 'var(--text-primary)'
-        }}>{t.title}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span>{t.subtitle}</span>
-          {onboardingDismissed && !showStepsAnyway && (
-            <button
-              onClick={() => setShowStepsAnyway(true)}
-              className="hover-link"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent-color)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                padding: 0,
-                textDecoration: 'underline',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <span>{lang === 'ar' ? 'عرض دليل التهيئة' : 'Show onboarding guide'}</span>
-            </button>
-          )}
-        </p>
-      </div>
-
-      {/* Onboarding Checklist Card */}
+  const renderOnboardingChecklist = () => {
+    return (
+      <>
       {(!onboardingDismissed || showStepsAnyway) && (
         progressPercent === 100 && !showStepsAnyway ? (
           <div className="dashboard-card" style={{ 
@@ -474,7 +463,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%)',
             border: '1px solid rgba(16, 185, 129, 0.2)',
             padding: '24px',
-            borderRadius: '16px',
+            borderRadius: '24px',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -506,13 +495,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button onClick={() => setCurrentTab('code')} className="btn btn-primary" style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '6px' }}>
+                <button onClick={() => setCurrentTab('code')} className="btn btn-primary" style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '99px' }}>
                   {lang === 'ar' ? 'عرض وثائق الـ SDK' : 'Integrate SDK Code'}
                 </button>
                 <button 
                   onClick={() => setShowStepsAnyway(true)}
                   className="btn" 
-                  style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}
+                  style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '99px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}
                 >
                   {lang === 'ar' ? 'مراجعة الخطوات' : 'Review Steps'}
                 </button>
@@ -548,7 +537,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
         ) : (
-          <div className="onboarding-split-card" style={{ borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
+          <div className="onboarding-split-card" style={{ borderRadius: '24px', overflow: 'hidden', position: 'relative' }}>
             {/* Left Info Column */}
             <div className="onboarding-split-info" style={{ padding: '32px' }}>
               {/* Close button for onboarding slider */}
@@ -590,7 +579,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                  <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', fontWeight: 700, fontSize: '11px', padding: '3px 8px', borderRadius: '4px' }}>
+                  <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', fontWeight: 700, fontSize: '11px', padding: '3px 8px', borderRadius: '8px' }}>
                     {lang === 'ar' ? 'دليل تهيئة النظام' : 'SYSTEM SETUP GUIDE'}
                   </span>
                   <span className="tabular-nums-stat" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -637,7 +626,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     padding: '8px 20px',
                     fontSize: '13px',
                     fontWeight: 600,
-                    borderRadius: '6px',
+                    borderRadius: '99px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px'
@@ -661,7 +650,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       padding: '8px 24px',
                       fontSize: '13px',
                       fontWeight: 700,
-                      borderRadius: '6px',
+                      borderRadius: '99px',
                       cursor: 'pointer',
                       boxShadow: '0 4px 12px rgba(0, 107, 255, 0.25)',
                       transition: 'all 0.2s ease',
@@ -778,7 +767,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', fontFamily: 'monospace' }}>v=spf1 include:sumer...</span>
                       </div>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
-                        <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                        <span className="pulse-dot-verified" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                         {lang === 'ar' ? 'موثق' : 'Verified'}
                       </span>
                     </div>
@@ -789,7 +778,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', fontFamily: 'monospace' }}>feedback-smtp.sumer...</span>
                       </div>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
-                        <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                        <span className="pulse-dot-verified" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                         {lang === 'ar' ? 'موثق' : 'Verified'}
                       </span>
                     </div>
@@ -801,12 +790,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                       {step1Done ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
-                          <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                          <span className="pulse-dot-verified" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                           {lang === 'ar' ? 'موثق' : 'Verified'}
                         </span>
                       ) : (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#f59e0b', fontWeight: 600 }}>
-                          <span className="pulse-dot-warning" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                          <span className="pulse-dot-pending" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
                           {lang === 'ar' ? 'معلق' : 'Pending'}
                         </span>
                       )}
@@ -850,7 +839,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               )}
 
               {activeStep === 2 && (
-                <div className="mockup-code-terminal" style={{ width: '100%', maxWidth: '280px' }}>
+                <div className="mockup-code-terminal" style={{ width: '100%', maxWidth: '280px', direction: 'ltr' }}>
                   <div className="mockup-code-header">
                     <div className="mockup-code-dot" style={{ backgroundColor: '#ff5f56' }} />
                     <div className="mockup-code-dot" style={{ backgroundColor: '#ffbd2e' }} />
@@ -870,7 +859,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               )}
 
               {activeStep === 3 && (
-                <div className="mockup-phone-frame">
+                <div className="mockup-phone-frame" style={{ direction: 'ltr' }}>
                   <div className="mockup-phone-notch" />
                   {/* iOS Status Bar */}
                   <div style={{ 
@@ -924,7 +913,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       textAlign: 'start',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                      animation: 'slideInNotification 0.4s ease-out'
+                      animation: 'slideInNotification 0.4s ease-out',
+                      direction: lang === 'ar' ? 'rtl' : 'ltr'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -949,570 +939,835 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         )
       )}
+      </>
+    );
+  };
+
+  return (
+    <ScrollReveal>
+      {/* Onboarding Checklist Card */}
+      {renderOnboardingChecklist()}
 
       {/* Stats Cards */}
       <div className="dashboard-metric-grid">
-        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalEmails}</span>
-            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(0, 112, 243, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Mail size={16} color="#0070f3" />
+        {/* Email Card */}
+        <BentoCard 
+          className="dashboard-card bento-metric-card email-card" 
+          glowColor="168, 85, 247"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Mail size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+              <span className="bento-header-title">{t.totalEmails}</span>
             </div>
+            <button className="bento-options-btn">•••</button>
           </div>
-          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{emailCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+12% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '14px', marginBottom: '14px' }}>
+            <span className="bento-value tabular-nums-stat">{emailCount}</span>
+            <span className="bento-trend-badge up">
+              <TrendingUp size={10} />
+              <span>12%</span>
             </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="bento-desc">
+              {lang === 'ar' ? 'بناءً على الصادر الكلي' : 'Based on total outbound'}
+            </span>
+            <button 
+              className="bento-details-btn" 
+              onClick={() => setCurrentTab('reports')}
+            >
+              <span>{lang === 'ar' ? 'التفاصيل' : 'See Details'}</span>
+              <ChevronRight size={10} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
           </div>
         </BentoCard>
 
-        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalSMS}</span>
-            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(76, 217, 100, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Phone size={16} color="#22c55e" />
+        {/* SMS Card */}
+        <BentoCard 
+          className="dashboard-card bento-metric-card sms-card" 
+          glowColor="244, 63, 94"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Phone size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+              <span className="bento-header-title">{t.totalSMS}</span>
             </div>
+            <button className="bento-options-btn">•••</button>
           </div>
-          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{smsCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+8% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '14px', marginBottom: '14px' }}>
+            <span className="bento-value tabular-nums-stat">{smsCount}</span>
+            <span className="bento-trend-badge up">
+              <TrendingUp size={10} />
+              <span>8%</span>
             </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="bento-desc">
+              {lang === 'ar' ? 'بناءً على الرسائل المرسلة' : 'Based on SMS sent'}
+            </span>
+            <button 
+              className="bento-details-btn" 
+              onClick={() => setCurrentTab('reports')}
+            >
+              <span>{lang === 'ar' ? 'التفاصيل' : 'See Details'}</span>
+              <ChevronRight size={10} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
           </div>
         </BentoCard>
 
-        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalWA}</span>
-            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(37, 211, 102, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <MessageSquare size={16} color="#12b050" />
+        {/* WhatsApp Card */}
+        <BentoCard 
+          className="dashboard-card bento-metric-card wa-card" 
+          glowColor="14, 165, 233"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+              <span className="bento-header-title">{t.totalWA}</span>
             </div>
+            <button className="bento-options-btn">•••</button>
           </div>
-          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{waCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+24% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '14px', marginBottom: '14px' }}>
+            <span className="bento-value tabular-nums-stat">{waCount}</span>
+            <span className="bento-trend-badge up">
+              <TrendingUp size={10} />
+              <span>24%</span>
             </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="bento-desc">
+              {lang === 'ar' ? 'بناءً على النشاط الأخير' : 'Based on recent activity'}
+            </span>
+            <button 
+              className="bento-details-btn" 
+              onClick={() => setCurrentTab('reports')}
+            >
+              <span>{lang === 'ar' ? 'التفاصيل' : 'See Details'}</span>
+              <ChevronRight size={10} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
           </div>
         </BentoCard>
 
-        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.deliveryRate}</span>
-            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={16} color="var(--success-color)" />
+        {/* Delivery Rate Card */}
+        <BentoCard 
+          className="dashboard-card bento-metric-card delivery-card" 
+          glowColor="234, 179, 8"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle2 size={15} className="bento-icon" style={{ opacity: 0.8 }} />
+              <span className="bento-header-title">{t.deliveryRate}</span>
             </div>
+            <button className="bento-options-btn">•••</button>
           </div>
-          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{deliveryRateValue}%</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill neutral">
-              <span>{lang === 'en' ? 'Industry standard: 98%' : 'المعيار القياسي: 98%'}</span>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '14px', marginBottom: '14px' }}>
+            <span className="bento-value tabular-nums-stat">{deliveryRateValue}%</span>
+            <span className="bento-trend-badge neutral">
+              <span>98%</span>
             </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="bento-desc">
+              {lang === 'ar' ? 'مقارنة بالمعيار القياسي' : 'Compared to standard'}
+            </span>
+            <button 
+              className="bento-details-btn" 
+              onClick={() => setCurrentTab('reports')}
+            >
+              <span>{lang === 'ar' ? 'التفاصيل' : 'See Details'}</span>
+              <ChevronRight size={10} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
           </div>
         </BentoCard>
       </div>
 
-      {/* Analytics Chart section */}
-      <div className="dashboard-card" style={{ marginBottom: '24px', overflow: 'visible', padding: '16px 20px' }}>
-        <div className="flex-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-primary)' }}>
-              {lang === 'ar' ? 'تحليل حجم الحركة اليومية' : 'Daily Traffic Analytics'}
-            </h3>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-              {lang === 'ar' ? 'توزيع عمليات التوصيل الناجحة للقنوات الثلاث' : 'Successful delivery volume distribution across channels'}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => setCurrentTab('reports')}
-              className="btn"
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '4px 10px',
-                borderRadius: '6px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--panel-bg)',
-                color: 'var(--text-primary)',
-                height: '28px'
-              }}
-            >
-              <span>{lang === 'ar' ? 'التقارير التفصيلية ↗' : 'Detailed Reports ↗'}</span>
-            </button>
-            
-            {/* Time Range Selector */}
-            <div className="capsule-tab-container" style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '2px', display: 'flex', height: '28px', alignItems: 'center' }}>
-              {(['24h', '7d', '30d'] as const).map((range) => (
-                <button 
-                  key={range}
-                  onClick={() => { setTimeRange(range); setHoveredIdx(null); }}
-                  className={`capsule-tab-btn ${timeRange === range ? 'active' : ''}`}
-                  style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {range === '24h' && (lang === 'ar' ? '24 ساعة' : '24h')}
-                  {range === '7d' && (lang === 'ar' ? '7 أيام' : '7d')}
-                  {range === '30d' && (lang === 'ar' ? '30 يوم' : '30d')}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Unified Metrics and Legend row */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '16px', 
-          borderBottom: '1px solid var(--border-color)', 
-          paddingBottom: '10px',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          {/* Metrics */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+      {/* Tier 2: Middle Split Grid (Traffic Analytics, Donut Chart, Calendar Strip) */}
+      <div className="dashboard-tier2-grid">
+        {/* A. Traffic Analytics Line Chart */}
+        <div className="dashboard-card" style={{ overflow: 'visible', padding: '20px 24px', borderRadius: '24px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="flex-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
             <div>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
-                {lang === 'ar' ? 'الحجم الإجمالي' : 'Total Volume'}
-              </span>
-              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {totalVolume.toLocaleString()}
-              </span>
-            </div>
-            <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '16px', height: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
-                {lang === 'ar' ? 'المعدل اليومي' : 'Daily Average'}
-              </span>
-              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-                {avgVolume.toLocaleString()}
+              <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-primary)', textAlign: 'start' }}>
+                {lang === 'ar' ? 'تحليل حجم الحركة اليومية' : 'Daily Traffic Analytics'}
+              </h3>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', textAlign: 'start' }}>
+                {lang === 'ar' ? 'توزيع عمليات التوصيل الناجحة للقنوات الثلاث' : 'Successful delivery volume distribution across channels'}
               </span>
             </div>
-            <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '16px', height: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
-                {lang === 'ar' ? 'حجم الذروة' : 'Peak Volume'}
-              </span>
-              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-                {peakVolume.toLocaleString()}
-              </span>
-            </div>
-          </div>
 
-          {/* Interactive Legend Toggles */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button 
-              onClick={() => setShowEmail(!showEmail)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: showEmail ? 'rgba(0, 112, 243, 0.08)' : 'transparent',
-                border: showEmail ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
-                cursor: 'pointer',
-                opacity: showEmail ? 1 : 0.5,
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                height: '28px',
-                transition: 'all 0.15s ease',
-              }}
-              title={lang === 'ar' ? 'تفعيل/تعطيل البريد الإلكتروني' : 'Toggle Email Line'}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
-              <span style={{ fontWeight: 600, color: showEmail ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'Email' : 'البريد'}</span>
-            </button>
-            
-            <button 
-              onClick={() => setShowSms(!showSms)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: showSms ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
-                border: showSms ? '1px solid var(--success-color)' : '1px solid var(--border-color)',
-                cursor: 'pointer',
-                opacity: showSms ? 1 : 0.5,
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                height: '28px',
-                transition: 'all 0.15s ease',
-              }}
-              title={lang === 'ar' ? 'تفعيل/تعطيل الـ SMS' : 'Toggle SMS Line'}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
-              <span style={{ fontWeight: 600, color: showSms ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'SMS' : 'الـ SMS'}</span>
-            </button>
-
-            <button 
-              onClick={() => setShowWhatsapp(!showWhatsapp)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: showWhatsapp ? 'rgba(37, 211, 102, 0.08)' : 'transparent',
-                border: showWhatsapp ? '1px solid var(--channel-whatsapp)' : '1px solid var(--border-color)',
-                cursor: 'pointer',
-                opacity: showWhatsapp ? 1 : 0.5,
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                height: '28px',
-                transition: 'all 0.15s ease',
-              }}
-              title={lang === 'ar' ? 'تفعيل/تعطيل الواتساب' : 'Toggle WhatsApp Line'}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
-              <span style={{ fontWeight: 600, color: showWhatsapp ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'WhatsApp' : 'الواتساب'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* SVG Render */}
-        <div style={{ width: '100%', overflowX: 'auto', direction: 'ltr', position: 'relative' }}>
-          <svg 
-            viewBox={`0 0 ${width} ${height}`} 
-            style={{ width: '100%', minWidth: '550px', height: 'auto', display: 'block', overflow: 'visible' }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => setHoveredIdx(null)}
-          >
-            <defs>
-              <linearGradient id="emailGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0.0" />
-              </linearGradient>
-              <linearGradient id="smsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--success-color)" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="var(--success-color)" stopOpacity="0.0" />
-              </linearGradient>
-              <linearGradient id="whatsappGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--channel-whatsapp)" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="var(--channel-whatsapp)" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-
-            {/* Grid Lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
-              const y = paddingY + ratio * chartHeight;
-              const value = Math.round(maxVal * (1 - ratio));
-              return (
-                <g key={idx}>
-                  <line 
-                    x1={paddingX} 
-                    y1={y} 
-                    x2={width - paddingX} 
-                    y2={y} 
-                    stroke="var(--border-color)" 
-                    strokeWidth="0.8" 
-                    strokeDasharray="4 4" 
-                  />
-                  <text 
-                    x={paddingX - 10} 
-                    y={y + 3} 
-                    textAnchor="end" 
-                    fill="var(--text-secondary)" 
-                    style={{ fontSize: '9px', fontFamily: 'monospace' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => setCurrentTab('reports')}
+                className="btn"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: '99px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--panel-bg)',
+                  color: 'var(--text-primary)',
+                  height: '28px'
+                }}
+              >
+                <span>{lang === 'ar' ? 'التقارير التفصيلية ↗' : 'Detailed Reports ↗'}</span>
+              </button>
+              
+              {/* Time Range Selector */}
+              <div className="capsule-tab-container" style={{ display: 'flex', height: '28px', alignItems: 'center' }}>
+                {(['24h', '7d', '30d'] as const).map((range) => (
+                  <button 
+                    key={range}
+                    onClick={() => { setTimeRange(range); setHoveredIdx(null); }}
+                    className={`capsule-tab-btn ${timeRange === range ? 'active' : ''}`}
+                    style={{ fontSize: '11px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    {value}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Area Fills */}
-            {showEmail && <path d={makeSmoothAreaPathStr(emailPoints)} fill="url(#emailGrad)" style={{ transition: 'opacity 0.2s' }} />}
-            {showSms && <path d={makeSmoothAreaPathStr(smsPoints)} fill="url(#smsGrad)" style={{ transition: 'opacity 0.2s' }} />}
-            {showWhatsapp && <path d={makeSmoothAreaPathStr(whatsappPoints)} fill="url(#whatsappGrad)" style={{ transition: 'opacity 0.2s' }} />}
-
-            {/* Stroke Lines */}
-            {showEmail && <path d={makeSmoothPathStr(emailPoints)} fill="none" stroke="var(--accent-color)" strokeWidth="2.5" strokeLinecap="round" />}
-            {showSms && <path d={makeSmoothPathStr(smsPoints)} fill="none" stroke="var(--success-color)" strokeWidth="2.5" strokeLinecap="round" />}
-            {showWhatsapp && <path d={makeSmoothPathStr(whatsappPoints)} fill="none" stroke="var(--channel-whatsapp)" strokeWidth="2.5" strokeLinecap="round" />}
-
-            {/* Hover Vertical tracking line */}
-            {hoveredIdx !== null && (
-              <line
-                x1={paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)}
-                y1={paddingY}
-                x2={paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)}
-                y2={height - paddingY}
-                stroke="var(--border-hover)"
-                strokeWidth="1.2"
-                strokeDasharray="3 3"
-              />
-            )}
-
-            {/* Node Dots & glowing halos */}
-            {showEmail && emailPoints.map((p, i) => (
-              <g key={`e-${i}`}>
-                {hoveredIdx === i && (
-                  <circle cx={p.x} cy={p.y} r="8" fill="rgba(0, 112, 243, 0.18)" />
-                )}
-                <circle 
-                  cx={p.x} 
-                  cy={p.y} 
-                  r={hoveredIdx === i ? "5.5" : "4"} 
-                  fill="var(--panel-bg)" 
-                  stroke="var(--accent-color)" 
-                  strokeWidth="2" 
-                  style={{ transition: 'r 0.1s ease' }}
-                />
-              </g>
-            ))}
-            
-            {showSms && smsPoints.map((p, i) => (
-              <g key={`s-${i}`}>
-                {hoveredIdx === i && (
-                  <circle cx={p.x} cy={p.y} r="8" fill="rgba(16, 185, 129, 0.18)" />
-                )}
-                <circle 
-                  cx={p.x} 
-                  cy={p.y} 
-                  r={hoveredIdx === i ? "5.5" : "4"} 
-                  fill="var(--panel-bg)" 
-                  stroke="var(--success-color)" 
-                  strokeWidth="2" 
-                  style={{ transition: 'r 0.1s ease' }}
-                />
-              </g>
-            ))}
-            
-            {showWhatsapp && whatsappPoints.map((p, i) => (
-              <g key={`w-${i}`}>
-                {hoveredIdx === i && (
-                  <circle cx={p.x} cy={p.y} r="8" fill="rgba(37, 211, 102, 0.18)" />
-                )}
-                <circle 
-                  cx={p.x} 
-                  cy={p.y} 
-                  r={hoveredIdx === i ? "5.5" : "4"} 
-                  fill="var(--panel-bg)" 
-                  stroke="var(--channel-whatsapp)" 
-                  strokeWidth="2" 
-                  style={{ transition: 'r 0.1s ease' }}
-                />
-              </g>
-            ))}
-
-          </svg>
-
-          {/* HTML X-Axis Labels */}
-          <div style={{
-            position: 'absolute',
-            bottom: '2px',
-            left: `${(paddingX / width) * 100}%`,
-            width: `${(chartWidth / width) * 100}%`,
-            minWidth: `${(chartWidth / width) * 550}px`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            pointerEvents: 'none',
-            fontSize: '9px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-            fontFamily: 'Cairo, system-ui, -apple-system, sans-serif'
-          }}>
-            {chartData.map((d, idx) => {
-              const showLabel = timeRange !== '30d' || idx === 0 || idx === chartData.length - 1 || idx % 5 === 0;
-              return (
-                <div 
-                  key={idx} 
-                  style={{
-                    visibility: showLabel ? 'visible' : 'hidden',
-                    width: '0',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    whiteSpace: 'nowrap',
-                    direction: lang === 'ar' ? 'rtl' : 'ltr'
-                  }}
-                >
-                  {d.dateStr}
-                </div>
-              );
-            })}
+                    {range === '24h' && (lang === 'ar' ? '24 ساعة' : '24h')}
+                    {range === '7d' && (lang === 'ar' ? '7 أيام' : '7d')}
+                    {range === '30d' && (lang === 'ar' ? '30 يوم' : '30d')}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Interactive HTML Tooltip outside SVG */}
-          {hoveredIdx !== null && (
-            <div style={{
-              position: 'absolute',
-              left: `${((paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)) / width) * 100}%`,
-              top: `${(getAverageTooltipY() / height) * 100}%`,
-              transform: `translate(${
-                ((paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1) + 15 + 155) > width) 
-                  ? '-110%' 
-                  : '10%'
-              }, -50%)`,
-              pointerEvents: 'none',
-              zIndex: 10,
-              backgroundColor: 'var(--panel-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              boxShadow: 'var(--shadow-large)',
-              fontSize: '11px',
-              color: 'var(--text-primary)',
-              minWidth: '150px',
-              transition: 'left 0.08s ease, top 0.08s ease',
-              direction: lang === 'ar' ? 'rtl' : 'ltr'
-            }}>
-              <div style={{ fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '5px', fontSize: '11px' }}>
-                {chartData[hoveredIdx].dateStr}
+          {/* Legend and stats */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '16px', 
+            borderBottom: '1px solid var(--border-color)', 
+            paddingBottom: '10px',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
+                  {lang === 'ar' ? 'الحجم الإجمالي' : 'Total Volume'}
+                </span>
+                <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {totalVolume.toLocaleString()}
+                </span>
               </div>
-              
-              {showEmail && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
-                    <span>{lang === 'ar' ? 'البريد:' : 'Email:'}</span>
-                  </div>
-                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].email}</span>
-                </div>
-              )}
-              
-              {showSms && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
-                    <span>{lang === 'ar' ? 'الـ SMS:' : 'SMS:'}</span>
-                  </div>
-                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].sms}</span>
-                </div>
-              )}
-              
-              {showWhatsapp && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
-                    <span>{lang === 'ar' ? 'الواتساب:' : 'WhatsApp:'}</span>
-                  </div>
-                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].whatsapp}</span>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '4px', marginTop: '4px', fontWeight: 700 }}>
-                <span>{lang === 'ar' ? 'الإجمالي:' : 'Total:'}</span>
-                <span className="tabular-nums-stat" style={{ color: 'var(--accent-color)' }}>
-                  {(showEmail ? chartData[hoveredIdx].email : 0) + 
-                   (showSms ? chartData[hoveredIdx].sms : 0) + 
-                   (showWhatsapp ? chartData[hoveredIdx].whatsapp : 0)}
+              <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '16px', height: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
+                  {lang === 'ar' ? 'المعدل اليومي' : 'Daily Average'}
+                </span>
+                <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                  {avgVolume.toLocaleString()}
                 </span>
               </div>
             </div>
-          )}
+
+            {/* Interactive Legend Toggles */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <button 
+                onClick={() => setShowEmail(!showEmail)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: showEmail ? 'rgba(0, 112, 243, 0.08)' : 'transparent',
+                  border: showEmail ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  opacity: showEmail ? 1 : 0.5,
+                  padding: '4px 10px',
+                  borderRadius: '99px',
+                  fontSize: '11px',
+                  height: '28px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
+                <span style={{ fontWeight: 600, color: showEmail ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'Email' : 'البريد'}</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowSms(!showSms)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: showSms ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
+                  border: showSms ? '1px solid var(--success-color)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  opacity: showSms ? 1 : 0.5,
+                  padding: '4px 10px',
+                  borderRadius: '99px',
+                  fontSize: '11px',
+                  height: '28px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
+                <span style={{ fontWeight: 600, color: showSms ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'SMS' : 'الـ SMS'}</span>
+              </button>
+
+              <button 
+                onClick={() => setShowWhatsapp(!showWhatsapp)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: showWhatsapp ? 'rgba(37, 211, 102, 0.08)' : 'transparent',
+                  border: showWhatsapp ? '1px solid var(--channel-whatsapp)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  opacity: showWhatsapp ? 1 : 0.5,
+                  padding: '4px 10px',
+                  borderRadius: '99px',
+                  fontSize: '11px',
+                  height: '28px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
+                <span style={{ fontWeight: 600, color: showWhatsapp ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'WhatsApp' : 'الواتساب'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* SVG Render */}
+          <div style={{ width: '100%', overflowX: 'auto', direction: 'ltr', position: 'relative' }}>
+            <svg 
+              viewBox={`0 0 ${width} ${height}`} 
+              style={{ width: '100%', minWidth: '450px', height: 'auto', display: 'block', overflow: 'visible' }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setHoveredIdx(null)}
+            >
+              <defs>
+                <linearGradient id="emailGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="smsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--success-color)" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="var(--success-color)" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="whatsappGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--channel-whatsapp)" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="var(--channel-whatsapp)" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+                const y = paddingY + ratio * chartHeight;
+                const value = Math.round(maxVal * (1 - ratio));
+                return (
+                  <g key={idx}>
+                    <line 
+                      x1={paddingX} 
+                      y1={y} 
+                      x2={width - paddingX} 
+                      y2={y} 
+                      stroke="var(--border-color)" 
+                      strokeWidth="0.8" 
+                      strokeDasharray="4 4" 
+                    />
+                    <text 
+                      x={paddingX - 10} 
+                      y={y + 3} 
+                      textAnchor="end" 
+                      fill="var(--text-secondary)" 
+                      style={{ fontSize: '9px', fontFamily: 'monospace' }}
+                    >
+                      {value}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Area Fills */}
+              {showEmail && <path d={makeSmoothAreaPathStr(emailPoints)} fill="url(#emailGrad)" style={{ transition: 'opacity 0.2s' }} />}
+              {showSms && <path d={makeSmoothAreaPathStr(smsPoints)} fill="url(#smsGrad)" style={{ transition: 'opacity 0.2s' }} />}
+              {showWhatsapp && <path d={makeSmoothAreaPathStr(whatsappPoints)} fill="url(#whatsappGrad)" style={{ transition: 'opacity 0.2s' }} />}
+
+              {/* Stroke Lines */}
+              {showEmail && <path d={makeSmoothPathStr(emailPoints)} fill="none" stroke="var(--accent-color)" strokeWidth="2.5" strokeLinecap="round" />}
+              {showSms && <path d={makeSmoothPathStr(smsPoints)} fill="none" stroke="var(--success-color)" strokeWidth="2.5" strokeLinecap="round" />}
+              {showWhatsapp && <path d={makeSmoothPathStr(whatsappPoints)} fill="none" stroke="var(--channel-whatsapp)" strokeWidth="2.5" strokeLinecap="round" />}
+
+              {/* Hover Vertical tracking line */}
+              {hoveredIdx !== null && (
+                <line
+                  x1={paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)}
+                  y1={paddingY}
+                  x2={paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)}
+                  y2={height - paddingY}
+                  stroke="var(--border-hover)"
+                  strokeWidth="1.2"
+                  strokeDasharray="3 3"
+                />
+              )}
+
+              {/* Node Dots */}
+              {showEmail && emailPoints.map((p, i) => (
+                <g key={`e-${i}`}>
+                  {hoveredIdx === i && (
+                    <circle cx={p.x} cy={p.y} r="8" fill="rgba(0, 112, 243, 0.18)" />
+                  )}
+                  <circle 
+                    cx={p.x} 
+                    cy={p.y} 
+                    r={hoveredIdx === i ? "5.5" : "4"} 
+                    fill="var(--panel-bg)" 
+                    stroke="var(--accent-color)" 
+                    strokeWidth="2" 
+                    style={{ transition: 'r 0.1s ease' }}
+                  />
+                </g>
+              ))}
+              
+              {showSms && smsPoints.map((p, i) => (
+                <g key={`s-${i}`}>
+                  {hoveredIdx === i && (
+                    <circle cx={p.x} cy={p.y} r="8" fill="rgba(16, 185, 129, 0.18)" />
+                  )}
+                  <circle 
+                    cx={p.x} 
+                    cy={p.y} 
+                    r={hoveredIdx === i ? "5.5" : "4"} 
+                    fill="var(--panel-bg)" 
+                    stroke="var(--success-color)" 
+                    strokeWidth="2" 
+                    style={{ transition: 'r 0.1s ease' }}
+                  />
+                </g>
+              ))}
+              
+              {showWhatsapp && whatsappPoints.map((p, i) => (
+                <g key={`w-${i}`}>
+                  {hoveredIdx === i && (
+                    <circle cx={p.x} cy={p.y} r="8" fill="rgba(37, 211, 102, 0.18)" />
+                  )}
+                  <circle 
+                    cx={p.x} 
+                    cy={p.y} 
+                    r={hoveredIdx === i ? "5.5" : "4"} 
+                    fill="var(--panel-bg)" 
+                    stroke="var(--channel-whatsapp)" 
+                    strokeWidth="2" 
+                    style={{ transition: 'r 0.1s ease' }}
+                  />
+                </g>
+              ))}
+            </svg>
+
+            {/* HTML X-Axis Labels */}
+            <div style={{
+              position: 'absolute',
+              bottom: '2px',
+              left: `${(paddingX / width) * 100}%`,
+              width: `${(chartWidth / width) * 100}%`,
+              minWidth: `${(chartWidth / width) * 450}px`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              pointerEvents: 'none',
+              fontSize: '9px',
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+              fontFamily: 'Cairo, system-ui, -apple-system, sans-serif'
+            }}>
+              {chartData.map((d, idx) => {
+                const showLabel = timeRange !== '30d' || idx === 0 || idx === chartData.length - 1 || idx % 5 === 0;
+                return (
+                  <div 
+                    key={idx} 
+                    style={{
+                      visibility: showLabel ? 'visible' : 'hidden',
+                      width: '0',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      whiteSpace: 'nowrap',
+                      direction: lang === 'ar' ? 'rtl' : 'ltr'
+                    }}
+                  >
+                    {d.dateStr}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tooltip */}
+            {hoveredIdx !== null && (
+              <div style={{
+                position: 'absolute',
+                left: `${((paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1)) / width) * 100}%`,
+                top: `${(getAverageTooltipY() / height) * 100}%`,
+                transform: `translate(${
+                  ((paddingX + (hoveredIdx * chartWidth) / (chartData.length - 1) + 15 + 155) > width) 
+                    ? '-110%' 
+                    : '10%'
+                }, -50%)`,
+                pointerEvents: 'none',
+                zIndex: 10,
+                backgroundColor: 'var(--panel-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                boxShadow: 'var(--shadow-large)',
+                fontSize: '11px',
+                color: 'var(--text-primary)',
+                minWidth: '150px',
+                transition: 'left 0.08s ease, top 0.08s ease',
+                direction: lang === 'ar' ? 'rtl' : 'ltr'
+              }}>
+                <div style={{ fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '5px', fontSize: '11px' }}>
+                  {chartData[hoveredIdx].dateStr}
+                </div>
+                
+                {showEmail && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
+                      <span>{lang === 'ar' ? 'البريد:' : 'Email:'}</span>
+                    </div>
+                    <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].email}</span>
+                  </div>
+                )}
+                
+                {showSms && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
+                      <span>{lang === 'ar' ? 'الـ SMS:' : 'SMS:'}</span>
+                    </div>
+                    <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].sms}</span>
+                  </div>
+                )}
+                
+                {showWhatsapp && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
+                      <span>{lang === 'ar' ? 'الواتساب:' : 'WhatsApp:'}</span>
+                    </div>
+                    <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].whatsapp}</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '4px', marginTop: '4px', fontWeight: 700 }}>
+                  <span>{lang === 'ar' ? 'الإجمالي:' : 'Total:'}</span>
+                  <span className="tabular-nums-stat" style={{ color: 'var(--accent-color)' }}>
+                    {(showEmail ? chartData[hoveredIdx].email : 0) + 
+                     (showSms ? chartData[hoveredIdx].sms : 0) + 
+                     (showWhatsapp ? chartData[hoveredIdx].whatsapp : 0)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* B. Success Rate Donut Chart Widget */}
+        <div className="donut-chart-card dashboard-card" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: '340px' }}>
+          <div>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-primary)', textAlign: 'start' }}>
+              {lang === 'ar' ? 'تحليل نسب نجاح القنوات' : 'Channel Success Analysis'}
+            </h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', textAlign: 'start' }}>
+              {lang === 'ar' ? 'معدلات التوصيل الفردية ونسب القنوات' : 'Individual delivery rates and ratios'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            {/* Left: Concentric Rings SVG */}
+            <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, margin: '0 auto' }}>
+              <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)', overflow: 'visible', width: '120px', height: '120px' }}>
+                {/* 1. Outer Ring: Email (Radius: 48, StrokeWidth: 6) */}
+                <circle cx="60" cy="60" r="48" fill="transparent" stroke="var(--border-color)" strokeWidth="6" opacity="0.4" />
+                <circle 
+                  cx="60" cy="60" r="48" fill="transparent" stroke="#a855f7" strokeWidth="6" 
+                  strokeDasharray={`${2 * Math.PI * 48}`}
+                  strokeDashoffset={`${2 * Math.PI * 48 * (1 - emailSuccessRate / 100)}`}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+
+                {/* 2. Middle Ring: SMS (Radius: 38, StrokeWidth: 6) */}
+                <circle cx="60" cy="60" r="38" fill="transparent" stroke="var(--border-color)" strokeWidth="6" opacity="0.4" />
+                <circle 
+                  cx="60" cy="60" r="38" fill="transparent" stroke="#f43f5e" strokeWidth="6" 
+                  strokeDasharray={`${2 * Math.PI * 38}`}
+                  strokeDashoffset={`${2 * Math.PI * 38 * (1 - smsSuccessRate / 100)}`}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+
+                {/* 3. Inner Ring: WhatsApp (Radius: 28, StrokeWidth: 6) */}
+                <circle cx="60" cy="60" r="28" fill="transparent" stroke="var(--border-color)" strokeWidth="6" opacity="0.4" />
+                <circle 
+                  cx="60" cy="60" r="28" fill="transparent" stroke="#0ea5e9" strokeWidth="6" 
+                  strokeDasharray={`${2 * Math.PI * 28}`}
+                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - waSuccessRate / 100)}`}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+              </svg>
+              {/* Overall success center text */}
+              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>{deliveryRateValue}%</span>
+                <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'الإجمالي' : 'Overall'}</span>
+              </div>
+            </div>
+
+            {/* Right: Ratios and Details list */}
+            <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Email details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#a855f7' }}></span>
+                    <span style={{ fontWeight: 600 }}>{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</span>
+                  </div>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold' }}>{emailSuccessRate}%</span>
+                </div>
+                <div style={{ height: '4px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${emailSuccessRate}%`, backgroundColor: '#a855f7', borderRadius: '2px' }}></div>
+                </div>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{emailCount} / {emailTotal} {lang === 'ar' ? 'مكتمل' : 'delivered'}</span>
+              </div>
+
+              {/* SMS details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></span>
+                    <span style={{ fontWeight: 600 }}>{lang === 'ar' ? 'الرسائل القصيرة SMS' : 'SMS'}</span>
+                  </div>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold' }}>{smsSuccessRate}%</span>
+                </div>
+                <div style={{ height: '4px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${smsSuccessRate}%`, backgroundColor: '#f43f5e', borderRadius: '2px' }}></div>
+                </div>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{smsCount} / {smsTotal} {lang === 'ar' ? 'مكتمل' : 'delivered'}</span>
+              </div>
+
+              {/* WhatsApp details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0ea5e9' }}></span>
+                    <span style={{ fontWeight: 600 }}>{lang === 'ar' ? 'واتساب' : 'WhatsApp'}</span>
+                  </div>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold' }}>{waSuccessRate}%</span>
+                </div>
+                <div style={{ height: '4px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${waSuccessRate}%`, backgroundColor: '#0ea5e9', borderRadius: '2px' }}></div>
+                </div>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{waCount} / {waTotal} {lang === 'ar' ? 'مكتمل' : 'delivered'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* C. Active Channels / Calendar Strip Widget */}
+        <div className="calendar-strip-card dashboard-card" style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}>
+          <div>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-primary)', textAlign: 'start' }}>
+              {lang === 'ar' ? 'القنوات النشطة' : 'Active Channels'}
+            </h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', textAlign: 'start' }}>
+              {lang === 'ar' ? 'مخطط الإرسال اليومي' : 'Daily timeline'}
+            </span>
+          </div>
+
+          <div className="calendar-strip">
+            {calendarDays.map((day, idx) => (
+              <button 
+                key={idx}
+                onClick={() => setSelectedDayIdx(idx)}
+                className={`calendar-day-btn ${selectedDayIdx === idx ? 'active' : ''}`}
+                style={{ border: 'none', cursor: 'pointer', outline: 'none' }}
+              >
+                <span className="calendar-day-num">{day.num}</span>
+                <span className="calendar-day-name">{day.name}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="calendar-active-items">
+            {selectedDayIdx === 3 ? ( // Today
+              <>
+                <div className="calendar-item-card">
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span className="calendar-item-title">{lang === 'ar' ? 'خدمة التحقق OTP' : 'Zain OTP Verify'}</span>
+                    <span className="calendar-item-tag purple">{lang === 'ar' ? 'رسائل SMS' : 'SMS API'}</span>
+                  </div>
+                  <ChevronRight size={14} style={{ opacity: 0.6, transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+                </div>
+
+                <div className="calendar-item-card">
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span className="calendar-item-title">{lang === 'ar' ? 'إشعارات البريد الصادر' : 'SMTP Store Billing'}</span>
+                    <span className="calendar-item-tag blue">{lang === 'ar' ? 'نظام SMTP' : 'Email Node'}</span>
+                  </div>
+                  <ChevronRight size={14} style={{ opacity: 0.6, transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+                </div>
+              </>
+            ) : selectedDayIdx === 2 ? ( // Yesterday
+              <div className="calendar-item-card">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="calendar-item-title">{lang === 'ar' ? 'حملة التسويق عبر البريد' : 'Email Promo Campaign'}</span>
+                  <span className="calendar-item-tag blue">{lang === 'ar' ? 'نظام SMTP' : 'Email Node'}</span>
+                </div>
+                <ChevronRight size={14} style={{ opacity: 0.6, transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+              </div>
+            ) : selectedDayIdx === 1 ? ( // 2 days ago
+              <div className="calendar-item-card">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="calendar-item-title">{lang === 'ar' ? 'إشعارات واتساب للدعم' : 'Support WhatsApp Dispatch'}</span>
+                  <span className="calendar-item-tag pink">{lang === 'ar' ? 'واتساب' : 'WhatsApp API'}</span>
+                </div>
+                <ChevronRight size={14} style={{ opacity: 0.6, transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+              </div>
+            ) : selectedDayIdx === 0 ? ( // 3 days ago
+              <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '11px', textAlign: 'center' }}>
+                <span>{lang === 'ar' ? 'لا توجد قنوات نشطة في هذا اليوم' : 'No active channels on this day'}</span>
+              </div>
+            ) : ( // Tomorrow
+              <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '11px', textAlign: 'center' }}>
+                <span>{lang === 'ar' ? 'لم تبدأ حركة اليوم بعد' : 'Traffic has not started yet'}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-
-      <div className="dashboard-telemetry-grid">
-        {/* Recent Send Logs */}
+      {/* Tier 3: Bottom Split Grid (Activities Schedule, Upcoming Milestones) */}
+      <div className="dashboard-tier3-grid">
+        {/* A. Activities Schedule List */}
         <div style={{ minWidth: '0' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>{t.recentActivity}</h2>
-          <div className="table-container" style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--panel-bg)' }}>
+          <div className="flex-between" style={{ marginBottom: '14px', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'start' }}>
+              {lang === 'ar' ? 'جدول الأنشطة الأخير' : 'Activities Schedule'}
+            </h2>
+            <button 
+              onClick={() => setCurrentTab('logs')}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+            >
+              <span>{lang === 'ar' ? 'عرض السجلات' : 'View Logs'}</span>
+              <ChevronRight size={12} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
+          </div>
+
+          <div className="activities-schedule-list">
             {logs.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+              <div className="dashboard-card" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
                 <AlertCircle size={28} style={{ marginBottom: '8px', color: 'var(--text-muted)', opacity: 0.6 }} />
                 <p>{t.noActivity}</p>
               </div>
             ) : (
-              <table className="v-table">
-                <thead>
-                  <tr>
-                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.channel}</th>
-                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.recipient}</th>
-                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.status}</th>
-                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.time}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.slice(-5).reverse().map((log) => (
-                    <tr key={log.id}>
-                      <td style={{ textTransform: 'capitalize', padding: '10px 14px', fontSize: '13px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {log.type === 'email' && <Mail size={13} color="#0070f3" />}
-                          {log.type === 'sms' && <Phone size={13} color="#22c55e" />}
-                          {log.type === 'whatsapp' && <MessageSquare size={13} color="#25d366" />}
-                          <span style={{ fontWeight: 500 }}>{log.type}</span>
-                        </div>
-                      </td>
-                      <td className="tabular-nums-stat" style={{ padding: '10px 14px', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{log.to}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span className={`sumer-badge ${log.status === 'delivered' ? 'success' : 'warning'}`}>
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="tabular-nums-stat" style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '10px 14px' }}>
-                        {new Date(log.timestamp).toLocaleTimeString(lang === 'en' ? 'en-US' : 'ar-IQ')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              logs.slice(-3).reverse().map((log, idx) => {
+                const isPurple = log.type === 'email';
+                const isPink = log.type === 'sms';
+                const colorClass = isPurple ? 'purple' : (isPink ? 'pink' : 'blue');
+                
+                let titleText = '';
+                if (log.type === 'email') titleText = lang === 'ar' ? 'رسالة بريد إلكتروني صادرة' : 'Outbound Transactional Email';
+                else if (log.type === 'sms') titleText = lang === 'ar' ? 'رمز تحقق SMS OTP' : 'SMS Code Dispatch';
+                else titleText = lang === 'ar' ? 'إشعار واتساب تلقائي' : 'WhatsApp Notification';
+
+                return (
+                  <div key={log.id} className="activity-schedule-item">
+                    <div className="activity-schedule-left">
+                      <div className={`activity-channel-icon-outer ${colorClass}`}>
+                        {log.type === 'email' && <Mail size={15} />}
+                        {log.type === 'sms' && <Phone size={15} />}
+                        {log.type === 'whatsapp' && <MessageSquare size={15} />}
+                      </div>
+                      <div>
+                        <h4 className="activity-schedule-title">{titleText}</h4>
+                        <span className="activity-schedule-subtitle tabular-nums-stat">{log.to}</span>
+                      </div>
+                    </div>
+
+                    <div className="activity-schedule-right">
+                      <span className={`activity-schedule-status-pill ${log.status === 'delivered' ? 'done' : 'on-hold'}`}>
+                        {log.status === 'delivered' ? (lang === 'ar' ? 'مكتمل' : 'Done') : (lang === 'ar' ? 'قيد الانتظار' : 'On hold')}
+                      </span>
+                      <span className="activity-schedule-time">
+                        {new Date(log.timestamp).toLocaleTimeString(lang === 'en' ? 'en-US' : 'ar-IQ', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
+                      <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>•••</button>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Iraqi Operator statistics breakdown */}
+        {/* B. Upcoming Events & Milestones */}
         <div style={{ minWidth: '0' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>{t.operatorStats}</h2>
-          <div className="dashboard-card" style={{ padding: '20px' }}>
-            <div className="telemetry-row">
-              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
-                <div>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'Zain Iraq' : 'زين العراق'}</span>
-                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
-                    {lang === 'en' ? 'Avg Latency: 1.1s • Delivery: 99.8%' : 'متوسط التأخير: 1.1 ثانية • التوصيل: 99.8%'}
-                  </span>
-                </div>
-                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{zainPercent || 0}%</span>
+          <div className="flex-between" style={{ marginBottom: '14px', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'start' }}>
+              {lang === 'ar' ? 'الفعاليات والأحداث القادمة' : 'Upcoming Events'}
+            </h2>
+            <button 
+              onClick={() => setCurrentTab('system')}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+            >
+              <span>{lang === 'ar' ? 'عرض الأحداث' : 'View Events'}</span>
+              <ChevronRight size={12} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+            </button>
+          </div>
+
+          <div className="upcoming-milestones-list">
+            <div className="milestone-card">
+              <div className="milestone-header">
+                <span className="milestone-date">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: '4px' }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  28 Sep, 2026
+                </span>
+                <span className="milestone-priority">★ 4.9</span>
               </div>
-              <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${zainPercent || 0}%`, backgroundColor: '#ffcc00', transition: 'width 0.3s ease' }}></div>
+              <h4 className="milestone-title">
+                {lang === 'ar' ? 'ترقية بوابة شبكة زين كاش المباشرة' : 'Zain Cash Direct API v3 Integration'}
+              </h4>
+              <div className="milestone-footer">
+                <span className="milestone-tag">{lang === 'ar' ? 'بوابات الدفع' : 'Billing Gateway'}</span>
+                <div className="milestone-assignees">
+                  <div className="milestone-assignee-avatar" style={{ backgroundColor: '#a855f7', color: '#fff' }}>JK</div>
+                  <div className="milestone-assignee-avatar" style={{ backgroundColor: '#10b981', color: '#fff' }}>MH</div>
+                  <div className="milestone-assignee-avatar" style={{ backgroundColor: '#f43f5e', color: '#fff' }}>AS</div>
+                </div>
               </div>
             </div>
 
-            <div className="telemetry-row">
-              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
-                <div>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'AsiaCell' : 'آسياسيل'}</span>
-                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
-                    {lang === 'en' ? 'Avg Latency: 0.9s • Delivery: 99.9%' : 'متوسط التأخير: 0.9 ثانية • التوصيل: 99.9%'}
-                  </span>
+            <div className="milestone-card">
+              <div className="milestone-header">
+                <span className="milestone-date">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: '4px' }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  12 Oct, 2026
+                </span>
+                <span className="milestone-priority">★ 4.8</span>
+              </div>
+              <h4 className="milestone-title">
+                {lang === 'ar' ? 'إطلاق واجهة Sandbox للمطورين العراقيين' : 'Sumer Send Developer Sandbox Launch'}
+              </h4>
+              <div className="milestone-footer">
+                <span className="milestone-tag">{lang === 'ar' ? 'حزم الـ SDK' : 'SDK Release'}</span>
+                <div className="milestone-assignees">
+                  <div className="milestone-assignee-avatar" style={{ backgroundColor: '#0ea5e9', color: '#fff' }}>AS</div>
+                  <div className="milestone-assignee-avatar" style={{ backgroundColor: '#eab308', color: '#fff' }}>JK</div>
                 </div>
-                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{asiacellPercent || 0}%</span>
               </div>
-              <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${asiacellPercent || 0}%`, backgroundColor: '#ff3366', transition: 'width 0.3s ease' }}></div>
-              </div>
-            </div>
-
-            <div className="telemetry-row">
-              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
-                <div>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'Korek Telecom' : 'كورك تليكوم'}</span>
-                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
-                    {lang === 'en' ? 'Avg Latency: 1.4s • Delivery: 99.2%' : 'متوسط التأخير: 1.4 ثانية • التوصيل: 99.2%'}
-                  </span>
-                </div>
-                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{korekPercent || 0}%</span>
-              </div>
-              <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${korekPercent || 0}%`, backgroundColor: '#00bfff', transition: 'width 0.3s ease' }}></div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-              {lang === 'en' 
-                ? 'Calculated dynamically based on +964 phone number prefixes sent via APIs.'
-                : 'يتم احتساب النسب تلقائياً بناءً على بادئات الأرقام العراقية (+964) التي تستقبل رسائل الـ SMS والـ WhatsApp.'}
             </div>
           </div>
         </div>

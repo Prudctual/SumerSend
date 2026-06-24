@@ -5,6 +5,7 @@ import { Mail, Phone, MessageSquare, Send, Code, AlertCircle, Copy, Check, Lock,
 import { templatesDb } from '../data/templates';
 import type { TemplateItem } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
+import { GuideBanner } from './GuideBanner';
 import { renderTemplateIcon } from './IconHelper';
 
 interface PlaygroundViewProps {
@@ -515,31 +516,15 @@ rs.whatsapp.send(
           }}>{t.title}</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{t.subtitle}</p>
         </div>
-        <button 
-          className="btn" 
-          style={{ 
-            fontSize: '12px', 
-            padding: '8px 16px',
-            borderRadius: '999px',
-            border: '1px solid var(--border-color)',
-            backgroundColor: 'var(--panel-bg)',
-            fontWeight: 600
-          }} 
-          onClick={() => setShowGuide(!showGuide)}
-        >
-          {showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}
-        </button>
       </div>
 
-      {showGuide && (
-        <BentoCard className="card" style={{ marginBottom: '20px', padding: '24px', backgroundColor: 'var(--panel-bg)', borderRadius: '6px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.03, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>{t.guideText}</p>
-          </div>
-        </BentoCard>
-      )}
+      <GuideBanner
+        lang={lang}
+        show={showGuide}
+        onClose={() => setShowGuide(false)}
+        title={t.guideTitle}
+        description={t.guideText}
+      />
 
       <div className="playground-layout">
         
@@ -562,7 +547,7 @@ rs.whatsapp.send(
             </button>
           </div>
 
-          <div className="card playground-composer-container" key={activeTab} style={{ padding: '20px', marginBottom: '16px' }}>
+          <BentoCard className="card playground-composer-container" key={activeTab} glowColor="147, 51, 234" style={{ padding: '24px', borderRadius: '24px', marginBottom: '16px' }}>
             {statusMsg && (
               <div style={{ 
                 padding: '12px 16px', 
@@ -635,7 +620,7 @@ rs.whatsapp.send(
                         onClick={() => handleSelectTemplate(temp)}
                         style={{
                           padding: '14px',
-                          borderRadius: '10px',
+                          borderRadius: '16px',
                           border: isSelected 
                             ? '1.5px solid var(--accent-color)' 
                             : '1.5px solid var(--border-color)',
@@ -708,9 +693,9 @@ rs.whatsapp.send(
                 <div style={{ 
                   marginBottom: '25px', 
                   padding: '16px', 
-                  borderRadius: '10px', 
+                  borderRadius: '16px', 
                   backgroundColor: 'var(--bg-color)', 
-                  border: '1.5px solid var(--border-color)',
+                  border: '1px solid var(--border-color)',
                   boxSizing: 'border-box'
                 }}>
                   <div className="flex-between" style={{ marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
@@ -767,24 +752,58 @@ rs.whatsapp.send(
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
                     gap: '12px' 
                   }}>
-                    {selectedTemplate.variables.map((v) => (
-                      <div key={v.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                          {lang === 'ar' ? v.labelAr : v.labelEn}
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={templateVariables[v.key] || ''}
-                          onChange={(e) => handleVariableChange(v.key, e.target.value)}
-                          style={{ 
-                            padding: '8px 10px', 
-                            fontSize: '12px',
-                            backgroundColor: 'var(--panel-bg)'
-                          }}
-                        />
-                      </div>
-                    ))}
+                    {selectedTemplate.variables.map((v) => {
+                      const isLongText = (
+                        v.key.toLowerCase().includes('desc') || 
+                        v.key.toLowerCase().includes('text') || 
+                        v.key.toLowerCase().includes('body') ||
+                        v.key.toLowerCase().includes('content') ||
+                        v.labelAr.includes('وصف') || 
+                        v.labelAr.includes('نص') || 
+                        v.labelAr.includes('محتوى') ||
+                        (v.labelEn || '').toLowerCase().includes('desc') || 
+                        (v.labelEn || '').toLowerCase().includes('text') ||
+                        (v.labelEn || '').toLowerCase().includes('body') ||
+                        (v.labelEn || '').toLowerCase().includes('content')
+                      );
+
+                      return (
+                        <div key={v.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            {lang === 'ar' ? v.labelAr : v.labelEn}
+                          </label>
+                          {isLongText ? (
+                            <textarea
+                              className="form-input"
+                              value={templateVariables[v.key] || ''}
+                              onChange={(e) => handleVariableChange(v.key, e.target.value)}
+                              rows={2}
+                              style={{ 
+                                padding: '8px 10px', 
+                                fontSize: '12px',
+                                backgroundColor: 'var(--panel-bg)',
+                                resize: 'vertical',
+                                fontFamily: 'inherit',
+                                lineHeight: 1.4
+                              }}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={templateVariables[v.key] || ''}
+                              onChange={(e) => handleVariableChange(v.key, e.target.value)}
+                              style={{ 
+                                padding: '8px 10px', 
+                                fontSize: '12px',
+                                backgroundColor: 'var(--panel-bg)',
+                                height: '36px'
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -911,12 +930,12 @@ rs.whatsapp.send(
                 </button>
               </div>
             </form>
-          </div>
+            </BentoCard>
 
           {/* Code SDK section */}
-          <div style={{ marginTop: '20px' }}>
+          <BentoCard className="card" glowColor="99, 102, 241" style={{ marginTop: '20px', padding: '24px', borderRadius: '24px' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
                 <Code size={18} color="var(--text-secondary)" />
                 <span>{t.sdkTitle}</span>
               </h3>
@@ -935,6 +954,7 @@ rs.whatsapp.send(
 
             <div style={{ position: 'relative' }}>
               <button
+                type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(getCodeSnippet());
                   setCopiedCode(true);
@@ -946,7 +966,7 @@ rs.whatsapp.send(
                   top: '12px',
                   right: '12px',
                   padding: '6px',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
                   background: 'rgba(24, 24, 27, 0.8)',
                   border: '1px solid #3f3f46',
                   color: '#e4e4e7',
@@ -964,7 +984,7 @@ rs.whatsapp.send(
               <pre style={{ 
                 backgroundColor: '#09090b', 
                 border: '1px solid #27272a', 
-                borderRadius: '6px', 
+                borderRadius: '12px', 
                 padding: '20px', 
                 paddingRight: '50px',
                 fontSize: '13px', 
@@ -977,7 +997,7 @@ rs.whatsapp.send(
                 <code>{getCodeSnippet()}</code>
               </pre>
             </div>
-          </div>
+          </BentoCard>
 
         </div>
 

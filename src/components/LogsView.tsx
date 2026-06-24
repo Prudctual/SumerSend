@@ -1,9 +1,10 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Mail, Phone, MessageSquare, AlertCircle, Search, FileText, Download, ChevronDown, Copy, Check, Server, CheckCheck } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
+import { GuideBanner } from './GuideBanner';
 
 interface LogsViewProps {
   lang: 'en' | 'ar';
@@ -20,6 +21,24 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'preview' | 'trace' | 'payload'>('preview');
   const [copiedPayload, setCopiedPayload] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'SELECT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === 'Escape') {
+        setSelectedLog(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const getTraceEvents = (log: any) => {
     const time = new Date(log.timestamp);
@@ -264,16 +283,16 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
       <div style={{ marginBottom: '20px' }} className="flex-between">
         <div>
           <h1 style={{ 
-            fontSize: '32px', 
+            fontSize: '26px', 
             fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+            letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
             lineHeight: 1.15,
             marginBottom: '8px',
             color: 'var(--text-primary)'
           }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           {/* Export Menu Dropdown */}
           <div style={{ position: 'relative' }}>
             <button 
@@ -306,7 +325,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                   marginTop: '8px',
                   backgroundColor: 'var(--panel-bg)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
+                  borderRadius: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   padding: '6px 0',
                   minWidth: '155px',
@@ -377,28 +396,24 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
           >
             {lang === 'en' ? 'Clear Logs' : 'تفريغ السجلات'}
           </button>
-          <button className="btn" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowGuide(!showGuide)}>
-            {showGuide ? (lang === 'en' ? 'Hide Guide' : 'إخفاء الدليل') : (lang === 'en' ? 'Show Guide' : 'عرض الدليل')}
-          </button>
         </div>
       </div>
 
-      {showGuide && (
-        <BentoCard className="card" style={{ marginBottom: '20px', padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '6px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.03, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.guideText}</p>
-          </div>
-        </BentoCard>
-      )}
+      <GuideBanner
+        lang={lang}
+        show={showGuide}
+        onClose={() => setShowGuide(false)}
+        title={t.guideTitle}
+        description={t.guideText}
+      />
 
       {/* Filters Bar */}
-      <div className="card" style={{ padding: '16px 20px', marginBottom: '16px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="card" style={{ padding: '20px', marginBottom: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Search */}
         <div style={{ flex: 2, minWidth: '240px', position: 'relative' }}>
           <Search size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: lang === 'en' ? '12px' : 'auto', right: lang === 'ar' ? '12px' : 'auto', top: '50%', transform: 'translateY(-50%)' }} />
           <input
+            ref={searchInputRef}
             type="text"
             className="form-input"
             value={searchTerm}
@@ -477,7 +492,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
             <tbody>
               {filteredLogs.slice().reverse().map((log) => (
                 <tr key={log.id} onClick={() => { setSelectedLog(log); setActiveDetailTab('preview'); setCopiedPayload(false); }} style={{ transition: 'background-color 0.15s ease' }}>
-                  <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <td className="tabular-nums-stat" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
                     #{log.id.slice(-6)}
                   </td>
                   <td style={{ textTransform: 'capitalize' }}>
@@ -502,7 +517,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                       {log.status === 'delivered' ? t.delivered : t.failed}
                     </span>
                   </td>
-                  <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <td className="tabular-nums-stat" style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
                     {new Date(log.timestamp).toLocaleString(lang === 'en' ? 'en-US' : 'ar-IQ')}
                   </td>
                 </tr>
@@ -590,8 +605,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                     gap: '8px 12px', 
                     fontSize: '13px', 
                     backgroundColor: 'var(--bg-color)',
-                    padding: '12px 14px',
-                    borderRadius: '6px',
+                    padding: '16px',
+                    borderRadius: '12px',
                     border: '1px solid var(--border-color)',
                     lineHeight: 1.5
                   }}>
@@ -681,7 +696,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                       /* WhatsApp Simulator Mockup */
                       <div style={{
                         border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
+                        borderRadius: '16px',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
@@ -796,7 +811,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                       /* SMS Simulator Mockup */
                       <div style={{
                         border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
+                        borderRadius: '16px',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
@@ -879,8 +894,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ 
                     backgroundColor: 'var(--bg-color)',
-                    padding: '14px 16px',
-                    borderRadius: '6px',
+                    padding: '20px',
+                    borderRadius: '16px',
                     border: '1px solid var(--border-color)',
                   }}>
                     <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>
@@ -948,8 +963,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                   <div style={{
                     backgroundColor: 'var(--bg-color)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '14px 16px'
+                    borderRadius: '16px',
+                    padding: '20px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
                       <Server size={14} color="var(--text-muted)" />
@@ -1000,7 +1015,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                         alignItems: 'center',
                         gap: '6px',
                         cursor: 'pointer',
-                        borderRadius: '4px',
+                        borderRadius: '8px',
                         border: '1px solid var(--border-color)',
                         backgroundColor: 'var(--bg-color)',
                         color: 'var(--text-primary)',
@@ -1026,7 +1041,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
                   <pre style={{
                     margin: 0,
                     padding: '16px',
-                    borderRadius: '6px',
+                    borderRadius: '12px',
                     border: '1px solid var(--border-color)',
                     backgroundColor: '#09090b',
                     color: '#e4e4e7',

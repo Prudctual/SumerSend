@@ -28,3 +28,7 @@ server/baileys_auth_info
 server/.env
 *.env
 
+# Scratch scripts
+scratch/
+
+

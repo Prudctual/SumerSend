@@ -208,7 +208,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         maxWidth: '430px',
         background: 'var(--panel-bg)',
         border: '1px solid var(--border-color)',
-        borderRadius: '12px',
+        borderRadius: '24px',
         padding: '36px 32px',
         boxShadow: theme === 'dark' 
           ? '0 1px 1px rgba(0,0,0,0.02), 0 8px 16px -4px rgba(0,0,0,0.3), 0 24px 32px -8px rgba(0,0,0,0.4)' 
@@ -225,7 +225,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
             justifyContent: 'center',
             width: '48px',
             height: '48px',
-            borderRadius: '10px',
+            borderRadius: '12px',
             backgroundColor: 'var(--text-primary)',
             color: 'var(--panel-bg)',
             marginBottom: '16px',
@@ -262,7 +262,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
             backgroundColor: 'var(--danger-bg)',
             border: '1px solid var(--danger-color)',
             color: 'var(--danger-text)',
-            borderRadius: '6px',
+            borderRadius: '8px',
             padding: '10px 14px',
             fontSize: '13px',
             marginBottom: '20px',
@@ -304,7 +304,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   position: 'absolute',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  left: '12px',
+                  left: lang === 'ar' ? 'auto' : '12px',
+                  right: lang === 'ar' ? '12px' : 'auto',
                   color: 'var(--text-muted)',
                   pointerEvents: 'none'
                 }} />
@@ -342,7 +343,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 position: 'absolute',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                left: '12px',
+                left: lang === 'ar' ? 'auto' : '12px',
+                right: lang === 'ar' ? '12px' : 'auto',
                 color: 'var(--text-muted)',
                 pointerEvents: 'none'
               }} />
@@ -383,7 +385,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 position: 'absolute',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                left: '12px',
+                left: lang === 'ar' ? 'auto' : '12px',
+                right: lang === 'ar' ? '12px' : 'auto',
                 color: 'var(--text-muted)',
                 pointerEvents: 'none'
               }} />
@@ -395,7 +398,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   position: 'absolute',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  right: '12px',
+                  left: lang === 'ar' ? '12px' : 'auto',
+                  right: lang === 'ar' ? 'auto' : '12px',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
