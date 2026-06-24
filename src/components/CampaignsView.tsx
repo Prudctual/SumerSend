@@ -977,10 +977,10 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       {/* VIEW 1: CAMPAIGNS LIST & DASHBOARD */}
       {viewState === 'list' && !selectedCampaign && (
         <div>
-          <div className="flex-between" style={{ marginBottom: '20px' }}>
+          <div className="flex-between" style={{ marginBottom: '16px' }}>
             <div>
-              <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '6px' }}>{t.title}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t.subtitle}</p>
+              <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{t.title}</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>{t.subtitle}</p>
             </div>
             <button 
               className="btn btn-primary"

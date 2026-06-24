@@ -503,17 +503,17 @@ rs.whatsapp.send(
 
   return (
     <ScrollReveal>
-      <div style={{ marginBottom: '20px' }} className="flex-between">
+      <div style={{ marginBottom: '16px' }} className="flex-between">
         <div>
           <h1 style={{ 
-            fontSize: '32px', 
-            fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+            fontSize: '20px', 
+            fontWeight: 700, 
+            letterSpacing: lang === 'ar' ? '0' : '-0.3px', 
             lineHeight: 1.15,
-            marginBottom: '8px',
+            marginBottom: '4px',
             color: 'var(--text-primary)'
           }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{t.subtitle}</p>
         </div>
         <button 
           className="btn" 
