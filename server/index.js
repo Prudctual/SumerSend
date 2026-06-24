@@ -44,7 +44,8 @@ import {
   deleteSubscribersBulk,
   loadSubscriberSettings,
   saveSubscriberSettings,
-  bulkAddSubscribers
+  bulkAddSubscribers,
+  appendLogsBulk
 } from './db.js';
 
 dotenv.config();
@@ -53,7 +54,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // API Rate Limiting for Public /v1/ Endpoints
 const apiLimiter = rateLimit({
@@ -900,7 +902,7 @@ app.post('/api/subscribers/bulk', async (req, res) => {
 
     for (const s of subscribers) {
       if (!s.email) continue;
-      const normalizedEmail = s.email.toLowerCase().trim();
+      const normalizedEmail = String(s.email).toLowerCase().trim();
       if (!isValidEmail(normalizedEmail)) continue;
       if (seenEmails.has(normalizedEmail)) continue;
 
@@ -908,7 +910,7 @@ app.post('/api/subscribers/bulk', async (req, res) => {
       validSubs.push({
         id: `sub_${Math.random().toString(36).substring(2, 15)}`,
         email: normalizedEmail,
-        name: s.name ? s.name.trim() : null,
+        name: s.name ? String(s.name).trim() : null,
         status: 'active',
         createdAt: new Date().toISOString()
       });
@@ -931,17 +933,75 @@ app.post('/api/subscribers/bulk', async (req, res) => {
         const smtpConfig = await loadSmtpConfig(userId);
         const fromSender = smtpConfig.from || 'Sumer Send <onboarding@sumersend.com>';
         const welcomeSubject = settings.welcomeSubject;
+        const welcomeBodyTemplate = settings.welcomeBody;
+        const costPerEmail = 10;
 
-        for (const sub of validSubs) {
-          const cost = 10;
-          const charged = await chargeWallet(userId, cost, `Bulk Welcome Email to ${sub.email}`);
+        // Check wallet balance
+        const wallet = await loadWallet(userId);
+        const currentBalance = wallet ? wallet.balance : 0;
+        const totalCostRequired = validSubs.length * costPerEmail;
 
-          let welcomeBody = settings.welcomeBody;
-          welcomeBody = welcomeBody.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+        let subsToWelcome = [];
+        let subsToFail = [];
 
-          if (!charged) {
+        if (currentBalance >= totalCostRequired) {
+          subsToWelcome = validSubs;
+          welcomeQueuedCount = validSubs.length;
+        } else {
+          walletShortage = true;
+          const affordableCount = Math.floor(currentBalance / costPerEmail);
+          subsToWelcome = validSubs.slice(0, affordableCount);
+          subsToFail = validSubs.slice(affordableCount);
+          welcomeQueuedCount = affordableCount;
+        }
+
+        // 1. Charge wallet in a single transaction if any are welcome-eligible
+        if (subsToWelcome.length > 0) {
+          const totalChargeAmount = subsToWelcome.length * costPerEmail;
+          const charged = await chargeWallet(userId, totalChargeAmount, `Bulk Welcome Emails charge for ${subsToWelcome.length} subscribers`);
+          
+          if (charged) {
+            // Build queue items
+            const queueItems = subsToWelcome.map(sub => {
+              const welcomeBody = welcomeBodyTemplate.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+              return {
+                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                user_id: userId,
+                type: 'email',
+                recipient: sub.email,
+                subject: welcomeSubject,
+                body: welcomeBody,
+                status: 'pending',
+                attempts: 0,
+                max_attempts: 3
+              };
+            });
+
+            // Insert in chunks of 1000 to keep it extremely reliable
+            const chunkSize = 1000;
+            for (let i = 0; i < queueItems.length; i += chunkSize) {
+              const chunk = queueItems.slice(i, i + chunkSize);
+              const { error: queueError } = await supabase.from('message_queue').insert(chunk);
+              if (queueError) {
+                console.error('[API] Failed to batch queue welcome emails chunk:', queueError);
+                const chunkRefund = chunk.length * costPerEmail;
+                await refundWallet(userId, chunkRefund, `Refund: Bulk Queue failure for chunk of ${chunk.length}`);
+                welcomeQueuedCount -= chunk.length;
+              }
+            }
+          } else {
+            // Fallback if charge failed (should not happen since we checked balance)
             walletShortage = true;
-            const failedLog = {
+            subsToFail = validSubs;
+            welcomeQueuedCount = 0;
+          }
+        }
+
+        // 2. Log failed welcome emails in a single batch insert
+        if (subsToFail.length > 0) {
+          const failedLogs = subsToFail.map(sub => {
+            const welcomeBody = welcomeBodyTemplate.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+            return {
               id: `msg_${Math.random().toString(36).substring(2, 15)}`,
               type: 'email',
               from: fromSender,
@@ -952,29 +1012,14 @@ app.post('/api/subscribers/bulk', async (req, res) => {
               error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
               timestamp: new Date().toISOString()
             };
-            await appendLog(userId, failedLog);
-            triggerWebhooks(userId, 'email.failed', failedLog);
-          } else {
-            const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
-            const { error: queueError } = await supabase.from('message_queue').insert({
-              id: msgId,
-              user_id: userId,
-              type: 'email',
-              recipient: sub.email,
-              subject: welcomeSubject,
-              body: welcomeBody,
-              status: 'pending',
-              attempts: 0,
-              max_attempts: 3
-            });
+          });
 
-            if (queueError) {
-              console.error('[API] Failed to queue welcome email in bulk:', queueError);
-              await refundWallet(userId, cost, `Refund: Queue failure for Bulk Welcome Email to ${sub.email}`);
-            } else {
-              welcomeQueuedCount++;
-            }
-          }
+          await appendLogsBulk(userId, failedLogs);
+
+          // Trigger webhooks for failed logs (async in background)
+          failedLogs.forEach(failedLog => {
+            triggerWebhooks(userId, 'email.failed', failedLog);
+          });
         }
       }
     }

@@ -946,15 +946,49 @@ export async function bulkAddSubscribers(userId, subscribers) {
     updated_at: new Date().toISOString()
   }));
 
-  const { error } = await supabase
-    .from('subscribers')
-    .upsert(dbSubscribers, { onConflict: 'user_id, email' });
+  // Chunk upsert into batches of 1000 to prevent gateway timeouts/limitations
+  const chunkSize = 1000;
+  for (let i = 0; i < dbSubscribers.length; i += chunkSize) {
+    const chunk = dbSubscribers.slice(i, i + chunkSize);
+    const { error } = await supabase
+      .from('subscribers')
+      .upsert(chunk, { onConflict: 'user_id, email' });
 
-  if (error) {
-    console.error(`Error bulk adding subscribers for user ${userId}:`, error);
-    throw error;
+    if (error) {
+      console.error(`Error bulk adding subscribers chunk for user ${userId}:`, error);
+      throw error;
+    }
   }
   return true;
 }
+
+export async function appendLogsBulk(userId, logEntries) {
+  if (!Array.isArray(logEntries) || logEntries.length === 0) return true;
+
+  const dbLogs = logEntries.map(l => ({
+    id: l.id || `msg_${Math.random().toString(36).substring(2, 15)}`,
+    user_id: userId,
+    type: l.type,
+    sender: l.from,
+    recipient: l.to,
+    subject: l.subject,
+    body: l.body,
+    status: l.status,
+    error: l.error,
+    timestamp: l.timestamp || new Date().toISOString()
+  }));
+
+  const chunkSize = 1000;
+  for (let i = 0; i < dbLogs.length; i += chunkSize) {
+    const chunk = dbLogs.slice(i, i + chunkSize);
+    const { error } = await supabase.from('logs').insert(chunk);
+    if (error) {
+      console.error(`Error bulk inserting logs for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  return true;
+}
+
 
 
