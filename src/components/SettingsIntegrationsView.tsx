@@ -41,12 +41,36 @@ export const SettingsIntegrationsView: React.FC<SettingsIntegrationsViewProps> =
   const { lang, initialTab } = props;
   
   const getFlatTabFromInitial = (tab?: string) => {
-    if (!tab) return 'smtp';
+    if (!tab) return 'apikeys';
     if (tab === 'api') return 'apikeys';
+    if (tab === 'settings') return 'apikeys';
     return tab;
   };
 
   const [activeTab, setActiveTab] = useState<string>(() => getFlatTabFromInitial(initialTab));
+
+  const handleTabChange = (tab: string) => {
+    if (!document.startViewTransition) {
+      setActiveTab(tab);
+      return;
+    }
+    
+    const tabOrder = ['apikeys', 'domains', 'smtp', 'whatsapp', 'webhooks', 'code'];
+    const oldIdx = tabOrder.indexOf(activeTab);
+    const newIdx = tabOrder.indexOf(tab);
+    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+    
+    const options: any = {
+      update: () => {
+        setActiveTab(tab);
+      }
+    };
+    if (direction) {
+      options.types = [direction];
+    }
+    (document as any).startViewTransition(options);
+  };
+
   const [hideOuterLayout, setHideOuterLayout] = useState(false);
 
   useEffect(() => {
@@ -55,40 +79,30 @@ export const SettingsIntegrationsView: React.FC<SettingsIntegrationsViewProps> =
     }
   }, [initialTab]);
 
-  // Grouped Menu Structure ordered by importance
+  // Grouped Menu Structure ordered by setup flow & usage frequency
   const menuSections = [
     {
-      titleAr: 'قنوات الإرسال الأساسية',
-      titleEn: 'CORE SENSING CHANNELS',
-      items: [
-        { id: 'smtp', labelAr: 'خادم البريد SMTP', labelEn: 'SMTP Configuration', icon: Mail },
-        { id: 'whatsapp', labelAr: 'ربط واتساب وإرساله', labelEn: 'WhatsApp Connection', icon: Smartphone },
-        { id: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Domains & DNS', icon: Globe },
-      ]
-    },
-    {
-      titleAr: 'الربط البرمجي والـ API',
-      titleEn: 'API & DEVELOPER HUB',
+      titleAr: 'البدء السريع',
+      titleEn: 'QUICK START',
       items: [
         { id: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Keys', icon: Key },
-        { id: 'webhooks', labelAr: 'الويب هوكس (Webhooks)', labelEn: 'Webhooks', icon: Webhook },
-        { id: 'quickstart', labelAr: 'البدء السريع والتجربة', labelEn: 'API Quickstart', icon: Play },
-        { id: 'code', labelAr: 'منشئ الأكواد التفاعلي', labelEn: 'Code Builder', icon: Code },
+        { id: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Verified Domains', icon: Globe },
       ]
     },
     {
-      titleAr: 'القوالب والمحتوى',
-      titleEn: 'CONTENT & TEMPLATES',
+      titleAr: 'قنوات الإرسال',
+      titleEn: 'SEND CHANNELS',
       items: [
-        { id: 'templates', labelAr: 'معرض القوالب الإبداعية', labelEn: 'Creative Templates', icon: BookOpen },
+        { id: 'smtp', labelAr: 'إرسال البريد SMTP', labelEn: 'SMTP Relay Setup', icon: Mail },
+        { id: 'whatsapp', labelAr: 'ربط جلسة واتساب', labelEn: 'WhatsApp Sync', icon: Smartphone },
+        { id: 'webhooks', labelAr: 'الويب هوكس (Webhooks)', labelEn: 'Webhooks Setup', icon: Webhook },
       ]
     },
     {
-      titleAr: 'الحماية وإعدادات النظام',
-      titleEn: 'SECURITY & SYSTEM HUB',
+      titleAr: 'أدوات المطور',
+      titleEn: 'DEVELOPER TOOLS',
       items: [
-        { id: 'security', labelAr: 'الأمان والتحقق (2FA)', labelEn: 'Security & 2FA', icon: Shield },
-        { id: 'system', labelAr: 'حالة النظام والتعرفة', labelEn: 'System Hub & Tariff', icon: Info },
+        { id: 'code', labelAr: 'منشئ الأكواد التفاعلي', labelEn: 'Interactive Code Builder', icon: Code },
       ]
     }
   ];
@@ -165,17 +179,17 @@ export const SettingsIntegrationsView: React.FC<SettingsIntegrationsViewProps> =
     <ScrollReveal>
       {/* Dynamic Unified Header */}
       {!hideOuterLayout && (
-        <div style={{ marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+        <div style={{ marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
           <h1 style={{ 
-            fontSize: '28px', 
+            fontSize: '26px', 
             fontWeight: 800, 
-            marginBottom: '8px', 
+            marginBottom: '6px', 
             color: 'var(--text-primary)', 
-            letterSpacing: lang === 'ar' ? '0' : '-1px' 
+            letterSpacing: lang === 'ar' ? '0' : '-0.5px' 
           }}>
             {lang === 'ar' ? header.titleAr : header.titleEn}
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500, margin: 0 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, margin: 0 }}>
             {lang === 'ar' ? header.descAr : header.descEn}
           </p>
         </div>
@@ -197,7 +211,7 @@ export const SettingsIntegrationsView: React.FC<SettingsIntegrationsViewProps> =
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => handleTabChange(item.id)}
                       className={`settings-sidebar-btn ${isActive ? 'active' : ''}`}
                     >
                       <Icon size={14} />
@@ -211,7 +225,7 @@ export const SettingsIntegrationsView: React.FC<SettingsIntegrationsViewProps> =
         )}
 
         {/* Main Content Area */}
-        <div className="settings-content" style={{ animation: 'fadeIn 0.25s ease' }}>
+        <div className="settings-content" key={activeTab} style={{ animation: 'fadeIn 0.25s ease' }}>
           {activeTab === 'domains' && (
             <DomainsView 
               lang={lang} 

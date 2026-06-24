@@ -1189,7 +1189,7 @@ echo "Webhook Processed";
                     </div>
                   </div>
 
-                  <button className="btn" style={{ fontSize: '11px', padding: '6px 12px', background: isStep2Done ? 'none' : '', border: isStep2Done ? '1px solid var(--border-color)' : '' }} onClick={() => setCurrentTab('settings')}>
+                  <button className="btn" style={{ fontSize: '11px', padding: '6px 12px', background: isStep2Done ? 'none' : '', border: isStep2Done ? '1px solid var(--border-color)' : '' }} onClick={() => setCurrentTab('smtp')}>
                     {t.qsStep2Btn}
                   </button>
                 </div>
@@ -1374,11 +1374,58 @@ echo "Webhook Processed";
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t.apiKeySubtitle}</p>
           </div>
 
-          <BentoCard className="card" style={{ marginBottom: '20px', padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.03, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.guideText}</p>
+          <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '16px', marginBottom: '20px', overflow: 'hidden' }}>
+            {/* Left Info Column */}
+            <div className="onboarding-split-info" style={{ padding: '24px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 500, margin: '0 0 16px 0', textAlign: 'start' }}>
+                  {t.guideText}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
+                  {lang === 'ar' ? 'بيئة الإنتاج: نشطة' : 'Production Env: Active'}
+                </span>
+                <span className="sumer-badge warning" style={{ padding: '3px 8px', fontSize: '11px' }}>
+                  {lang === 'ar' ? 'سري للغاية' : 'Strictly Confidential'}
+                </span>
+              </div>
+            </div>
+
+            {/* Right Visual Column */}
+            <div className="onboarding-split-visual" style={{ padding: '20px' }}>
+              <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {lang === 'ar' ? 'حالة مفتاح الوصول' : 'Key Security Check'}
+                  </span>
+                  <span style={{ 
+                    fontSize: '9px', 
+                    fontWeight: 700,
+                    color: 'var(--success-text)',
+                    backgroundColor: 'var(--success-bg)',
+                    padding: '1px 6px',
+                    borderRadius: '4px'
+                  }}>
+                    {lang === 'ar' ? 'آمن' : 'Secure'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الاسم:' : 'Name:'}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Main API Key</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المفتاح:' : 'Key:'}</span>
+                    <span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>sm_live_8f0a...</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'تسريب الكود:' : 'Client leak:'}</span>
+                    <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>0 detected</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </BentoCard>
 

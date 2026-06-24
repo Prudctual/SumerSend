@@ -2,7 +2,7 @@
 
 
 import React from 'react';
-import { Mail, MessageSquare, Phone, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, MessageSquare, Phone, TrendingUp, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
 
 interface DashboardViewProps {
@@ -24,7 +24,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   walletBalance = 0,
   transactions = []
 }) => {
-  const step1Done = domains.every((d: any) => d.status === 'verified');
+  const [showStepsAnyway, setShowStepsAnyway] = React.useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = React.useState(() => {
+    return localStorage.getItem('sumer_onboarding_dismissed_v2') === 'true';
+  });
+
+  const step1Done = domains.length > 0 && domains.every((d: any) => d.status === 'verified');
   const step2Done = transactions.length > 1;
   const step3Done = apiKeys.length > 1;
   const step4Done = logs.length > 3;
@@ -35,6 +40,74 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   if (step3Done) completedSteps++;
   if (step4Done) completedSteps++;
   const progressPercent = Math.round((completedSteps / 4) * 100);
+
+  const nextStep = !step1Done ? 1 : (!step2Done ? 2 : (!step3Done ? 3 : (!step4Done ? 4 : 0)));
+  const [activeStep, setActiveStep] = React.useState<number>(nextStep > 0 ? nextStep - 1 : 0);
+
+  React.useEffect(() => {
+    if (nextStep > 0) {
+      setActiveStep(nextStep - 1);
+    }
+  }, [nextStep]);
+
+  React.useEffect(() => {
+    if (step1Done && step2Done && step3Done && step4Done) {
+      const hasCelebrated = localStorage.getItem('sumer_onboarding_celebrated');
+      if (!hasCelebrated) {
+        localStorage.setItem('sumer_onboarding_celebrated', 'true');
+        window.dispatchEvent(new CustomEvent('sumer-success-screen'));
+      }
+    } else {
+      localStorage.removeItem('sumer_onboarding_celebrated');
+    }
+  }, [step1Done, step2Done, step3Done, step4Done]);
+
+  const onboardingSteps = [
+    {
+      id: 1,
+      titleAr: 'توثيق النطاق',
+      titleEn: 'Domain Verification',
+      descAr: 'قم بتفعيل النطاق المعلق (DNS) لتمكين توقيع البريد وإرسال موثوق.',
+      descEn: 'Verify your pending domain DNS to enable digital signing (DKIM/SPF) for secure deliverability.',
+      isDone: step1Done,
+      actionTab: 'domains',
+      actionTextAr: 'ربط النطاق',
+      actionTextEn: 'Verify Domain',
+    },
+    {
+      id: 2,
+      titleAr: 'شحن رصيد المحفظة',
+      titleEn: 'Deposit Credits',
+      descAr: 'قم بعملية شحن المحفظة عبر بوابة زين كاش لتغطية تكاليف الإرسال والـ API.',
+      descEn: 'Top up your account wallet via Zain Cash gateway to cover carrier API transmission fees.',
+      isDone: step2Done,
+      actionTab: 'billing',
+      actionTextAr: 'شحن الآن',
+      actionTextEn: 'Top-up Wallet',
+    },
+    {
+      id: 3,
+      titleAr: 'توليد مفتاح API',
+      titleEn: 'Create API Key',
+      descAr: 'أضف مفتاح API مخصص لربطه بتطبيقاتك البرمجية والبدء بالإرسال التلقائي.',
+      descEn: 'Generate a secure API key to authenticate and connect your backend services.',
+      isDone: step3Done,
+      actionTab: 'api',
+      actionTextAr: 'توليد مفتاح',
+      actionTextEn: 'Generate Key',
+    },
+    {
+      id: 4,
+      titleAr: 'إرسال أول اختبار',
+      titleEn: 'Send Test API',
+      descAr: 'أرسل رسالة تجريبية من منصة الاختبار لترى وصولها الفوري إلى الهاتف.',
+      descEn: 'Send a sandbox test notification in the playground to check instant delivery.',
+      isDone: step4Done,
+      actionTab: 'playground',
+      actionTextAr: 'منصة الاختبار',
+      actionTextEn: 'Go to Playground',
+    }
+  ];
 
   const translations = {
     en: {
@@ -360,248 +433,602 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     <ScrollReveal>
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ 
-          fontSize: '32px', 
+          fontSize: '26px', 
           fontWeight: 800, 
-          letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+          letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
           lineHeight: 1.15,
-          marginBottom: '8px',
+          marginBottom: '6px',
           color: 'var(--text-primary)'
         }}>{t.title}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span>{t.subtitle}</span>
+          {onboardingDismissed && !showStepsAnyway && (
+            <button
+              onClick={() => setShowStepsAnyway(true)}
+              className="hover-link"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent-color)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: 0,
+                textDecoration: 'underline',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <span>{lang === 'ar' ? 'عرض دليل التهيئة' : 'Show onboarding guide'}</span>
+            </button>
+          )}
+        </p>
       </div>
 
       {/* Onboarding Checklist Card */}
-      <div className="card" style={{ padding: '24px', marginBottom: '24px', background: 'var(--panel-bg)', borderRadius: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
-              {lang === 'ar' ? 'خطوات تهيئة وتفعيل الحساب' : 'Developer Onboarding Steps'}
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-              {lang === 'ar' ? 'اتبع الخطوات المتسلسلة الأربعة التالية لتفعيل خادم المراسلة بالكامل.' : 'Follow these four sequential steps to fully set up and test your gateway.'}
-            </p>
+      {(!onboardingDismissed || showStepsAnyway) && (
+        progressPercent === 100 && !showStepsAnyway ? (
+          <div className="dashboard-card" style={{ 
+            marginBottom: '24px', 
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            padding: '24px',
+            borderRadius: '16px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '150px', height: '150px', background: 'var(--success-color)', opacity: 0.04, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+              <div style={{ 
+                width: '48px', 
+                height: '48px', 
+                borderRadius: '50%', 
+                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                color: 'var(--success-color)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontSize: '24px',
+                flexShrink: 0
+              }}>
+                <Sparkles size={24} style={{ color: 'var(--success-color)' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: '280px', textAlign: 'start' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>{lang === 'ar' ? 'تهانينا! حساب المطور الخاص بك نشط وجاهز للإنتاج' : 'Congratulations! Your developer account is fully configured'}</span>
+                  <span className="sumer-badge success" style={{ padding: '2px 8px', fontSize: '11px' }}>{lang === 'ar' ? 'مكتمل بنسبة 100%' : '100% Completed'}</span>
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '6px 0 0 0', lineHeight: 1.5 }}>
+                  {lang === 'ar' 
+                    ? 'لقد قمت بتهيئة النطاق، شحن المحفظة، توليد المفاتيح، والتحقق من إرسال أول طلب API بنجاح. خادم المراسلة العراقي الآن متكامل بالكامل وجاهز للربط الفعلي.' 
+                    : 'You have verified your domain, funded your wallet, generated API credentials, and completed live transmission checks. Your localized Iraqi gateway is active.'}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button onClick={() => setCurrentTab('code')} className="btn btn-primary" style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '6px' }}>
+                  {lang === 'ar' ? 'عرض وثائق الـ SDK' : 'Integrate SDK Code'}
+                </button>
+                <button 
+                  onClick={() => setShowStepsAnyway(true)}
+                  className="btn" 
+                  style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}
+                >
+                  {lang === 'ar' ? 'مراجعة الخطوات' : 'Review Steps'}
+                </button>
+              </div>
+            </div>
+            {/* Close button for congratulations banner */}
+            <button
+              onClick={() => {
+                localStorage.setItem('sumer_onboarding_dismissed_v2', 'true');
+                setOnboardingDismissed(true);
+                setShowStepsAnyway(false);
+              }}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: lang === 'ar' ? 'auto' : '12px',
+                left: lang === 'ar' ? '12px' : 'auto',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <X size={16} />
+            </button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {progressPercent}% {lang === 'ar' ? 'مكتمل' : 'Completed'}
+        ) : (
+          <div className="onboarding-split-card" style={{ borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
+            {/* Left Info Column */}
+            <div className="onboarding-split-info" style={{ padding: '32px' }}>
+              {/* Close button for onboarding slider */}
+              <button
+                onClick={() => {
+                  localStorage.setItem('sumer_onboarding_dismissed_v2', 'true');
+                  setOnboardingDismissed(true);
+                  setShowStepsAnyway(false);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: lang === 'ar' ? 'auto' : '16px',
+                  left: lang === 'ar' ? '16px' : 'auto',
+                  background: 'var(--panel-muted)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--border-color)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+              >
+                <X size={14} />
+              </button>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', fontWeight: 700, fontSize: '11px', padding: '3px 8px', borderRadius: '4px' }}>
+                    {lang === 'ar' ? 'دليل تهيئة النظام' : 'SYSTEM SETUP GUIDE'}
+                  </span>
+                  <span className="tabular-nums-stat" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    {completedSteps}/4 {lang === 'ar' ? 'مكتمل' : 'Completed'} ({progressPercent}%)
+                  </span>
+                </div>
+
+                <div style={{ textAlign: 'start' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      backgroundColor: onboardingSteps[activeStep].isDone ? 'var(--success-color)' : 'var(--text-primary)',
+                      color: onboardingSteps[activeStep].isDone ? '#fff' : 'var(--bg-color)',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      flexShrink: 0
+                    }}>
+                      {onboardingSteps[activeStep].isDone ? '✓' : onboardingSteps[activeStep].id}
+                    </span>
+                    <span>{lang === 'ar' ? onboardingSteps[activeStep].titleAr : onboardingSteps[activeStep].titleEn}</span>
+                    {onboardingSteps[activeStep].isDone && (
+                      <span className="sumer-badge success" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                        {lang === 'ar' ? 'مكتمل' : 'Done'}
+                      </span>
+                    )}
+                  </h2>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px', minHeight: '60px' }}>
+                    {lang === 'ar' ? onboardingSteps[activeStep].descAr : onboardingSteps[activeStep].descEn}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginTop: 'auto' }}>
+                {/* Main Action Button */}
+                <button
+                  onClick={() => setCurrentTab(onboardingSteps[activeStep].actionTab)}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 20px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>{lang === 'ar' ? onboardingSteps[activeStep].actionTextAr : onboardingSteps[activeStep].actionTextEn}</span>
+                </button>
+
+                {/* Prominent Blue "فهمت" Button on the final step */}
+                {activeStep === 3 && (
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('sumer_onboarding_dismissed_v2', 'true');
+                      setOnboardingDismissed(true);
+                      setShowStepsAnyway(false);
+                    }}
+                    style={{
+                      backgroundColor: '#006bff',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '8px 24px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(0, 107, 255, 0.25)',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#0056cc';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 255, 0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#006bff';
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 255, 0.25)';
+                    }}
+                  >
+                    {lang === 'ar' ? 'فهمت' : 'Got it'}
+                  </button>
+                )}
+              </div>
+
+              {/* Slider Controls Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                {/* Dots */}
+                <div className="onboarding-dots-container">
+                  {onboardingSteps.map((step, idx) => (
+                    <button
+                      key={step.id}
+                      onClick={() => setActiveStep(idx)}
+                      className={`onboarding-dot ${idx === activeStep ? 'active' : ''} ${step.isDone ? 'done' : ''}`}
+                      title={lang === 'ar' ? step.titleAr : step.titleEn}
+                    />
+                  ))}
+                </div>
+
+                {/* Navigation Arrows */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    disabled={activeStep === 0}
+                    onClick={() => setActiveStep(prev => prev - 1)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: activeStep === 0 ? 0.4 : 1,
+                      cursor: activeStep === 0 ? 'not-allowed' : 'pointer',
+                      backgroundColor: 'var(--panel-muted)',
+                      border: '1px solid var(--border-color)',
+                      minWidth: 'auto',
+                      color: 'var(--text-primary)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeStep !== 0) {
+                        e.currentTarget.style.backgroundColor = 'var(--border-color)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                    }}
+                  >
+                    {lang === 'ar' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                  </button>
+                  <button
+                    disabled={activeStep === onboardingSteps.length - 1}
+                    onClick={() => setActiveStep(prev => prev + 1)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: activeStep === onboardingSteps.length - 1 ? 0.4 : 1,
+                      cursor: activeStep === onboardingSteps.length - 1 ? 'not-allowed' : 'pointer',
+                      backgroundColor: 'var(--panel-muted)',
+                      border: '1px solid var(--border-color)',
+                      minWidth: 'auto',
+                      color: 'var(--text-primary)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeStep !== onboardingSteps.length - 1) {
+                        e.currentTarget.style.backgroundColor = 'var(--border-color)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                    }}
+                  >
+                    {lang === 'ar' ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Visual Preview Column */}
+            <div className="onboarding-split-visual" style={{ minHeight: '300px' }}>
+              {activeStep === 0 && (
+                <div className="mockup-floating-card" style={{ width: '100%', maxWidth: '280px', textAlign: 'start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace' }}>DNS Records</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>shop.iq</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                    {/* TXT Record */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>TXT (SPF)</span>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', fontFamily: 'monospace' }}>v=spf1 include:sumer...</span>
+                      </div>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                        <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                        {lang === 'ar' ? 'موثق' : 'Verified'}
+                      </span>
+                    </div>
+                    {/* MX Record */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>MX</span>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', fontFamily: 'monospace' }}>feedback-smtp.sumer...</span>
+                      </div>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                        <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                        {lang === 'ar' ? 'موثق' : 'Verified'}
+                      </span>
+                    </div>
+                    {/* DKIM Record */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>CNAME (DKIM)</span>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', fontFamily: 'monospace' }}>sumer._domainkey...</span>
+                      </div>
+                      {step1Done ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                          <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                          {lang === 'ar' ? 'موثق' : 'Verified'}
+                        </span>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#f59e0b', fontWeight: 600 }}>
+                          <span className="pulse-dot-warning" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                          {lang === 'ar' ? 'معلق' : 'Pending'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeStep === 1 && (
+                <div className="mockup-floating-card" style={{ width: '100%', maxWidth: '250px', padding: '0', overflow: 'hidden', borderBottomStyle: 'dashed', borderBottomWidth: '2px' }}>
+                  <div style={{ backgroundColor: '#ff9900', padding: '12px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.5px' }}>ZAIN CASH</span>
+                    <span style={{ fontSize: '9px', opacity: 0.9, fontWeight: 700 }}>{lang === 'ar' ? 'إيصال شحن' : 'RECEIPT'}</span>
+                  </div>
+                  <div style={{ padding: '16px', fontSize: '11px', textAlign: 'start' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>{lang === 'ar' ? 'رصيد مضاف' : 'Credits Deposited'}</span>
+                      <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'monospace' }}>50,000 IQD</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px dashed var(--border-color)', paddingTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+                        <span style={{ fontWeight: 700, color: '#10b981' }}>{lang === 'ar' ? 'ناجحة' : 'SUCCESS'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'رقم العملية:' : 'Txn ID:'}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>#ZC-897210</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المحفظة:' : 'Wallet:'}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>0782***392</span>
+                      </div>
+                    </div>
+                    {/* Barcode representation */}
+                    <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ height: '24px', width: '120px', background: 'repeating-linear-gradient(90deg, var(--text-primary) 0px, var(--text-primary) 2px, transparent 2px, transparent 6px, var(--text-primary) 6px, var(--text-primary) 7px, transparent 7px, transparent 10px)' }}></div>
+                      <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>964780912234</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeStep === 2 && (
+                <div className="mockup-code-terminal" style={{ width: '100%', maxWidth: '280px' }}>
+                  <div className="mockup-code-header">
+                    <div className="mockup-code-dot" style={{ backgroundColor: '#ff5f56' }} />
+                    <div className="mockup-code-dot" style={{ backgroundColor: '#ffbd2e' }} />
+                    <div className="mockup-code-dot" style={{ backgroundColor: '#27c93f' }} />
+                    <span style={{ marginLeft: '8px', color: '#565f89', fontSize: '10px' }}>sumer-node.js</span>
+                  </div>
+                  <div className="mockup-code-body">
+                    <div style={{ color: '#89ddff' }}><span style={{ color: '#e0af68' }}>const</span> Sumer = <span style={{ color: '#0db9d7' }}>require</span>(<span style={{ color: '#9ece6a' }}>'sumersend'</span>);</div>
+                    <div style={{ color: '#89ddff' }}><span style={{ color: '#e0af68' }}>const</span> client = <span style={{ color: '#e0af68' }}>new</span> <span style={{ color: '#0db9d7' }}>Sumer</span>(<span style={{ color: '#9ece6a' }}>'sm_live_...'</span>);</div>
+                    <div style={{ color: '#565f89', margin: '4px 0' }}>// Send SMS via Zain/AsiaCell</div>
+                    <div style={{ color: '#89ddff' }}>client.sms.send(&#123;</div>
+                    <div style={{ paddingLeft: '12px', color: '#bb9af3' }}>to: <span style={{ color: '#9ece6a' }}>"+9647800000000"</span>,</div>
+                    <div style={{ paddingLeft: '12px', color: '#bb9af3' }}>body: <span style={{ color: '#9ece6a' }}>"كود التفعيل: 4892"</span></div>
+                    <div style={{ color: '#89ddff' }}>&#125;).then(console.log);</div>
+                  </div>
+                </div>
+              )}
+
+              {activeStep === 3 && (
+                <div className="mockup-phone-frame">
+                  <div className="mockup-phone-notch" />
+                  {/* iOS Status Bar */}
+                  <div style={{ 
+                    height: '14px', 
+                    padding: '0 10px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    color: '#fff', 
+                    fontSize: '8px', 
+                    zIndex: 2, 
+                    position: 'relative',
+                    fontFamily: 'system-ui'
+                  }}>
+                    <span style={{ fontWeight: 600 }}>9:41</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      {/* Signal */}
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                        <rect x="0" y="4" width="1.5" height="2" rx="0.5" />
+                        <rect x="2" y="3" width="1.5" height="3" rx="0.5" />
+                        <rect x="4" y="2" width="1.5" height="4" rx="0.5" />
+                        <rect x="6" y="1" width="1.5" height="5" rx="0.5" />
+                        <rect x="8" y="0" width="1.5" height="6" rx="0.5" />
+                      </svg>
+                      {/* Battery */}
+                      <div style={{ width: '11px', height: '6px', border: '1px solid #fff', borderRadius: '1.5px', padding: '0.5px', display: 'flex' }}>
+                        <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '0.5px' }} />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Phone screen background */}
+                  <div style={{ 
+                    flex: 1, 
+                    background: 'linear-gradient(to bottom, #111827, #1f2937)', 
+                    padding: '12px 8px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '8px',
+                    position: 'relative' 
+                  }}>
+                    <div style={{ flex: 1 }} />
+                    
+                    {/* Notification card */}
+                    <div className="mockup-phone-notification" style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                      backdropFilter: 'blur(10px)', 
+                      borderRadius: '10px', 
+                      padding: '8px', 
+                      color: '#fff', 
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      textAlign: 'start',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      animation: 'slideInNotification 0.4s ease-out'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#006bff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 800 }}>S</div>
+                          <span style={{ fontSize: '8px', fontWeight: 600 }}>SUMER SEND</span>
+                        </div>
+                        <span style={{ fontSize: '7px', opacity: 0.6 }}>{lang === 'ar' ? 'الآن' : 'now'}</span>
+                      </div>
+                      <div style={{ fontSize: '9px', fontWeight: 600, marginBottom: '1px' }}>{lang === 'ar' ? 'تنبيه بوابة المطور' : 'Developer Gateway Test'}</div>
+                      <p style={{ fontSize: '8px', margin: 0, opacity: 0.8, lineHeight: 1.3 }}>
+                        {lang === 'ar' ? 'تم توصيل أول رسالة API بنجاح 🚀' : 'First API dispatch successfully processed 🚀'}
+                      </p>
+                    </div>
+                    
+                    <div style={{ flex: 1 }} />
+                    {/* Indicator bar */}
+                    <div style={{ width: '50px', height: '3px', backgroundColor: 'rgba(255, 255, 255, 0.3)', borderRadius: '1.5px', margin: '0 auto' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      )}
+
+      {/* Stats Cards */}
+      <div className="dashboard-metric-grid">
+        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalEmails}</span>
+            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(0, 112, 243, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mail size={16} color="#0070f3" />
+            </div>
+          </div>
+          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{emailCount}</div>
+          <div style={{ marginTop: '8px' }}>
+            <span className="trend-pill up">
+              <TrendingUp size={11} />
+              <span>+12% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
             </span>
-            <div style={{ width: '120px', height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progressPercent}%`, backgroundColor: '#006bff', transition: 'width 0.3s ease' }} />
-            </div>
           </div>
-        </div>
+        </BentoCard>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          {/* Step 1 */}
-          <div style={{ 
-            padding: '16px', 
-            borderRadius: '6px', 
-            border: '1px solid var(--border-color)', 
-            backgroundColor: step1Done ? 'var(--panel-muted)' : 'var(--panel-bg)',
-            opacity: step1Done ? 0.8 : 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            minHeight: '160px',
-            transition: 'all 0.2s'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ 
-                  width: '22px', 
-                  height: '22px', 
-                  borderRadius: '50%', 
-                  backgroundColor: step1Done ? 'var(--success-color)' : 'var(--text-primary)', 
-                  color: 'var(--bg-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700
-                }}>
-                  {step1Done ? '✓' : '1'}
-                </div>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
-                  {lang === 'ar' ? 'توثيق النطاق' : 'Domain Auth'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 12px 0' }}>
-                {lang === 'ar' ? 'قم بتفعيل النطاق المعلق (DNS) لتمكين توقيع البريد.' : 'Verify pending domain DNS to enable digital signing.'}
-              </p>
+        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalSMS}</span>
+            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(76, 217, 100, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Phone size={16} color="#22c55e" />
             </div>
-            {!step1Done ? (
-              <button onClick={() => setCurrentTab('domains')} className="btn btn-primary" style={{ width: '100%', minHeight: '32px', fontSize: '12px', padding: '4px 8px' }}>
-                {lang === 'ar' ? 'ربط النطاق' : 'Verify Domain'}
-              </button>
-            ) : (
-              <div style={{ fontSize: '11px', color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={12} />
-                <span>{lang === 'ar' ? 'تم التفعيل' : 'Active'}</span>
-              </div>
-            )}
           </div>
+          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{smsCount}</div>
+          <div style={{ marginTop: '8px' }}>
+            <span className="trend-pill up">
+              <TrendingUp size={11} />
+              <span>+8% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
+            </span>
+          </div>
+        </BentoCard>
 
-          {/* Step 2 */}
-          <div style={{ 
-            padding: '16px', 
-            borderRadius: '6px', 
-            border: '1px solid var(--border-color)', 
-            backgroundColor: step2Done ? 'var(--panel-muted)' : 'var(--panel-bg)',
-            opacity: step2Done ? 0.8 : 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            minHeight: '160px',
-            transition: 'all 0.2s'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ 
-                  width: '22px', 
-                  height: '22px', 
-                  borderRadius: '50%', 
-                  backgroundColor: step2Done ? 'var(--success-color)' : 'var(--text-primary)', 
-                  color: 'var(--bg-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700
-                }}>
-                  {step2Done ? '✓' : '2'}
-                </div>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
-                  {lang === 'ar' ? 'شحن رصيد المحفظة' : 'Deposit Credits'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 12px 0' }}>
-                {lang === 'ar' ? 'قم بعملية شحن تجريبية للمحفظة عبر بوابة زين كاش.' : 'Simulate a Zain Cash top up to cover sending costs.'}
-              </p>
+        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalWA}</span>
+            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(37, 211, 102, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={16} color="#12b050" />
             </div>
-            {!step2Done ? (
-              <button onClick={() => setCurrentTab('billing')} className="btn" style={{ width: '100%', minHeight: '32px', fontSize: '12px', padding: '4px 8px' }}>
-                {lang === 'ar' ? 'شحن الآن' : 'Charge Wallet'}
-              </button>
-            ) : (
-              <div style={{ fontSize: '11px', color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={12} />
-                <span>{lang === 'ar' ? 'تم الشحن' : 'Funded'}</span>
-              </div>
-            )}
           </div>
+          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{waCount}</div>
+          <div style={{ marginTop: '8px' }}>
+            <span className="trend-pill up">
+              <TrendingUp size={11} />
+              <span>+24% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
+            </span>
+          </div>
+        </BentoCard>
 
-          {/* Step 3 */}
-          <div style={{ 
-            padding: '16px', 
-            borderRadius: '6px', 
-            border: '1px solid var(--border-color)', 
-            backgroundColor: step3Done ? 'var(--panel-muted)' : 'var(--panel-bg)',
-            opacity: step3Done ? 0.8 : 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            minHeight: '160px',
-            transition: 'all 0.2s'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ 
-                  width: '22px', 
-                  height: '22px', 
-                  borderRadius: '50%', 
-                  backgroundColor: step3Done ? 'var(--success-color)' : 'var(--text-primary)', 
-                  color: 'var(--bg-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700
-                }}>
-                  {step3Done ? '✓' : '3'}
-                </div>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
-                  {lang === 'ar' ? 'توليد مفتاح API' : 'Create API Key'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 12px 0' }}>
-                {lang === 'ar' ? 'أضف مفتاح API مخصص لربطه بتطبيقاتك البرمجية.' : 'Add a custom key to connect your application backend.'}
-              </p>
+        <BentoCard className="dashboard-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.deliveryRate}</span>
+            <div className="card-icon-circle" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={16} color="var(--success-color)" />
             </div>
-            {!step3Done ? (
-              <button onClick={() => setCurrentTab('api')} className="btn" style={{ width: '100%', minHeight: '32px', fontSize: '12px', padding: '4px 8px' }}>
-                {lang === 'ar' ? 'توليد مفتاح' : 'Generate Key'}
-              </button>
-            ) : (
-              <div style={{ fontSize: '11px', color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={12} />
-                <span>{lang === 'ar' ? 'تمت الإضافة' : 'Key Active'}</span>
-              </div>
-            )}
           </div>
-
-          {/* Step 4 */}
-          <div style={{ 
-            padding: '16px', 
-            borderRadius: '6px', 
-            border: '1px solid var(--border-color)', 
-            backgroundColor: step4Done ? 'var(--panel-muted)' : 'var(--panel-bg)',
-            opacity: step4Done ? 0.8 : 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            minHeight: '160px',
-            transition: 'all 0.2s'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ 
-                  width: '22px', 
-                  height: '22px', 
-                  borderRadius: '50%', 
-                  backgroundColor: step4Done ? 'var(--success-color)' : 'var(--text-primary)', 
-                  color: 'var(--bg-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700
-                }}>
-                  {step4Done ? '✓' : '4'}
-                </div>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
-                  {lang === 'ar' ? 'إرسال أول اختبار' : 'Send Test API'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 12px 0' }}>
-                {lang === 'ar' ? 'أرسل رسالة تجريبية من منصة الاختبار لترى وصولها الفوري.' : 'Send a message in the playground to test live dispatch.'}
-              </p>
-            </div>
-            {!step4Done ? (
-              <button onClick={() => setCurrentTab('playground')} className="btn" style={{ width: '100%', minHeight: '32px', fontSize: '12px', padding: '4px 8px' }}>
-                {lang === 'ar' ? 'منصة الاختبار' : 'Go Playground'}
-              </button>
-            ) : (
-              <div style={{ fontSize: '11px', color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={12} />
-                <span>{lang === 'ar' ? 'تم الإرسال' : 'Dispatched'}</span>
-              </div>
-            )}
+          <div className="card-value tabular-nums-stat" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{deliveryRateValue}%</div>
+          <div style={{ marginTop: '8px' }}>
+            <span className="trend-pill neutral">
+              <span>{lang === 'en' ? 'Industry standard: 98%' : 'المعيار القياسي: 98%'}</span>
+            </span>
           </div>
-        </div>
+        </BentoCard>
       </div>
 
       {/* Analytics Chart section */}
-      <div className="card" style={{ padding: '20px', marginBottom: '20px', overflow: 'visible' }}>
-        <div className="flex-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                {lang === 'ar' ? 'تحليل حجم الحركة اليومية' : 'Daily Traffic Analytics'}
-              </h3>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {lang === 'ar' ? 'توزيع عمليات التوصيل الناجحة للقنوات الثلاث' : 'Successful delivery volume distribution across channels'}
-              </span>
-            </div>
+      <div className="dashboard-card" style={{ marginBottom: '24px', overflow: 'visible', padding: '16px 20px' }}>
+        <div className="flex-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-primary)' }}>
+              {lang === 'ar' ? 'تحليل حجم الحركة اليومية' : 'Daily Traffic Analytics'}
+            </h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {lang === 'ar' ? 'توزيع عمليات التوصيل الناجحة للقنوات الثلاث' : 'Successful delivery volume distribution across channels'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button 
               onClick={() => setCurrentTab('reports')}
               className="btn"
@@ -609,81 +1036,99 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 fontSize: '11px',
                 fontWeight: 600,
                 padding: '4px 10px',
+                borderRadius: '6px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--panel-bg)',
+                color: 'var(--text-primary)',
+                height: '28px'
               }}
             >
               <span>{lang === 'ar' ? 'التقارير التفصيلية ↗' : 'Detailed Reports ↗'}</span>
             </button>
-          </div>
-          
-          {/* Time Range Selector */}
-          <div className="capsule-tab-container">
-            {(['24h', '7d', '30d'] as const).map((range) => (
-              <button 
-                key={range}
-                onClick={() => { setTimeRange(range); setHoveredIdx(null); }}
-                className={`capsule-tab-btn ${timeRange === range ? 'active' : ''}`}
-              >
-                {range === '24h' && (lang === 'ar' ? '24 ساعة' : '24h')}
-                {range === '7d' && (lang === 'ar' ? '7 أيام' : '7d')}
-                {range === '30d' && (lang === 'ar' ? '30 يوم' : '30d')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Dynamic Secondary Metrics row */}
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-          <div>
-            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-              {lang === 'ar' ? 'الحجم الإجمالي' : 'Total Volume'}
-            </span>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {totalVolume.toLocaleString()}
-            </span>
-          </div>
-          <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '20px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-              {lang === 'ar' ? 'المعدل اليومي' : 'Daily Average'}
-            </span>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {avgVolume.toLocaleString()}
-            </span>
-          </div>
-          <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '20px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-              {lang === 'ar' ? 'حجم الذروة' : 'Peak Volume'}
-            </span>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {peakVolume.toLocaleString()}
-            </span>
+            
+            {/* Time Range Selector */}
+            <div className="capsule-tab-container" style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '2px', display: 'flex', height: '28px', alignItems: 'center' }}>
+              {(['24h', '7d', '30d'] as const).map((range) => (
+                <button 
+                  key={range}
+                  onClick={() => { setTimeRange(range); setHoveredIdx(null); }}
+                  className={`capsule-tab-btn ${timeRange === range ? 'active' : ''}`}
+                  style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {range === '24h' && (lang === 'ar' ? '24 ساعة' : '24h')}
+                  {range === '7d' && (lang === 'ar' ? '7 أيام' : '7d')}
+                  {range === '30d' && (lang === 'ar' ? '30 يوم' : '30d')}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Interactive Legend Toggles */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
+        {/* Unified Metrics and Legend row */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '16px', 
+          borderBottom: '1px solid var(--border-color)', 
+          paddingBottom: '10px',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          {/* Metrics */}
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
+                {lang === 'ar' ? 'الحجم الإجمالي' : 'Total Volume'}
+              </span>
+              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {totalVolume.toLocaleString()}
+              </span>
+            </div>
+            <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '16px', height: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
+                {lang === 'ar' ? 'المعدل اليومي' : 'Daily Average'}
+              </span>
+              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                {avgVolume.toLocaleString()}
+              </span>
+            </div>
+            <div style={{ borderInlineStart: '1px solid var(--border-color)', paddingInlineStart: '16px', height: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '2px', fontWeight: 600 }}>
+                {lang === 'ar' ? 'حجم الذروة' : 'Peak Volume'}
+              </span>
+              <span className="tabular-nums-stat" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                {peakVolume.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Legend Toggles */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <button 
               onClick={() => setShowEmail(!showEmail)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                background: showEmail ? 'var(--bg-color)' : 'transparent',
-                border: showEmail ? '1px solid var(--border-color)' : '1px solid transparent',
+                gap: '6px',
+                background: showEmail ? 'rgba(0, 112, 243, 0.08)' : 'transparent',
+                border: showEmail ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 opacity: showEmail ? 1 : 0.5,
-                padding: '6px 12px',
+                padding: '4px 10px',
                 borderRadius: '6px',
+                fontSize: '11px',
+                height: '28px',
                 transition: 'all 0.15s ease',
               }}
               title={lang === 'ar' ? 'تفعيل/تعطيل البريد الإلكتروني' : 'Toggle Email Line'}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
-              <span style={{ fontWeight: 600, fontSize: '12px', color: showEmail ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'Email' : 'البريد'}</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
+              <span style={{ fontWeight: 600, color: showEmail ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'Email' : 'البريد'}</span>
             </button>
             
             <button 
@@ -691,19 +1136,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                background: showSms ? 'var(--bg-color)' : 'transparent',
-                border: showSms ? '1px solid var(--border-color)' : '1px solid transparent',
+                gap: '6px',
+                background: showSms ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
+                border: showSms ? '1px solid var(--success-color)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 opacity: showSms ? 1 : 0.5,
-                padding: '6px 12px',
+                padding: '4px 10px',
                 borderRadius: '6px',
+                fontSize: '11px',
+                height: '28px',
                 transition: 'all 0.15s ease',
               }}
               title={lang === 'ar' ? 'تفعيل/تعطيل الـ SMS' : 'Toggle SMS Line'}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
-              <span style={{ fontWeight: 600, fontSize: '12px', color: showSms ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'SMS' : 'الـ SMS'}</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
+              <span style={{ fontWeight: 600, color: showSms ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'SMS' : 'الـ SMS'}</span>
             </button>
 
             <button 
@@ -711,19 +1158,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                background: showWhatsapp ? 'var(--bg-color)' : 'transparent',
-                border: showWhatsapp ? '1px solid var(--border-color)' : '1px solid transparent',
+                gap: '6px',
+                background: showWhatsapp ? 'rgba(37, 211, 102, 0.08)' : 'transparent',
+                border: showWhatsapp ? '1px solid var(--channel-whatsapp)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 opacity: showWhatsapp ? 1 : 0.5,
-                padding: '6px 12px',
+                padding: '4px 10px',
                 borderRadius: '6px',
+                fontSize: '11px',
+                height: '28px',
                 transition: 'all 0.15s ease',
               }}
               title={lang === 'ar' ? 'تفعيل/تعطيل الواتساب' : 'Toggle WhatsApp Line'}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
-              <span style={{ fontWeight: 600, fontSize: '12px', color: showWhatsapp ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'WhatsApp' : 'الواتساب'}</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
+              <span style={{ fontWeight: 600, color: showWhatsapp ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{lang === 'en' ? 'WhatsApp' : 'الواتساب'}</span>
             </button>
           </div>
         </div>
@@ -738,15 +1187,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             <defs>
               <linearGradient id="emailGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.15" />
+                <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0.0" />
               </linearGradient>
               <linearGradient id="smsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--success-color)" stopOpacity="0.15" />
+                <stop offset="0%" stopColor="var(--success-color)" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="var(--success-color)" stopOpacity="0.0" />
               </linearGradient>
               <linearGradient id="whatsappGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--channel-whatsapp)" stopOpacity="0.15" />
+                <stop offset="0%" stopColor="var(--channel-whatsapp)" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="var(--channel-whatsapp)" stopOpacity="0.0" />
               </linearGradient>
             </defs>
@@ -925,7 +1374,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }}></span>
                     <span>{lang === 'ar' ? 'البريد:' : 'Email:'}</span>
                   </div>
-                  <span style={{ fontWeight: 700 }}>{chartData[hoveredIdx].email}</span>
+                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].email}</span>
                 </div>
               )}
               
@@ -935,7 +1384,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></span>
                     <span>{lang === 'ar' ? 'الـ SMS:' : 'SMS:'}</span>
                   </div>
-                  <span style={{ fontWeight: 700 }}>{chartData[hoveredIdx].sms}</span>
+                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].sms}</span>
                 </div>
               )}
               
@@ -945,13 +1394,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }}></span>
                     <span>{lang === 'ar' ? 'الواتساب:' : 'WhatsApp:'}</span>
                   </div>
-                  <span style={{ fontWeight: 700 }}>{chartData[hoveredIdx].whatsapp}</span>
+                  <span className="tabular-nums-stat" style={{ fontWeight: 700 }}>{chartData[hoveredIdx].whatsapp}</span>
                 </div>
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '4px', marginTop: '4px', fontWeight: 700 }}>
                 <span>{lang === 'ar' ? 'الإجمالي:' : 'Total:'}</span>
-                <span style={{ color: 'var(--accent-color)' }}>
+                <span className="tabular-nums-stat" style={{ color: 'var(--accent-color)' }}>
                   {(showEmail ? chartData[hoveredIdx].email : 0) + 
                    (showSms ? chartData[hoveredIdx].sms : 0) + 
                    (showWhatsapp ? chartData[hoveredIdx].whatsapp : 0)}
@@ -962,110 +1411,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-        <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalEmails}</span>
-            <div className="card-icon-circle" style={{ backgroundColor: 'rgba(0, 112, 243, 0.08)' }}>
-              <Mail size={15} color="#0070f3" />
-            </div>
-          </div>
-          <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{emailCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+12% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
-            </span>
-          </div>
-        </BentoCard>
 
-        <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalSMS}</span>
-            <div className="card-icon-circle" style={{ backgroundColor: 'rgba(76, 217, 100, 0.08)' }}>
-              <Phone size={15} color="#22c55e" />
-            </div>
-          </div>
-          <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{smsCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+8% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
-            </span>
-          </div>
-        </BentoCard>
-
-        <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.totalWA}</span>
-            <div className="card-icon-circle" style={{ backgroundColor: 'rgba(37, 211, 102, 0.08)' }}>
-              <MessageSquare size={15} color="#12b050" />
-            </div>
-          </div>
-          <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{waCount}</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill up">
-              <TrendingUp size={11} />
-              <span>+24% {lang === 'en' ? 'this week' : 'هذا الأسبوع'}</span>
-            </span>
-          </div>
-        </BentoCard>
-
-        <BentoCard className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.deliveryRate}</span>
-            <div className="card-icon-circle" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)' }}>
-              <CheckCircle2 size={15} color="var(--success-color)" />
-            </div>
-          </div>
-          <div className="card-value" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{deliveryRateValue}%</div>
-          <div style={{ marginTop: '8px' }}>
-            <span className="trend-pill neutral">
-              <span>{lang === 'en' ? 'Industry standard: 98%' : 'المعيار القياسي: 98%'}</span>
-            </span>
-          </div>
-        </BentoCard>
-      </div>
-
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px' }}>
+      <div className="dashboard-telemetry-grid">
         {/* Recent Send Logs */}
-        <div style={{ flex: 2, minWidth: '350px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px' }}>{t.recentActivity}</h2>
-          <div className="table-container">
+        <div style={{ minWidth: '0' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>{t.recentActivity}</h2>
+          <div className="table-container" style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--panel-bg)' }}>
             {logs.length === 0 ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                <AlertCircle size={28} style={{ marginBottom: '8px', color: 'var(--text-muted)' }} />
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                <AlertCircle size={28} style={{ marginBottom: '8px', color: 'var(--text-muted)', opacity: 0.6 }} />
                 <p>{t.noActivity}</p>
               </div>
             ) : (
               <table className="v-table">
                 <thead>
                   <tr>
-                    <th style={{ padding: '8px 12px', fontSize: '12px' }}>{t.channel}</th>
-                    <th style={{ padding: '8px 12px', fontSize: '12px' }}>{t.recipient}</th>
-                    <th style={{ padding: '8px 12px', fontSize: '12px' }}>{t.status}</th>
-                    <th style={{ padding: '8px 12px', fontSize: '12px' }}>{t.time}</th>
+                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.channel}</th>
+                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.recipient}</th>
+                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.status}</th>
+                    <th style={{ padding: '10px 14px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.time}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.slice(-5).reverse().map((log) => (
                     <tr key={log.id}>
-                      <td style={{ textTransform: 'capitalize', padding: '8px 12px', fontSize: '13px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {log.type === 'email' && <Mail size={12} color="#0070f3" />}
-                          {log.type === 'sms' && <Phone size={12} color="#4cd964" />}
-                          {log.type === 'whatsapp' && <MessageSquare size={12} color="#25d366" />}
-                          <span>{log.type}</span>
+                      <td style={{ textTransform: 'capitalize', padding: '10px 14px', fontSize: '13px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {log.type === 'email' && <Mail size={13} color="#0070f3" />}
+                          {log.type === 'sms' && <Phone size={13} color="#22c55e" />}
+                          {log.type === 'whatsapp' && <MessageSquare size={13} color="#25d366" />}
+                          <span style={{ fontWeight: 500 }}>{log.type}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '8px 12px', fontSize: '13px' }}>{log.to}</td>
-                      <td style={{ padding: '8px 12px' }}>
-                        <span className={`status-pill ${log.status === 'delivered' ? 'success' : 'warning'}`}>
+                      <td className="tabular-nums-stat" style={{ padding: '10px 14px', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{log.to}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span className={`sumer-badge ${log.status === 'delivered' ? 'success' : 'warning'}`}>
                           {log.status}
                         </span>
                       </td>
-                      <td style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '8px 12px' }}>
+                      <td className="tabular-nums-stat" style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '10px 14px' }}>
                         {new Date(log.timestamp).toLocaleTimeString(lang === 'en' ? 'en-US' : 'ar-IQ')}
                       </td>
                     </tr>
@@ -1077,55 +1461,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Iraqi Operator statistics breakdown */}
-        <div style={{ flex: 1, minWidth: '280px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px' }}>{t.operatorStats}</h2>
-          <div className="card" style={{ padding: '16px' }}>
-            <div style={{ marginBottom: '14px' }}>
-              <div className="flex-between" style={{ marginBottom: '4px', fontSize: '13px' }}>
+        <div style={{ minWidth: '0' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>{t.operatorStats}</h2>
+          <div className="dashboard-card" style={{ padding: '20px' }}>
+            <div className="telemetry-row">
+              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
                 <div>
-                  <span style={{ fontWeight: 600, color: '#ffcc00' }}>{lang === 'en' ? 'Zain Iraq' : 'زين العراق'}</span>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '1px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'Zain Iraq' : 'زين العراق'}</span>
+                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
                     {lang === 'en' ? 'Avg Latency: 1.1s • Delivery: 99.8%' : 'متوسط التأخير: 1.1 ثانية • التوصيل: 99.8%'}
                   </span>
                 </div>
-                <span style={{ fontWeight: 700 }}>{zainPercent || 0}%</span>
+                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{zainPercent || 0}%</span>
               </div>
               <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${zainPercent || 0}%`, backgroundColor: '#ffcc00' }}></div>
+                <div style={{ height: '100%', width: `${zainPercent || 0}%`, backgroundColor: '#ffcc00', transition: 'width 0.3s ease' }}></div>
               </div>
             </div>
 
-            <div style={{ marginBottom: '14px' }}>
-              <div className="flex-between" style={{ marginBottom: '4px', fontSize: '13px' }}>
+            <div className="telemetry-row">
+              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
                 <div>
-                  <span style={{ fontWeight: 600, color: '#ff3366' }}>{lang === 'en' ? 'AsiaCell' : 'آسياسيل'}</span>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '1px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'AsiaCell' : 'آسياسيل'}</span>
+                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
                     {lang === 'en' ? 'Avg Latency: 0.9s • Delivery: 99.9%' : 'متوسط التأخير: 0.9 ثانية • التوصيل: 99.9%'}
                   </span>
                 </div>
-                <span style={{ fontWeight: 700 }}>{asiacellPercent || 0}%</span>
+                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{asiacellPercent || 0}%</span>
               </div>
               <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${asiacellPercent || 0}%`, backgroundColor: '#ff3366' }}></div>
+                <div style={{ height: '100%', width: `${asiacellPercent || 0}%`, backgroundColor: '#ff3366', transition: 'width 0.3s ease' }}></div>
               </div>
             </div>
 
-            <div>
-              <div className="flex-between" style={{ marginBottom: '4px', fontSize: '13px' }}>
+            <div className="telemetry-row">
+              <div className="flex-between" style={{ marginBottom: '6px', fontSize: '13px' }}>
                 <div>
-                  <span style={{ fontWeight: 600, color: '#00bfff' }}>{lang === 'en' ? 'Korek Telecom' : 'كورك تليكوم'}</span>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '1px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{lang === 'en' ? 'Korek Telecom' : 'كورك تليكوم'}</span>
+                  <span className="tabular-nums-stat" style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
                     {lang === 'en' ? 'Avg Latency: 1.4s • Delivery: 99.2%' : 'متوسط التأخير: 1.4 ثانية • التوصيل: 99.2%'}
                   </span>
                 </div>
-                <span style={{ fontWeight: 700 }}>{korekPercent || 0}%</span>
+                <span className="tabular-nums-stat" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{korekPercent || 0}%</span>
               </div>
               <div style={{ height: '6px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${korekPercent || 0}%`, backgroundColor: '#00bfff' }}></div>
+                <div style={{ height: '100%', width: `${korekPercent || 0}%`, backgroundColor: '#00bfff', transition: 'width 0.3s ease' }}></div>
               </div>
             </div>
 
-            <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4, borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+            <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
               {lang === 'en' 
                 ? 'Calculated dynamically based on +964 phone number prefixes sent via APIs.'
                 : 'يتم احتساب النسب تلقائياً بناءً على بادئات الأرقام العراقية (+964) التي تستقبل رسائل الـ SMS والـ WhatsApp.'}

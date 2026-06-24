@@ -53,6 +53,73 @@ export interface TemplateBlock {
   quoteAuthor?: string; // for quote
 }
 
+interface ColorPickerInputProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}
+
+const ColorPickerInput: React.FC<ColorPickerInputProps> = ({ label, value, onChange }) => {
+  return (
+    <div className="form-group" style={{ marginBottom: '12px' }}>
+      <label>{label}</label>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '6px',
+          border: '1px solid var(--border-color)',
+          backgroundColor: value,
+          position: 'relative',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          flexShrink: 0
+        }}>
+          <input 
+            type="color" 
+            value={value.startsWith('#') && value.length === 7 ? value : '#ffffff'} 
+            onChange={(e) => onChange(e.target.value)}
+            style={{ 
+              position: 'absolute',
+              top: '-8px',
+              left: '-8px',
+              width: '44px',
+              height: '44px',
+              padding: 0,
+              border: 'none',
+              cursor: 'pointer',
+              opacity: 0
+            }}
+          />
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: value,
+            pointerEvents: 'none'
+          }} />
+        </div>
+        <input 
+          type="text" 
+          value={value} 
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || /^#[0-9A-F]{0,6}$/i.test(val)) {
+              onChange(val);
+            }
+          }}
+          placeholder="#FFFFFF"
+          maxLength={7}
+          style={{ 
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            textTransform: 'uppercase'
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
 // Preset options for template icon
 const ICON_PRESETS = ['📝', '✉️', '📱', '🔔', '💬', '💡', '🔍', '📘', '🧠', '⚙️', '🔒', '🏆'];
 
@@ -149,12 +216,23 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 
     setVariables(newVars);
 
-    // Populate variable preview defaults
-    const prevs: Record<string, string> = {};
-    newVars.forEach(v => {
-      prevs[v.key] = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+    // Populate variable preview defaults while preserving custom values
+    setVariablePreviewValues(prev => {
+      const updated = { ...prev };
+      newVars.forEach(v => {
+        if (updated[v.key] === undefined) {
+          updated[v.key] = lang === 'ar' ? (v.defaultValAr || `[${v.key}]`) : (v.defaultValEn || `[${v.key}]`);
+        }
+      });
+      // Clean up deleted variables from preview values
+      const keys = new Set(newVars.map(v => v.key));
+      Object.keys(updated).forEach(k => {
+        if (!keys.has(k)) {
+          delete updated[k];
+        }
+      });
+      return updated;
     });
-    setVariablePreviewValues(prevs);
   }, [blocks, textBody, category, subjectAr, subjectEn]);
 
   // Load existing template data on startup
@@ -381,10 +459,15 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       result = textBody;
     }
 
-    // Replace dynamic variables with user-input preview values or fallback key
-    Object.entries(variablePreviewValues).forEach(([key, val]) => {
-      const placeholder = `{{${key}}}`;
-      result = result.replaceAll(placeholder, val || `{{${key}}}`);
+    // Replace dynamic variables with user-input preview values or fallback to default value / placeholder
+    variables.forEach(v => {
+      const placeholder = `{{${v.key}}}`;
+      const val = variablePreviewValues[v.key];
+      const defaultVal = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+      const finalVal = (val !== undefined && val !== '') 
+        ? val 
+        : ((defaultVal !== undefined && defaultVal !== '') ? defaultVal : `{{${v.key}}}`);
+      result = result.replaceAll(placeholder, finalVal);
     });
 
     return result;
@@ -487,7 +570,15 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         break;
     }
 
-    setBlocks(prev => [...prev, newBlock]);
+    setBlocks(prev => {
+      const selectedIdx = prev.findIndex(b => b.id === selectedBlockId);
+      if (selectedIdx !== -1) {
+        const updated = [...prev];
+        updated.splice(selectedIdx + 1, 0, newBlock);
+        return updated;
+      }
+      return [...prev, newBlock];
+    });
     setSelectedBlockId(newId);
   };
 
@@ -991,6 +1082,36 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         border-color: var(--accent-color);
         background-color: rgba(var(--accent-rgb), 0.02);
       }
+      .builder-sidebar-form .form-group {
+        margin-bottom: 12px;
+      }
+      .builder-sidebar-form label {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .builder-sidebar-form input,
+      .builder-sidebar-form textarea,
+      .builder-sidebar-form select {
+        width: 100%;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--border-color) !important;
+        background-color: var(--panel-bg) !important;
+        color: var(--text-primary) !important;
+      }
+      .builder-sidebar-form input:focus,
+      .builder-sidebar-form textarea:focus,
+      .builder-sidebar-form select:focus {
+        border-color: var(--accent-color) !important;
+        outline: none !important;
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1) !important;
+      }
     `}</style>
   );
 
@@ -1020,36 +1141,20 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
             <ArrowLeft size={16} style={{ transform: isAr ? 'rotate(180deg)' : 'none' }} />
           </button>
           
-          <div>
+          {/* Vertical Separator Line */}
+          <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)' }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input 
-                type="text" 
-                value={isAr ? nameAr : nameEn} 
-                onChange={(e) => {
-                  if (isAr) setNameAr(e.target.value);
-                  else setNameEn(e.target.value);
-                }}
-                placeholder={isAr ? 'اسم القالب المخصص...' : 'Custom template name...'}
-                style={{ 
-                  fontSize: '18px', 
-                  fontWeight: 800, 
-                  background: 'none', 
-                  border: 'none', 
-                  borderBottom: '1.5px dashed var(--border-color)', 
-                  outline: 'none',
-                  color: 'var(--text-primary)',
-                  padding: '2px 0',
-                  width: '260px'
-                }}
-              />
-              <div style={{ position: 'relative' }}>
+              {/* Emoji Icon Picker */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <span 
                   onClick={() => setShowIconPicker(prev => !prev)}
                   style={{ 
                     fontSize: '18px', 
                     cursor: 'pointer',
                     padding: '2px 6px',
-                    borderRadius: '5px',
+                    borderRadius: '6px',
                     backgroundColor: showIconPicker ? 'var(--panel-muted)' : 'transparent',
                     border: showIconPicker ? '1px solid var(--border-color)' : '1px solid transparent',
                     display: 'inline-block',
@@ -1118,30 +1223,65 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   </>
                 )}
               </div>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
-              <span className={`badge ${category === 'email' ? 'badge-blue' : category === 'sms' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '10px' }}>
+
+              {/* Title Input */}
+              <input 
+                type="text" 
+                value={isAr ? nameAr : nameEn} 
+                onChange={(e) => {
+                  if (isAr) setNameAr(e.target.value);
+                  else setNameEn(e.target.value);
+                }}
+                placeholder={isAr ? 'اسم القالب المخصص...' : 'Custom template name...'}
+                style={{ 
+                  fontSize: '16px', 
+                  fontWeight: 700, 
+                  background: 'none', 
+                  border: 'none', 
+                  outline: 'none',
+                  color: 'var(--text-primary)',
+                  padding: '2px 6px',
+                  width: '240px',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onFocus={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
+                onBlur={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              />
+
+              {/* Category Badge */}
+              <span className={`badge ${category === 'email' ? 'badge-blue' : category === 'sms' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '9px', padding: '2px 6px', height: 'fit-content' }}>
                 {category.toUpperCase()}
               </span>
-              <input 
-                type="text"
-                value={isAr ? descAr : descEn}
-                onChange={(e) => {
-                  if (isAr) setDescAr(e.target.value);
-                  else setDescEn(e.target.value);
-                }}
-                placeholder={isAr ? 'أضف وصفاً موجزاً للقالب...' : 'Short description...'}
-                style={{
-                  fontSize: '11px',
-                  color: 'var(--text-muted)',
-                  border: 'none',
-                  background: 'none',
-                  outline: 'none',
-                  width: '240px'
-                }}
-              />
             </div>
+            
+            {/* Description Subtitle */}
+            <input 
+              type="text"
+              value={isAr ? descAr : descEn}
+              onChange={(e) => {
+                if (isAr) setDescAr(e.target.value);
+                else setDescEn(e.target.value);
+              }}
+              placeholder={isAr ? 'أضف وصفاً موجزاً للقالب...' : 'Short description...'}
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                border: 'none',
+                background: 'none',
+                outline: 'none',
+                width: '320px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onFocus={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
+              onBlur={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            />
           </div>
         </div>
 
@@ -1234,6 +1374,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 
             {/* Column B: Center Visual Canvas */}
             <div 
+              onClick={() => setSelectedBlockId(null)}
               style={{ 
                 flex: 1, 
                 backgroundColor: canvasBg, 
@@ -1313,14 +1454,14 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       parsedContent = parsedContent.replaceAll(`{{${key}}}`, val || `{{${key}}}`);
                     });
 
-                    return (
+                     return (
                       <div
                         key={block.id}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedBlockId(block.id);
                         }}
-                        draggable
+                        draggable={!isSelected}
                         onDragStart={(e) => handleDragStart(e, idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
                         onDragEnd={handleDragEnd}
@@ -1374,10 +1515,41 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                             borderBottom: '1px solid rgba(255,255,255,0.1)'
                           }}>
                             <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, display: 'block', marginBottom: '6px' }}>
-                              {parsedContent}
+                              {isSelected ? (
+                                <input
+                                  type="text"
+                                  value={block.content}
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
+                                  placeholder={isAr ? 'اللقب الأعلى...' : 'Upper Title...'}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ background: 'transparent', border: 'none', outline: 'none', color: 'inherit', font: 'inherit', width: '100%', textAlign: align }}
+                                />
+                              ) : parsedContent}
                             </span>
-                            <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800 }}>{block.title}</h1>
-                            <p style={{ margin: '6px 0 0 0', fontSize: '12px', opacity: 0.7 }}>{block.subtitle}</p>
+                            <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800 }}>
+                              {isSelected ? (
+                                <input
+                                  type="text"
+                                  value={block.title || ''}
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
+                                  placeholder={isAr ? 'العنوان الأساسي...' : 'Primary Title...'}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ background: 'transparent', border: 'none', outline: 'none', color: 'inherit', font: 'inherit', width: '100%', textAlign: align, fontWeight: 'inherit' }}
+                                />
+                              ) : block.title}
+                            </h1>
+                            <p style={{ margin: '6px 0 0 0', fontSize: '12px', opacity: 0.7 }}>
+                              {isSelected ? (
+                                <input
+                                  type="text"
+                                  value={block.subtitle || ''}
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, subtitle: e.target.value } : b))}
+                                  placeholder={isAr ? 'العنوان الفرعي...' : 'Sub-header...'}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ background: 'transparent', border: 'none', outline: 'none', color: 'inherit', font: 'inherit', width: '100%', textAlign: align }}
+                                />
+                              ) : block.subtitle}
+                            </p>
                           </div>
                         )}
 
@@ -1388,9 +1560,32 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                             color, 
                             fontSize, 
                             lineHeight: 1.7,
-                            backgroundColor: block.backgroundColor || 'transparent'
+                            backgroundColor: block.backgroundColor || 'transparent',
+                            whiteSpace: 'pre-wrap'
                           }}>
-                            {parsedContent.replace(/\n/g, '<br/>')}
+                            {isSelected ? (
+                              <textarea
+                                value={block.content}
+                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
+                                placeholder={isAr ? 'اكتب نص الفقرة هنا...' : 'Type paragraph text here...'}
+                                rows={Math.max(2, block.content.split('\n').length)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  outline: 'none',
+                                  color: 'inherit',
+                                  font: 'inherit',
+                                  fontSize: 'inherit',
+                                  lineHeight: 'inherit',
+                                  width: '100%',
+                                  textAlign: align,
+                                  resize: 'none',
+                                  padding: 0,
+                                  margin: 0
+                                }}
+                              />
+                            ) : parsedContent}
                           </div>
                         )}
 
@@ -1410,7 +1605,27 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               borderRadius: block.borderRadius ? `${block.borderRadius}px` : '4px',
                               boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                             }}>
-                              {parsedContent}
+                              {isSelected ? (
+                                <input
+                                  type="text"
+                                  value={block.content}
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
+                                  placeholder={isAr ? 'نص الزر...' : 'Button text...'}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                    color: 'inherit',
+                                    font: 'inherit',
+                                    fontWeight: 'inherit',
+                                    width: 'auto',
+                                    textAlign: 'center',
+                                    padding: 0,
+                                    margin: 0
+                                  }}
+                                />
+                              ) : parsedContent}
                             </span>
                           </div>
                         )}
@@ -1443,8 +1658,55 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               textAlign: align,
                               color
                             }}>
-                              <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, lineHeight: 1.5 }}>"{parsedContent}"</p>
-                              {block.quoteAuthor && <span style={{ fontSize: '11px', color: '#666', display: 'block', marginTop: '4px' }}>— {block.quoteAuthor}</span>}
+                              {isSelected ? (
+                                <>
+                                  <textarea
+                                    value={block.content}
+                                    onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
+                                    placeholder={isAr ? 'نص الاقتباس...' : 'Quote content...'}
+                                    rows={Math.max(1, block.content.split('\n').length)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      outline: 'none',
+                                      color: 'inherit',
+                                      font: 'inherit',
+                                      fontWeight: 'inherit',
+                                      width: '100%',
+                                      textAlign: align,
+                                      resize: 'none',
+                                      padding: 0,
+                                      margin: 0
+                                    }}
+                                  />
+                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '6px', fontSize: '11px', opacity: 0.8, justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
+                                    <span>—</span>
+                                    <input
+                                      type="text"
+                                      value={block.quoteAuthor || ''}
+                                      onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, quoteAuthor: e.target.value } : b))}
+                                      placeholder={isAr ? 'الكاتب...' : 'Author...'}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        outline: 'none',
+                                        color: 'inherit',
+                                        font: 'inherit',
+                                        width: '120px',
+                                        padding: 0,
+                                        margin: 0
+                                      }}
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>"{parsedContent}"</p>
+                                  {block.quoteAuthor && <span style={{ fontSize: '11px', color: '#666', display: 'block', marginTop: '4px' }}>— {block.quoteAuthor}</span>}
+                                </>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1469,7 +1731,29 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                             borderTop: '1px solid #eaeaea', 
                             lineHeight: 1.5 
                           }}>
-                            <p style={{ margin: '0 0 4px 0' }}>{parsedContent}</p>
+                            {isSelected ? (
+                              <textarea
+                                value={block.content}
+                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
+                                placeholder={isAr ? 'نص التذييل...' : 'Footer text...'}
+                                rows={Math.max(1, block.content.split('\n').length)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  outline: 'none',
+                                  color: 'inherit',
+                                  font: 'inherit',
+                                  width: '100%',
+                                  textAlign: align,
+                                  resize: 'none',
+                                  padding: 0,
+                                  margin: 0
+                                }}
+                              />
+                            ) : (
+                              <p style={{ margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{parsedContent}</p>
+                            )}
                             <p style={{ margin: 0 }}>© 2026 Sumer Send. All rights reserved.</p>
                           </div>
                         )}
@@ -1482,7 +1766,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
             </div>
 
             {/* Column C: Right Properties & Smart Tools Inspector */}
-            <div style={{ width: '310px', display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
+            <div className="builder-sidebar-form" style={{ width: '310px', display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
               
               {/* Properties Editor card */}
               <div className="card" style={{ padding: '16px' }}>
@@ -1560,15 +1844,31 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, url: e.target.value } : b))}
                               />
                             </div>
-                            <div className="form-group">
-                              <label>{isAr ? 'حافة دائرية (Radius)' : 'Border Radius (px)'}</label>
-                              <input 
-                                type="number" 
-                                min={0}
-                                max={30}
-                                value={block.borderRadius || 0} 
-                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, borderRadius: parseInt(e.target.value) || 0 } : b))}
-                              />
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {isAr ? 'حافة دائرية (Radius)' : 'Border Radius'} ({block.borderRadius || 0}px)
+                              </label>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <input 
+                                  type="range" 
+                                  min={0}
+                                  max={30}
+                                  value={block.borderRadius || 0} 
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, borderRadius: parseInt(e.target.value) || 0 } : b))}
+                                  style={{ flex: 1, accentColor: 'var(--accent-color)', height: '4px', cursor: 'pointer' }}
+                                />
+                                <input 
+                                  type="number"
+                                  min={0}
+                                  max={30}
+                                  value={block.borderRadius || 0}
+                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, borderRadius: parseInt(e.target.value) || 0 } : b))}
+                                  style={{
+                                    width: '60px',
+                                    textAlign: 'center'
+                                  }}
+                                />
+                              </div>
                             </div>
                           </>
                         )}
@@ -1617,15 +1917,31 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                         )}
 
                         {block.type === 'spacer' && (
-                          <div className="form-group">
-                            <label>{isAr ? 'ارتفاع الفراغ (بكسل)' : 'Height (pixels)'}</label>
-                            <input 
-                              type="number" 
-                              min={5}
-                              max={200}
-                              value={block.height || 20} 
-                              onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, height: parseInt(e.target.value) || 20 } : b))}
-                            />
+                          <div className="form-group" style={{ marginBottom: '12px' }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              {isAr ? 'ارتفاع الفراغ' : 'Spacer Height'} ({block.height || 20}px)
+                            </label>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <input 
+                                type="range" 
+                                min={5}
+                                max={150}
+                                value={block.height || 20} 
+                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, height: parseInt(e.target.value) || 20 } : b))}
+                                style={{ flex: 1, accentColor: 'var(--accent-color)', height: '4px', cursor: 'pointer' }}
+                              />
+                              <input 
+                                type="number"
+                                min={5}
+                                max={200}
+                                value={block.height || 20}
+                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, height: parseInt(e.target.value) || 20 } : b))}
+                                style={{
+                                  width: '60px',
+                                  textAlign: 'center'
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
 
@@ -1661,37 +1977,45 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                             </div>
 
                             {block.type === 'text' && (
-                              <div className="form-group">
-                                <label>{isAr ? 'حجم الخط (بكسل)' : 'Font Size (px)'}</label>
-                                <input 
-                                  type="number" 
-                                  min={10}
-                                  max={36}
-                                  value={block.fontSize || 14} 
-                                  onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, fontSize: parseInt(e.target.value) || 14 } : b))}
-                                />
+                              <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  {isAr ? 'حجم الخط' : 'Font Size'} ({block.fontSize || 14}px)
+                                </label>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <input 
+                                    type="range" 
+                                    min={10}
+                                    max={36}
+                                    value={block.fontSize || 14} 
+                                    onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, fontSize: parseInt(e.target.value) || 14 } : b))}
+                                    style={{ flex: 1, accentColor: 'var(--accent-color)', height: '4px', cursor: 'pointer' }}
+                                  />
+                                  <input 
+                                    type="number"
+                                    min={10}
+                                    max={36}
+                                    value={block.fontSize || 14}
+                                    onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, fontSize: parseInt(e.target.value) || 14 } : b))}
+                                    style={{
+                                      width: '60px',
+                                      textAlign: 'center'
+                                    }}
+                                  />
+                                </div>
                               </div>
                             )}
 
-                            <div className="form-group">
-                              <label>{isAr ? 'لون الخلفية الخاص' : 'Custom Background'}</label>
-                              <input 
-                                type="color" 
-                                value={block.backgroundColor || '#ffffff'} 
-                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, backgroundColor: e.target.value } : b))}
-                                style={{ width: '100%', padding: '0', height: '24px', cursor: 'pointer' }}
-                              />
-                            </div>
+                            <ColorPickerInput 
+                              label={isAr ? 'لون الخلفية الخاص' : 'Custom Background'}
+                              value={block.backgroundColor || '#ffffff'}
+                              onChange={(val) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, backgroundColor: val } : b))}
+                            />
 
-                            <div className="form-group">
-                              <label>{isAr ? 'لون النص الخاص' : 'Custom Text Color'}</label>
-                              <input 
-                                type="color" 
-                                value={block.color || '#333333'} 
-                                onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, color: e.target.value } : b))}
-                                style={{ width: '100%', padding: '0', height: '24px', cursor: 'pointer' }}
-                              />
-                            </div>
+                            <ColorPickerInput 
+                              label={isAr ? 'لون النص الخاص' : 'Custom Text Color'}
+                              value={block.color || '#333333'}
+                              onChange={(val) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, color: val } : b))}
+                            />
                           </>
                         )}
 
@@ -1708,53 +2032,115 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 ) : (
                   // Canvas Global properties configuration
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div className="form-group">
-                      <label>{isAr ? 'خلفية الساحة الخارجية' : 'Outer Canvas BG'}</label>
-                      <input 
-                        type="color" 
-                        value={canvasBg} 
-                        onChange={(e) => setCanvasBg(e.target.value)}
-                        style={{ width: '100%', padding: '0', height: '24px', cursor: 'pointer' }}
-                      />
+                    {/* Template Metadata Editing */}
+                    <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <h4 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {isAr ? 'بيانات القالب الأساسية' : 'Template Details'}
+                      </h4>
+                      
+                      <div className="form-group">
+                        <label>{isAr ? 'الاسم (بالعربية)' : 'Name (Arabic)'}</label>
+                        <input 
+                          type="text" 
+                          value={nameAr} 
+                          onChange={(e) => setNameAr(e.target.value)}
+                          placeholder={isAr ? 'مثال: نشرة الفلسفة الأسبوعية' : 'e.g. Arabic Name'}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{isAr ? 'الاسم (بالإنجليزية)' : 'Name (English)'}</label>
+                        <input 
+                          type="text" 
+                          value={nameEn} 
+                          onChange={(e) => setNameEn(e.target.value)}
+                          placeholder={isAr ? 'مثال: Weekly Newsletter' : 'e.g. English Name'}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{isAr ? 'الوصف (بالعربية)' : 'Description (Arabic)'}</label>
+                        <textarea 
+                          rows={2}
+                          value={descAr} 
+                          onChange={(e) => setDescAr(e.target.value)}
+                          placeholder={isAr ? 'وصف مختصر للقالب...' : 'Arabic description...'}
+                          style={{ resize: 'none' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{isAr ? 'الوصف (بالإنجليزية)' : 'Description (English)'}</label>
+                        <textarea 
+                          rows={2}
+                          value={descEn} 
+                          onChange={(e) => setDescEn(e.target.value)}
+                          placeholder={isAr ? 'وصف بالإنجليزية...' : 'English description...'}
+                          style={{ resize: 'none' }}
+                        />
+                      </div>
                     </div>
+
+                    <h4 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {isAr ? 'تصميم المظهر العام' : 'Canvas Design'}
+                    </h4>
+                    <ColorPickerInput 
+                      label={isAr ? 'خلفية الساحة الخارجية' : 'Outer Canvas BG'}
+                      value={canvasBg}
+                      onChange={setCanvasBg}
+                    />
                     
-                    <div className="form-group">
-                      <label>{isAr ? 'خلفية وعاء المحتوى' : 'Inner Container BG'}</label>
-                      <input 
-                        type="color" 
-                        value={containerBg} 
-                        onChange={(e) => setContainerBg(e.target.value)}
-                        style={{ width: '100%', padding: '0', height: '24px', cursor: 'pointer' }}
-                      />
+                    <ColorPickerInput 
+                      label={isAr ? 'خلفية وعاء المحتوى' : 'Inner Container BG'}
+                      value={containerBg}
+                      onChange={setContainerBg}
+                    />
+
+                    <ColorPickerInput 
+                      label={isAr ? 'اللون الأساسي للعلامة' : 'Brand Primary Color'}
+                      value={primaryColor}
+                      onChange={setPrimaryColor}
+                    />
+
+                    <ColorPickerInput 
+                      label={isAr ? 'اللون العام للنصوص' : 'Global Text Color'}
+                      value={globalTextColor}
+                      onChange={setGlobalTextColor}
+                    />
+
+                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {isAr ? 'عرض الحاوية' : 'Container Width'} ({containerWidth}px)
+                      </label>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input 
+                          type="range" 
+                          min={450}
+                          max={800}
+                          step={10}
+                          value={containerWidth} 
+                          onChange={(e) => setContainerWidth(parseInt(e.target.value) || 600)}
+                          style={{ flex: 1, accentColor: 'var(--accent-color)', height: '4px', cursor: 'pointer' }}
+                        />
+                        <input 
+                          type="number"
+                          min={450}
+                          max={800}
+                          value={containerWidth}
+                          onChange={(e) => setContainerWidth(parseInt(e.target.value) || 600)}
+                          style={{
+                            width: '70px',
+                            textAlign: 'center'
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label>{isAr ? 'اللون الأساسي للعلامة' : 'Brand Primary Color'}</label>
-                      <input 
-                        type="color" 
-                        value={primaryColor} 
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        style={{ width: '100%', padding: '0', height: '24px', cursor: 'pointer' }}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>{isAr ? 'عرض الحاوية (بكسل)' : 'Container Width (px)'}</label>
-                      <input 
-                        type="number" 
-                        min={400}
-                        max={800}
-                        value={containerWidth} 
-                        onChange={(e) => setContainerWidth(parseInt(e.target.value) || 600)}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>{isAr ? 'الخط العام للرسالة' : 'Global Font Family'}</label>
+                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {isAr ? 'الخط العام للرسالة' : 'Global Font Family'}
+                      </label>
                       <select 
                         value={globalFont} 
                         onChange={(e) => setGlobalFont(e.target.value)}
-                        style={{ width: '100%', padding: '6px', fontSize: '12px' }}
+                        style={{ width: '100%', cursor: 'pointer' }}
                       >
                         <option value="Cairo">Cairo (Arabic Cairo)</option>
                         <option value="Inter">Inter (Clean English)</option>
@@ -2150,7 +2536,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               </div>
             </div>
 
-            <div style={{ width: '330px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="builder-sidebar-form" style={{ width: '330px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="card" style={{ 
                 padding: '24px 20px', 
                 flex: 1, 
@@ -2793,8 +3179,19 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               style={{ 
                 padding: '14px 16px', 
                 borderRadius: '10px', 
-                backgroundColor: spamDetails.score > 40 ? 'rgba(239, 68, 68, 0.04)' : 'var(--panel-bg)', 
-                border: `1.5px solid ${spamDetails.score > 40 ? 'var(--danger-color)' : 'var(--border-color)'}`,
+                backgroundColor: 
+                  spamDetails.score === 55 
+                    ? 'rgba(239, 68, 68, 0.04)' 
+                    : spamDetails.score === 80 
+                      ? 'rgba(245, 158, 11, 0.04)' 
+                      : 'var(--panel-bg)', 
+                border: `1.5px solid ${
+                  spamDetails.score === 55 
+                    ? 'var(--danger-color)' 
+                    : spamDetails.score === 80 
+                      ? 'var(--warning-color)' 
+                      : 'var(--border-color)'
+                }`,
                 transition: 'all 0.2s ease',
                 boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
                 display: 'flex',
@@ -2802,12 +3199,22 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 gap: '4px'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = spamDetails.score > 40 ? 'var(--danger-color)' : 'var(--accent-color)';
+                e.currentTarget.style.borderColor = 
+                  spamDetails.score === 55 
+                    ? 'var(--danger-color)' 
+                    : spamDetails.score === 80 
+                      ? 'var(--warning-color)' 
+                      : 'var(--accent-color)';
                 e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.04)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = spamDetails.score > 40 ? 'var(--danger-color)' : 'var(--border-color)';
+                e.currentTarget.style.borderColor = 
+                  spamDetails.score === 55 
+                    ? 'var(--danger-color)' 
+                    : spamDetails.score === 80 
+                      ? 'var(--warning-color)' 
+                      : 'var(--border-color)';
                 e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.02)';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}

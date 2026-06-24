@@ -96,6 +96,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('welcome_substack');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Custom user templates state
   const [customTemplates, setCustomTemplates] = useState<TemplateItem[]>([]);
@@ -134,6 +135,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const customList = customTemplates.filter(t => t.type === activeCategory) || [];
     return [...staticList, ...customList];
   };
+
+  // Synchronize selected template ID when category changes
+  useEffect(() => {
+    const list = getMergedTemplates();
+    if (list.length > 0) {
+      const exists = list.some(t => t.id === selectedTemplateId);
+      if (!exists) {
+        setSelectedTemplateId(list[0].id);
+      }
+    }
+  }, [activeCategory, customTemplates, selectedTemplateId]);
 
   // Synchronize dynamic preview variables when template changes
   useEffect(() => {
@@ -395,11 +407,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const translations = {
     en: {
-      title: 'Settings & System Hub',
-      subtitle: 'Manage SMTP connection, view premium templates gallery, and review background system bridges.',
+      title: 'Security & Settings',
+      subtitle: 'Manage account security, creative templates gallery, and system configurations.',
       smtpTab: 'SMTP Server Config',
       templatesTab: 'Creative Templates',
-      systemTab: 'System & Services',
+      systemTab: 'System & Configuration',
       hostLabel: 'SMTP Server Host',
       portLabel: 'SMTP Port',
       secureLabel: 'Use SSL/TLS (Port 465)',
@@ -429,11 +441,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       tariffTitle: 'Iraqi Local Rates & Tariff'
     },
     ar: {
-      title: 'الإعدادات والنظام المتكامل',
-      subtitle: 'تعديل خادم البريد SMTP، معاينة معرض القوالب الإبداعية، واستعراض قنوات وبوابات الإرسال النشطة.',
+      title: 'الأمان والإعدادات',
+      subtitle: 'إدارة أمان الحساب، ومعرض القوالب الإبداعية، والتحقق من إعدادات النظام.',
       smtpTab: 'إعدادات SMTP',
       templatesTab: 'معرض القوالب الإبداعية',
-      systemTab: 'تفاصيل النظام والخدمات',
+      systemTab: 'النظام والتهيئة',
       hostLabel: 'عنوان خادم SMTP (Host)',
       portLabel: 'منفذ الاتصال (Port)',
       secureLabel: 'تفعيل التشفير SSL/TLS (المنفذ 465)',
@@ -589,9 +601,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     
     if (template.variables) {
       template.variables.forEach(v => {
-        const val = previewVars[v.key] !== undefined 
+        const defaultVal = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+        const val = previewVars[v.key] !== undefined && previewVars[v.key] !== ''
           ? previewVars[v.key] 
-          : (lang === 'ar' ? v.defaultValAr : v.defaultValEn);
+          : (defaultVal !== '' ? defaultVal : `{{${v.key}}}`);
         compiledBody = compiledBody.replaceAll(`{{${v.key}}}`, val);
         compiledSubject = compiledSubject.replaceAll(`{{${v.key}}}`, val);
       });
@@ -673,9 +686,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     
     if (template.variables) {
       template.variables.forEach(v => {
-        const val = previewVars[v.key] !== undefined 
+        const defaultVal = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+        const val = previewVars[v.key] !== undefined && previewVars[v.key] !== ''
           ? previewVars[v.key] 
-          : (lang === 'ar' ? v.defaultValAr : v.defaultValEn);
+          : (defaultVal !== '' ? defaultVal : `{{${v.key}}}`);
         body = body.replaceAll(`{{${v.key}}}`, val);
         subject = subject.replaceAll(`{{${v.key}}}`, val);
       });
@@ -687,59 +701,54 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <ScrollReveal>
-      {!controlledSubTab && (
+      {(!controlledSubTab || ['security', 'templates', 'system'].includes(controlledSubTab)) && (
         <>
           {/* View Header */}
           <div style={{ marginBottom: '20px' }} className="flex-between">
             <div>
               <h1 style={{ 
-                fontSize: '32px', 
+                fontSize: '26px', 
                 fontWeight: 800, 
-                letterSpacing: lang === 'ar' ? '0' : '-1.5px', 
+                letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
                 lineHeight: 1.15,
-                marginBottom: '8px',
+                marginBottom: '6px',
                 color: 'var(--text-primary)'
               }}>{t.title}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
             </div>
           </div>
 
           {/* Main Sub-Tab Selectors */}
           <div className="vercel-tabs-container" style={{ overflowX: 'auto', marginBottom: '20px' }}>
             <button 
-              onClick={() => setActiveSubTab('smtp')}
-              className={`vercel-tab-btn ${activeSubTab === 'smtp' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSubTab('security');
+                setCurrentTab('security');
+              }}
+              className={`vercel-tab-btn ${activeSubTab === 'security' ? 'active' : ''}`}
             >
-              <Settings size={15} />
-              <span>{lang === 'en' ? 'SMTP Configuration' : 'إعدادات الـ SMTP'}</span>
+              <Shield size={15} />
+              <span>{lang === 'en' ? 'Security & 2FA' : 'الأمان والتحقق ثنائي العامل'}</span>
             </button>
             <button 
-              onClick={() => setActiveSubTab('whatsapp')}
-              className={`vercel-tab-btn ${activeSubTab === 'whatsapp' ? 'active' : ''}`}
-            >
-              <Smartphone size={15} />
-              <span>{lang === 'en' ? 'WhatsApp Connection' : 'اتصال واتساب'}</span>
-            </button>
-            <button 
-              onClick={() => setActiveSubTab('templates')}
+              onClick={() => {
+                setActiveSubTab('templates');
+                setCurrentTab('templates');
+              }}
               className={`vercel-tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
             >
               <BookOpen size={15} />
               <span>{t.templatesTab}</span>
             </button>
             <button 
-              onClick={() => setActiveSubTab('system')}
+              onClick={() => {
+                setActiveSubTab('system');
+                setCurrentTab('system');
+              }}
               className={`vercel-tab-btn ${activeSubTab === 'system' ? 'active' : ''}`}
             >
               <Info size={15} />
               <span>{t.systemTab}</span>
-            </button>
-            <button 
-              onClick={() => setActiveSubTab('security')}
-              className={`vercel-tab-btn ${activeSubTab === 'security' ? 'active' : ''}`}
-            >
-              <Shield size={15} />
-              <span>{lang === 'en' ? 'Security & 2FA' : 'الأمان والتحقق ثنائي العامل'}</span>
             </button>
           </div>
         </>
@@ -760,11 +769,58 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
           </div>
           {showGuide && (
-            <BentoCard className="card" style={{ marginBottom: '20px', padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: 'var(--accent-color)', opacity: 0.03, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.guideText}</p>
+            <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '16px', marginBottom: '20px', overflow: 'hidden' }}>
+              {/* Left Info Column */}
+              <div className="onboarding-split-info" style={{ padding: '24px' }}>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 500, margin: '0 0 16px 0', textAlign: 'start' }}>
+                    {t.guideText}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
+                    {lang === 'ar' ? 'المنفذ: 587 (TLS)' : 'Port: 587 (TLS)'}
+                  </span>
+                  <span className="sumer-badge" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
+                    {lang === 'ar' ? 'التتشغيل: STARTTLS' : 'Encryption: STARTTLS'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Visual Column */}
+              <div className="onboarding-split-visual" style={{ padding: '20px' }}>
+                <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {lang === 'ar' ? 'بيانات اتصال SMTP' : 'SMTP Server Config'}
+                    </span>
+                    <span style={{ 
+                      fontSize: '9px', 
+                      fontWeight: 700,
+                      color: 'var(--success-text)',
+                      backgroundColor: 'var(--success-bg)',
+                      padding: '1px 6px',
+                      borderRadius: '4px'
+                    }}>
+                      {lang === 'ar' ? 'متصل' : 'Online'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الخادم:' : 'Server:'}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>smtp.sumersend.com</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المنفذ:' : 'Port:'}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>587</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المستخدم:' : 'User:'}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>mail@mystore.iq</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </BentoCard>
           )}
@@ -1025,32 +1081,81 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             )}
           </div>
           
-          <div className="card" style={{ flex: 1, minWidth: '320px', padding: '24px' }}>
-             <BentoCard className="card" style={{ padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <Shield size={20} color="var(--accent-color)" />
-                <h3 style={{ fontSize: '15px', fontWeight: 700 }}>{lang === 'en' ? 'Baileys WebSockets Engine' : 'محرك Baileys WebSockets'}</h3>
+          <div className="onboarding-split-card" style={{ flex: 1, minWidth: '320px', borderRadius: '16px', overflow: 'hidden' }}>
+            {/* Left Info Column */}
+            <div className="onboarding-split-info" style={{ padding: '24px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <Shield size={20} color="var(--accent-color)" />
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{lang === 'en' ? 'Baileys WebSockets Engine' : 'محرك Baileys WebSockets'}</h3>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px', textAlign: 'start' }}>
+                  {lang === 'en'
+                    ? 'Sumer Send uses the lightweight Baileys library instead of Puppeteer. This connects directly to WhatsApp servers via WebSockets, using 90% less memory and providing instant dispatch speeds.'
+                    : 'تستخدم سومر سيند مكتبة Baileys الخفيفة بدلاً من Puppeteer. هذا المحرك يتصل مباشرة بسيرفرات واتساب عبر الـ WebSockets مما يوفر 90% من استهلاك الذاكرة ويوفر سرعة إرسال لحظية.'}
+                </p>
               </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-                {lang === 'en'
-                  ? 'Sumer Send uses the lightweight Baileys library instead of Puppeteer. This connects directly to WhatsApp servers via WebSockets, using 90% less memory and providing instant dispatch speeds.'
-                  : 'تستخدم سومر سيند مكتبة Baileys الخفيفة بدلاً من Puppeteer. هذا المحرك يتصل مباشرة بسيرفرات واتساب عبر الـ WebSockets مما يوفر 90% من استهلاك الذاكرة ويوفر سرعة إرسال لحظية.'}
-              </p>
               
-              <div style={{ padding: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <div style={{ padding: '12px', backgroundColor: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', textAlign: 'start' }}>
                   <AlertCircle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#b45309', margin: '0 0 4px 0' }}>{lang === 'en' ? 'Important Warning' : 'تحذير هام'}</h4>
-                    <p style={{ fontSize: '12px', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#b45309', margin: '0 0 2px 0' }}>{lang === 'en' ? 'Anti-Spam Warning' : 'تحذير مكافحة الاسبام'}</h4>
+                    <p style={{ fontSize: '11px', color: '#92400e', margin: 0, lineHeight: 1.4 }}>
                       {lang === 'en'
-                        ? 'Avoid sending bulk promotional messages. Meta\'s automated systems may ban numbers that send too many messages to contacts who haven\'t saved their number.'
-                        : 'تجنب إرسال رسائل ترويجية جماعية أو Spam. أنظمة Meta الآلية قد تحظر الأرقام التي ترسل كميات كبيرة من الرسائل لجهات اتصال غير مسجلة.'}
+                        ? 'Avoid sending bulk spam. Meta may ban numbers sending unsolicited links.'
+                        : 'تجنب إرسال الرسائل المزعجة. قد تقوم Meta بحظر الأرقام التي ترسل روابط غير مرغوب فيها.'}
                     </p>
                   </div>
                 </div>
               </div>
-            </BentoCard>
+            </div>
+
+            {/* Right Column: WebSocket Memory Ticker */}
+            <div className="onboarding-split-visual" style={{ padding: '20px' }}>
+              <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {lang === 'ar' ? 'أداء محرك الواتساب' : 'WhatsApp Engine Metrics'}
+                  </span>
+                  <span style={{ 
+                    fontSize: '9px', 
+                    fontWeight: 700,
+                    color: 'var(--success-text)',
+                    backgroundColor: 'var(--success-bg)',
+                    padding: '1px 6px',
+                    borderRadius: '4px'
+                  }}>
+                    {lang === 'ar' ? 'نشط' : 'Active'}
+                  </span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'البروتوكول:' : 'Protocol:'}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>WebSockets (WS)</span>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
+                      <span>{lang === 'ar' ? 'استهلاك الذاكرة (Baileys):' : 'RAM usage (Baileys):'}</span>
+                      <span className="tabular-nums-stat" style={{ color: 'var(--success-color)' }}>12 MB</span>
+                    </div>
+                    <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '10%', backgroundColor: 'var(--success-color)' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
+                      <span>{lang === 'ar' ? 'استهلاك الذاكرة (Puppeteer):' : 'RAM usage (Puppeteer):'}</span>
+                      <span className="tabular-nums-stat" style={{ color: 'var(--danger-color)' }}>120 MB</span>
+                    </div>
+                    <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--danger-color)' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1174,120 +1279,173 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <div className="templates-grid">
                   
                   {/* Left side list of templates */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '12px',
-                    maxHeight: '620px',
-                    overflowY: 'auto',
-                    paddingRight: lang === 'en' ? '6px' : '0',
-                    paddingLeft: lang === 'ar' ? '6px' : '0',
-                  }}>
-                    {mergedTemplates.map((temp) => {
-                      const isCustom = customTemplates.some(ct => ct.id === temp.id);
-                      return (
-                        <div 
-                          key={temp.id}
-                          onClick={() => setSelectedTemplateId(temp.id)}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Search Input Box */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={lang === 'ar' ? 'البحث عن قالب...' : 'Search templates...'}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          paddingRight: lang === 'ar' ? '12px' : '32px',
+                          paddingLeft: lang === 'ar' ? '32px' : '12px',
+                          fontSize: '13px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--panel-muted)',
+                          color: 'var(--text-primary)',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
                           style={{
-                            padding: '16px 20px',
-                            borderRadius: '8px',
-                            border: `1px solid ${selectedTemplateId === temp.id ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                            backgroundColor: selectedTemplateId === temp.id 
-                              ? 'var(--panel-muted)' 
-                              : 'var(--panel-bg)',
+                            position: 'absolute',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            left: lang === 'ar' ? '10px' : 'auto',
+                            right: lang === 'ar' ? 'auto' : '10px',
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
                             cursor: 'pointer',
-                            position: 'relative',
-                            transition: 'all 0.2s ease',
-                            boxShadow: selectedTemplateId === temp.id ? '0 4px 12px rgba(0, 0, 0, 0.03)' : 'none',
+                            fontSize: '11px',
+                            padding: '4px'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '10px' }}>
-                            <h4 style={{ fontSize: '13.5px', fontWeight: 650, margin: 0, color: selectedTemplateId === temp.id ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                              {lang === 'ar' ? temp.nameAr : temp.nameEn}
-                            </h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {isCustom ? (
-                                <span style={{
-                                  fontSize: '10px',
-                                  fontWeight: 600,
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'rgba(var(--accent-rgb), 0.08)',
-                                  border: '1px solid rgba(var(--accent-rgb), 0.2)',
-                                  color: 'var(--accent-color)',
-                                  display: 'inline-block',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {lang === 'ar' ? 'مخصص' : 'Custom'}
-                                </span>
-                              ) : (
-                                <span style={{
-                                  fontSize: '10px',
-                                  fontWeight: 600,
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'var(--panel-muted)',
-                                  border: '1px solid var(--border-color)',
-                                  color: 'var(--text-muted)',
-                                  display: 'inline-block',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {lang === 'ar' ? 'افتراضي' : 'System'}
-                                </span>
-                              )}
-                              {isCustom && selectedTemplateId === temp.id && (
-                                <div style={{ display: 'flex', gap: '4px', marginLeft: '6px', marginRight: '6px' }}>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingTemplate(temp);
-                                      setIsBuildingTemplate(true);
-                                    }}
-                                    className="btn"
-                                    style={{ padding: '2px 4px', fontSize: '10px', display: 'flex', alignItems: 'center', border: 'none', background: 'none', color: 'var(--accent-color)', cursor: 'pointer' }}
-                                    title={lang === 'ar' ? 'تعديل' : 'Edit'}
-                                  >
-                                    {lang === 'ar' ? 'تعديل' : 'Edit'}
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTemplate(temp.id, e);
-                                    }}
-                                    className="btn"
-                                    style={{ padding: '2px 4px', fontSize: '10px', display: 'flex', alignItems: 'center', border: 'none', background: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}
-                                    title={lang === 'ar' ? 'حذف' : 'Delete'}
-                                  >
-                                    <Trash2 size={10} />
-                                  </button>
-                                </div>
-                              )}
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Templates Scrollable List */}
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: '10px',
+                      maxHeight: '560px',
+                      overflowY: 'auto',
+                      paddingRight: lang === 'en' ? '4px' : '0',
+                      paddingLeft: lang === 'ar' ? '4px' : '0',
+                    }}>
+                      {(() => {
+                        const filteredTemplates = mergedTemplates.filter(temp => {
+                          const name = lang === 'ar' ? temp.nameAr : temp.nameEn;
+                          const desc = lang === 'ar' ? temp.descAr : temp.descEn;
+                          const query = searchQuery.toLowerCase().trim();
+                          return (
+                            name.toLowerCase().includes(query) ||
+                            desc.toLowerCase().includes(query) ||
+                            temp.id.toLowerCase().includes(query)
+                          );
+                        });
+
+                        if (filteredTemplates.length === 0) {
+                          return (
+                            <div style={{ padding: '30px 15px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                              <span style={{ fontSize: '12.5px' }}>
+                                {lang === 'ar' ? 'لا توجد قوالب تطابق بحثك' : 'No templates match your search'}
+                              </span>
                             </div>
-                          </div>
-                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                            {lang === 'ar' ? temp.descAr : temp.descEn}
-                          </p>
-                          
-                          {/* Active vertical line indicator */}
-                          {selectedTemplateId === temp.id && (
-                            <div style={{ 
-                              position: 'absolute', 
-                              top: '0',
-                              bottom: '0',
-                              left: lang === 'en' ? '0' : 'auto',
-                              right: lang === 'en' ? 'auto' : '0',
-                              width: '3px', 
-                              backgroundColor: 'var(--accent-color)',
-                              borderTopLeftRadius: lang === 'en' ? '8px' : '0',
-                              borderBottomLeftRadius: lang === 'en' ? '8px' : '0',
-                              borderTopRightRadius: lang === 'en' ? '0' : '8px',
-                              borderBottomRightRadius: lang === 'en' ? '0' : '8px'
-                            }} />
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        }
+
+                        return filteredTemplates.map((temp) => {
+                          const isCustom = customTemplates.some(ct => ct.id === temp.id);
+                          const isActive = selectedTemplateId === temp.id;
+                          return (
+                            <div 
+                              key={temp.id}
+                              onClick={() => setSelectedTemplateId(temp.id)}
+                              style={{
+                                padding: '14px 16px',
+                                borderRadius: '8px',
+                                border: `1px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                                backgroundColor: isActive 
+                                  ? 'var(--panel-muted)' 
+                                  : 'var(--panel-bg)',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                transition: 'all 0.15s ease',
+                                boxShadow: isActive ? '0 0 0 1px var(--accent-color), 0 2px 8px rgba(0, 0, 0, 0.02)' : 'none',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '10px' }}>
+                                <h4 style={{ fontSize: '13px', fontWeight: 650, margin: 0, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                                  {lang === 'ar' ? temp.nameAr : temp.nameEn}
+                                </h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {isCustom ? (
+                                    <span style={{
+                                      fontSize: '9px',
+                                      fontWeight: 600,
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'rgba(var(--accent-rgb), 0.08)',
+                                      border: '1px solid rgba(var(--accent-rgb), 0.15)',
+                                      color: 'var(--accent-color)',
+                                      display: 'inline-block',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {lang === 'ar' ? 'مخصص' : 'Custom'}
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      fontSize: '9px',
+                                      fontWeight: 600,
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'var(--panel-muted)',
+                                      border: '1px solid var(--border-color)',
+                                      color: 'var(--text-muted)',
+                                      display: 'inline-block',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {lang === 'ar' ? 'افتراضي' : 'System'}
+                                    </span>
+                                  )}
+                                  {isCustom && isActive && (
+                                    <div style={{ display: 'flex', gap: '4px', marginLeft: '4px', marginRight: '4px' }}>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingTemplate(temp);
+                                          setIsBuildingTemplate(true);
+                                        }}
+                                        className="btn"
+                                        style={{ padding: '2px 4px', fontSize: '10px', display: 'flex', alignItems: 'center', border: 'none', background: 'none', color: 'var(--accent-color)', cursor: 'pointer' }}
+                                        title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                                      >
+                                        {lang === 'ar' ? 'تعديل' : 'Edit'}
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteTemplate(temp.id, e);
+                                        }}
+                                        className="btn"
+                                        style={{ padding: '2px 4px', fontSize: '10px', display: 'flex', alignItems: 'center', border: 'none', background: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}
+                                        title={lang === 'ar' ? 'حذف' : 'Delete'}
+                                      >
+                                        <Trash2 size={10} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
+                                {lang === 'ar' ? temp.descAr : temp.descEn}
+                              </p>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
 
                   {/* Right side live preview pane */}
@@ -1732,7 +1890,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                               position: 'relative',
                               fontSize: '12.5px',
                               lineHeight: 1.4,
-                              textAlign: 'right',
+                              textAlign: lang === 'ar' ? 'right' : 'left',
                               whiteSpace: 'pre-line'
                             }}>
                               {compiledSelectedTemplate.body}
@@ -1907,7 +2065,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                               fontSize: '13px',
                               lineHeight: 1.4,
                               position: 'relative',
-                              textAlign: 'right',
+                              textAlign: lang === 'ar' ? 'right' : 'left',
                               whiteSpace: 'pre-line',
                               borderBottomLeftRadius: lang === 'ar' ? '4px' : '16px',
                               borderBottomRightRadius: lang === 'ar' ? '16px' : '4px'

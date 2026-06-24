@@ -143,6 +143,33 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const [campaigns, setCampaigns] = useState<Campaign[]>(defaultCampaignsList);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
+  const changeViewStateAndCampaign = (nextState: 'list' | 'create' | 'progress', nextCampaign: Campaign | null) => {
+    if (!document.startViewTransition) {
+      setViewState(nextState);
+      setSelectedCampaign(nextCampaign);
+      return;
+    }
+
+    let oldVal = selectedCampaign ? 'details' : viewState;
+    let newVal = nextCampaign ? 'details' : nextState;
+
+    const order = ['list', 'create', 'progress', 'details'];
+    const oldIdx = order.indexOf(oldVal);
+    const newIdx = order.indexOf(newVal);
+    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+
+    const options: any = {
+      update: () => {
+        setViewState(nextState);
+        setSelectedCampaign(nextCampaign);
+      }
+    };
+    if (direction) {
+      options.types = [direction];
+    }
+    (document as any).startViewTransition(options);
+  };
+
   // Campaigns list sub-tab navigation
   const [campaignSubTab, setCampaignSubTab] = useState<'campaigns' | 'templates'>('campaigns');
   const [customTemplates, setCustomTemplates] = useState<any[]>(defaultCustomTemplates);
@@ -662,7 +689,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   const executeCampaignLaunch = async (totalCost: number) => {
     // Step 1: Create Campaign Draft on Backend
-    setViewState('progress');
+    changeViewStateAndCampaign('progress', null);
     setExecProgress(0);
     setExecLogs([`> Starting Campaign: ${campName}...`, `> Target Channel: ${campChannel.toUpperCase()}`]);
 
@@ -922,13 +949,13 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       .then(data => {
         if (data.success) {
           setCampaigns(prev => prev.filter(c => c.id !== id));
-          if (selectedCampaign?.id === id) setSelectedCampaign(null);
+          if (selectedCampaign?.id === id) changeViewStateAndCampaign('list', null);
         }
       })
       .catch(() => {
         // local delete fallback
         setCampaigns(prev => prev.filter(c => c.id !== id));
-        if (selectedCampaign?.id === id) setSelectedCampaign(null);
+        if (selectedCampaign?.id === id) changeViewStateAndCampaign('list', null);
       });
   };
 
@@ -946,6 +973,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   return (
     <ScrollReveal>
+      <div className="campaigns-view-container" key={selectedCampaign ? `details_${selectedCampaign.id}` : viewState}>
       {/* VIEW 1: CAMPAIGNS LIST & DASHBOARD */}
       {viewState === 'list' && !selectedCampaign && (
         <div>
@@ -958,7 +986,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               className="btn btn-primary"
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 600 }}
               onClick={() => {
-                setViewState('create');
+                changeViewStateAndCampaign('create', null);
                 setStep(1);
                 setCampName('');
                 setCampChannel('sms');
@@ -1089,7 +1117,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                     </thead>
                     <tbody>
                       {campaigns.map((camp) => (
-                        <tr key={camp.id} onClick={() => setSelectedCampaign(camp)} style={{ cursor: 'pointer', transition: 'background-color 0.15s' }}>
+                        <tr key={camp.id} onClick={() => changeViewStateAndCampaign('list', camp)} style={{ cursor: 'pointer', transition: 'background-color 0.15s' }}>
                           <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                             {camp.name}
                           </td>
@@ -1587,7 +1615,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           <button 
             className="btn" 
             style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-            onClick={() => setSelectedCampaign(null)}
+            onClick={() => changeViewStateAndCampaign('list', null)}
           >
             <ArrowLeft size={14} />
             <span>{lang === 'en' ? 'Back to Campaigns' : 'العودة لقائمة الحملات'}</span>
@@ -1940,7 +1968,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           {/* Wizard Footer controls */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
             {step === 1 ? (
-              <button className="btn" onClick={() => setViewState('list')}>{t.cancelBtn}</button>
+              <button className="btn" onClick={() => changeViewStateAndCampaign('list', null)}>{t.cancelBtn}</button>
             ) : (
               <button className="btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setStep(step - 1)}>
                 <ChevronLeft size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
@@ -2052,8 +2080,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               <button 
                 className="btn btn-primary"
                 onClick={() => {
-                  setViewState('list');
-                  setSelectedCampaign(null);
+                  changeViewStateAndCampaign('list', null);
                 }}
               >
                 {lang === 'en' ? 'Done & Close' : 'إكمال وإغلاق'}
@@ -2223,6 +2250,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </div>
         </div>
       )}
+      </div>
     </ScrollReveal>
   );
 };

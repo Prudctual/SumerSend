@@ -56,6 +56,17 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [activeNotificationDetail, setActiveNotificationDetail] = useState<any | null>(null);
 
+  const setNotificationDetailWithTransition = (detail: any) => {
+    if (!document.startViewTransition) {
+      setActiveNotificationDetail(detail);
+      return;
+    }
+    
+    document.startViewTransition(() => {
+      setActiveNotificationDetail(detail);
+    });
+  };
+
   // Active template states
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
@@ -551,7 +562,7 @@ rs.whatsapp.send(
             </button>
           </div>
 
-          <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
+          <div className="card playground-composer-container" key={activeTab} style={{ padding: '20px', marginBottom: '16px' }}>
             {statusMsg && (
               <div style={{ 
                 padding: '12px 16px', 
@@ -1031,7 +1042,7 @@ rs.whatsapp.send(
                       }}>
                         <button 
                           type="button"
-                          onClick={() => setActiveNotificationDetail(null)}
+                          onClick={() => setNotificationDetailWithTransition(null)}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -1149,7 +1160,7 @@ rs.whatsapp.send(
                       }}>
                         <button 
                           type="button"
-                          onClick={() => setActiveNotificationDetail(null)}
+                          onClick={() => setNotificationDetailWithTransition(null)}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -1225,7 +1236,7 @@ rs.whatsapp.send(
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <button 
                             type="button"
-                            onClick={() => setActiveNotificationDetail(null)}
+                            onClick={() => setNotificationDetailWithTransition(null)}
                             style={{
                               background: 'none',
                               border: 'none',
@@ -1384,7 +1395,7 @@ rs.whatsapp.send(
                           key={noti.id} 
                           className="phone-notification"
                           onClick={() => {
-                            setActiveNotificationDetail(noti);
+                            setNotificationDetailWithTransition(noti);
                           }}
                           style={{ 
                             cursor: 'pointer',

@@ -40,6 +40,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   setCurrentTab
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'channels' | 'costs' | 'exports'>('overview');
+
+  const handleSubTabChange = (tab: 'overview' | 'channels' | 'costs' | 'exports') => {
+    if (!document.startViewTransition) {
+      setActiveSubTab(tab);
+      return;
+    }
+
+    const tabOrder = ['overview', 'channels', 'costs', 'exports'];
+    const oldIdx = tabOrder.indexOf(activeSubTab);
+    const newIdx = tabOrder.indexOf(tab);
+    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+
+    const options: any = {
+      update: () => {
+        setActiveSubTab(tab);
+      }
+    };
+    if (direction) {
+      options.types = [direction];
+    }
+    (document as any).startViewTransition(options);
+  };
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
@@ -1014,28 +1036,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       {/* Main Subtabs Navigation */}
       <div className="capsule-tab-container" style={{ marginBottom: '24px' }}>
         <button 
-          onClick={() => setActiveSubTab('overview')} 
+          onClick={() => handleSubTabChange('overview')} 
           className={`capsule-tab-btn ${activeSubTab === 'overview' ? 'active' : ''}`}
         >
           <Activity size={14} style={{ marginInlineEnd: '6px' }} />
           {t.tabOverview}
         </button>
         <button 
-          onClick={() => setActiveSubTab('channels')} 
+          onClick={() => handleSubTabChange('channels')} 
           className={`capsule-tab-btn ${activeSubTab === 'channels' ? 'active' : ''}`}
         >
           <Send size={14} style={{ marginInlineEnd: '6px' }} />
           {t.tabChannels}
         </button>
         <button 
-          onClick={() => setActiveSubTab('costs')} 
+          onClick={() => handleSubTabChange('costs')} 
           className={`capsule-tab-btn ${activeSubTab === 'costs' ? 'active' : ''}`}
         >
           <Wallet size={14} style={{ marginInlineEnd: '6px' }} />
           {t.tabCosts}
         </button>
         <button 
-          onClick={() => setActiveSubTab('exports')} 
+          onClick={() => handleSubTabChange('exports')} 
           className={`capsule-tab-btn ${activeSubTab === 'exports' ? 'active' : ''}`}
         >
           <FileText size={14} style={{ marginInlineEnd: '6px' }} />
@@ -1043,7 +1065,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </button>
       </div>
 
-      {/* OVERVIEW SUBTAB CONTENT */}
+      <div className="reports-content-container" key={activeSubTab}>
       {activeSubTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
@@ -1375,7 +1397,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                 <span>{t.domainLink}</span>
               </button>
-              <button onClick={() => setCurrentTab('settings')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'inherit', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }} className="hover-link">
+              <button onClick={() => setCurrentTab('smtp')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'inherit', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }} className="hover-link">
                 <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                 <span>{t.smtpLink}</span>
               </button>
@@ -1788,7 +1810,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
         </div>
       )}
-
+      </div>
     </div>
   );
 };

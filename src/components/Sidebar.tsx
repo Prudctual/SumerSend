@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
-  BarChart3,
   Globe, 
   History, 
   Wallet as WalletIcon, 
@@ -16,7 +15,12 @@ import {
   PanelRight,
   PanelRightClose,
   Search,
-  Layers
+  Layers,
+  Shield,
+  Gift,
+  Settings,
+  Compass,
+  BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +39,27 @@ interface SidebarProps {
   domains?: any[];
   apiKeys?: any[];
 }
+
+// LogoLayers mimics the Starline AI stacked layers logo
+const LogoLayers = () => (
+  <div style={{ 
+    width: '32px', 
+    height: '32px', 
+    borderRadius: '8px', 
+    backgroundColor: '#09090b', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    flexShrink: 0,
+    border: '1px solid rgba(255,255,255,0.1)'
+  }}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+      <polyline points="2 17 12 22 22 17"></polyline>
+      <polyline points="2 12 12 17 22 12"></polyline>
+    </svg>
+  </div>
+);
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
@@ -73,48 +98,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Workspace items matching mockup (Dashboard, Reports, Logs, Billing)
   const workspaceItems = [
-    { id: 'dashboard', labelAr: 'لوحة التحكم', labelEn: 'Dashboard', icon: LayoutDashboard },
-    { id: 'reports', labelAr: 'التقارير والتحليلات', labelEn: 'Analytics & Reports', icon: BarChart3 },
-    { id: 'logs', labelAr: 'سجلات الإرسال', labelEn: 'Sending Logs', icon: History },
-    { id: 'billing', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing', icon: WalletIcon }
+    { id: 'dashboard', labelAr: 'لوحة التحكم', labelEn: 'Overview', icon: LayoutDashboard },
+    { id: 'messaging', labelAr: 'المراسلة والحملات', labelEn: 'Playground & Campaigns', icon: MessageSquare },
+    { id: 'logs', labelAr: 'السجلات والتحليلات', labelEn: 'Logs & Analytics', icon: History },
   ];
 
   // Channels/Integrations items shown as colored squares matching projects in mockup
   const channelItems = [
-    { id: 'playground', labelAr: 'حقل التجربة التفاعلي', labelEn: 'Playground', colorClass: 'color-orange' },
-    { id: 'campaigns', labelAr: 'إدارة الحملات', labelEn: 'Campaigns', colorClass: 'color-green', badge: '3' },
-    { id: 'smtp', labelAr: 'خادم البريد SMTP', labelEn: 'SMTP Server', colorClass: 'color-blue' },
-    { id: 'whatsapp', labelAr: 'ربط واتساب وإرساله', labelEn: 'WhatsApp Sync', colorClass: 'color-purple', badge: 'Active' },
-    { id: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Domains & DNS', colorClass: 'color-magenta', badge: domains.filter(d => d.status === 'verified').length.toString() },
-    { id: 'api', labelAr: 'مفاتيح الـ API', labelEn: 'Developer API Keys', colorClass: 'color-gray', badge: apiKeys.length.toString() },
-    { id: 'webhooks', labelAr: 'الويب هوكس', labelEn: 'Webhooks Setup', colorClass: 'color-yellow' },
-    { id: 'security', labelAr: 'الأمان والتحقق (2FA)', labelEn: 'Security & 2FA', colorClass: 'color-gray' },
-    { id: 'system', labelAr: 'حالة النظام والتعرفة', labelEn: 'System Rates', colorClass: 'color-yellow' }
+    { id: 'settings', labelAr: 'بوابة المطور والـ API', labelEn: 'Developer Hub', icon: Globe, badge: domains.filter(d => d.status === 'verified').length.toString() },
+    { id: 'billing', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing', icon: WalletIcon },
+    { id: 'security', labelAr: 'الأمان والإعدادات', labelEn: 'Security & Settings', icon: Shield }
   ];
 
   const [workspaceExpanded, setWorkspaceExpanded] = React.useState(true);
   const [channelsExpanded, setChannelsExpanded] = React.useState(true);
+  const [profileOpen, setProfileOpen] = React.useState(false);
 
-  // LogoLayers mimics the Starline AI stacked layers logo
-  const LogoLayers = () => (
-    <div style={{ 
-      width: '32px', 
-      height: '32px', 
-      borderRadius: '8px', 
-      backgroundColor: '#09090b', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      flexShrink: 0,
-      border: '1px solid rgba(255,255,255,0.1)'
-    }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 17 12 22 22 17"></polyline>
-        <polyline points="2 12 12 17 22 12"></polyline>
-      </svg>
-    </div>
-  );
+
 
   return (
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ 
@@ -207,25 +207,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed ? (
           <>
             <div 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                padding: '8px 12px 4px 12px', 
-                cursor: 'pointer',
-                userSelect: 'none'
-              }}
+              className="sidebar-section-header"
               onClick={() => setWorkspaceExpanded(!workspaceExpanded)}
             >
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                {lang === 'ar' ? 'مساحة العمل' : 'WORKSPACE'}
+              <span>
+                {lang === 'ar' ? 'الخدمات الأساسية' : 'CORE SERVICES'}
               </span>
               <ChevronDown 
                 size={12} 
+                className="chevron-icon"
                 style={{ 
-                  color: 'var(--text-muted)', 
-                  transform: workspaceExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
-                  transition: 'transform 0.2s' 
+                  transform: workspaceExpanded 
+                    ? 'rotate(0deg)' 
+                    : (lang === 'ar' ? 'rotate(90deg)' : 'rotate(-90deg)')
                 }} 
               />
             </div>
@@ -280,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   height: '32px',
                   justifyContent: 'center'
                 }}
-                title={lang === 'ar' ? 'مساحة العمل' : 'WORKSPACE'}
+                title={lang === 'ar' ? 'الخدمات الأساسية' : 'CORE SERVICES'}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -342,31 +336,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed ? (
           <>
             <div 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                padding: '12px 12px 4px 12px', 
-                cursor: 'pointer',
-                userSelect: 'none'
-              }}
+              className="sidebar-section-header"
               onClick={() => setChannelsExpanded(!channelsExpanded)}
             >
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                {lang === 'ar' ? 'القنوات والربط' : 'CHANNELS'}
+              <span>
+                {lang === 'ar' ? 'إعدادات المنصة' : 'CONFIGURATION'}
               </span>
               <ChevronDown 
                 size={12} 
+                className="chevron-icon"
                 style={{ 
-                  color: 'var(--text-muted)', 
-                  transform: channelsExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
-                  transition: 'transform 0.2s' 
+                  transform: channelsExpanded 
+                    ? 'rotate(0deg)' 
+                    : (lang === 'ar' ? 'rotate(90deg)' : 'rotate(-90deg)')
                 }} 
               />
             </div>
             <div className={`sidebar-accordion ${channelsExpanded ? 'expanded' : ''}`}>
               <div className="sidebar-accordion-inner">
                 {channelItems.map((item, index) => {
+                  const Icon = item.icon;
                   const isActive = currentTab === item.id;
                   return (
                     <button
@@ -387,11 +376,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span className={`sidebar-color-square ${item.colorClass}`} />
+                          <Icon size={16} />
                         </div>
                         <span>{lang === 'ar' ? item.labelAr : item.labelEn}</span>
                       </div>
-                      {item.badge && (
+                      {item.badge && item.badge !== '0' && (
                         <span className="sidebar-badge">{item.badge}</span>
                       )}
                     </button>
@@ -421,7 +410,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   height: '32px',
                   justifyContent: 'center'
                 }}
-                title={lang === 'ar' ? 'القنوات والربط' : 'CHANNELS'}
+                title={lang === 'ar' ? 'إعدادات المنصة' : 'CONFIGURATION'}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -438,6 +427,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={`sidebar-accordion ${channelsExpanded ? 'expanded' : ''}`}>
               <div className="sidebar-accordion-inner" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
                 {channelItems.map((item) => {
+                  const Icon = item.icon;
                   const isActive = currentTab === item.id;
                   return (
                     <div key={item.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
@@ -457,11 +447,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           height: '36px'
                         }}
                       >
-                        <span className={`sidebar-color-square ${item.colorClass}`} style={{ width: '12px', height: '12px' }} />
+                        <Icon size={16} />
                       </button>
                       <div className="sidebar-popover" style={{ width: 'auto', minWidth: '130px', padding: '8px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className={`sidebar-color-square ${item.colorClass}`} />
+                          <Icon size={13} style={{ opacity: 0.8 }} />
                           <span>{lang === 'ar' ? item.labelAr : item.labelEn}</span>
                         </div>
                       </div>
@@ -483,9 +473,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>{lang === 'ar' ? 'رصيد المحفظة' : 'Sumer Wallet'}</span>
           </div>
           <div className="sidebar-upgrade-desc">
-            {lang === 'ar' 
-              ? `الرصيد المتاح لإرسال الحملات هو ${walletBalance.toLocaleString()} د.ع` 
-              : `Available balance for notifications: ${walletBalance.toLocaleString()} IQD`}
+            {lang === 'ar' ? (
+              <>
+                الرصيد المتاح للمراسلة هو <strong className="tabular-nums-stat" style={{ fontWeight: 700 }}>{walletBalance.toLocaleString()}</strong> د.ع
+              </>
+            ) : (
+              <>
+                Available balance for notifications: <strong className="tabular-nums-stat" style={{ fontWeight: 700 }}>{walletBalance.toLocaleString()}</strong> IQD
+              </>
+            )}
           </div>
           <button 
             className="sidebar-upgrade-btn"
@@ -497,123 +493,253 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* 5. User Profile card (Collapsed only) */}
-      {isCollapsed && user && (
+      {/* 5. Vercel/Nashra style Profile Popover & Trigger Button */}
+      {user && (
         <div style={{ 
-          padding: '10px 8px', 
+          padding: '8px 12px', 
           borderTop: '1px solid var(--border-color)', 
-          display: 'flex', 
-          flexDirection: 'column',
-          alignItems: 'center', 
-          gap: '8px'
+          position: 'relative' 
         }}>
-          <div style={{ 
-            width: '30px', 
-            height: '30px', 
-            borderRadius: '50%', 
-            backgroundColor: 'var(--text-primary)', 
-            color: 'var(--panel-bg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            fontSize: '11px',
-            flexShrink: 0
-          }} title={`${user.name} (${user.email})`}>
-            {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
-          </div>
-          <button 
-            onClick={onLogout}
-            title={t.logout}
+          {/* Backdrop Overlay for closing dropdown on click outside */}
+          {profileOpen && (
+            <div 
+              onClick={() => setProfileOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 98,
+                background: 'transparent',
+              }}
+            />
+          )}
+
+          {/* Popover Card */}
+          {profileOpen && (
+            <div 
+              className="profile-dropdown-container"
+              style={{
+                bottom: isCollapsed ? '10px' : '56px',
+                left: isCollapsed 
+                  ? (lang === 'ar' ? 'auto' : '56px') 
+                  : (lang === 'ar' ? 'auto' : '12px'),
+                right: isCollapsed 
+                  ? (lang === 'ar' ? '56px' : 'auto') 
+                  : (lang === 'ar' ? '12px' : 'auto'),
+              }}
+            >
+              {/* User details header */}
+              <div className="profile-dropdown-header">
+                <div className="profile-dropdown-user-name">
+                  {user.name || 'Jasim Kareem'}
+                </div>
+                <div className="profile-dropdown-user-email">
+                  {user.email || 'mj9034812@gmail.com'}
+                </div>
+              </div>
+
+              <div className="profile-dropdown-divider" />
+
+              {/* Group 1: Account & Appearance */}
+              <div className="profile-dropdown-section">
+                {/* Account settings */}
+                <button 
+                  onClick={() => {
+                    setCurrentTab('security');
+                    setProfileOpen(false);
+                  }}
+                  className="profile-dropdown-item"
+                >
+                  <Settings size={14} />
+                  <span>{lang === 'ar' ? 'إعدادات الحساب' : 'Account'}</span>
+                </button>
+
+                {/* Appearance switch */}
+                <div className="profile-dropdown-control-row">
+                  <span>{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
+                  <div className="profile-dropdown-segmented">
+                    <button 
+                      onClick={() => setTheme('light')}
+                      className={`profile-dropdown-segmented-btn ${theme === 'light' ? 'active' : ''}`}
+                      title={lang === 'ar' ? 'فاتح' : 'Light Mode'}
+                    >
+                      <Sun size={12} />
+                    </button>
+                    <button 
+                      onClick={() => setTheme('dark')}
+                      className={`profile-dropdown-segmented-btn ${theme === 'dark' ? 'active' : ''}`}
+                      title={lang === 'ar' ? 'داكن' : 'Dark Mode'}
+                    >
+                      <Moon size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Language switch */}
+                <div className="profile-dropdown-control-row">
+                  <span>{lang === 'ar' ? 'اللغة' : 'Language'}</span>
+                  <div className="profile-dropdown-segmented">
+                    <button 
+                      onClick={() => setLang('ar')}
+                      className={`profile-dropdown-segmented-btn ${lang === 'ar' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '9px', fontWeight: 700 }}>عربي</span>
+                    </button>
+                    <button 
+                      onClick={() => setLang('en')}
+                      className={`profile-dropdown-segmented-btn ${lang === 'en' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '9px', fontWeight: 700 }}>EN</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="profile-dropdown-divider" />
+
+              {/* Group 2: Help & Navigation */}
+              <div className="profile-dropdown-section">
+                {/* Product tour */}
+                <button 
+                  onClick={() => {
+                    setCurrentTab('dashboard');
+                    setProfileOpen(false);
+                  }}
+                  className="profile-dropdown-item"
+                >
+                  <Compass size={14} />
+                  <span>{lang === 'ar' ? 'جولة في المنتج' : 'Product tour'}</span>
+                </button>
+
+                {/* Help center */}
+                <button 
+                  onClick={() => {
+                    setCurrentTab('dashboard');
+                    setProfileOpen(false);
+                  }}
+                  className="profile-dropdown-item"
+                >
+                  <BookOpen size={14} />
+                  <span>{lang === 'ar' ? 'مركز المساعدة' : 'Help center'}</span>
+                </button>
+
+                {/* Contact support */}
+                <button 
+                  onClick={() => {
+                    setCurrentTab('dashboard');
+                    setProfileOpen(false);
+                  }}
+                  className="profile-dropdown-item"
+                >
+                  <MessageSquare size={14} />
+                  <span>{lang === 'ar' ? 'تواصل مع الدعم' : 'Contact support'}</span>
+                </button>
+
+                {/* Refer & earn */}
+                <button 
+                  onClick={() => {
+                    setCurrentTab('billing');
+                    setProfileOpen(false);
+                  }}
+                  className="profile-dropdown-item"
+                >
+                  <Gift size={14} />
+                  <span>{lang === 'ar' ? 'شارك واربح' : 'Refer & earn'}</span>
+                  <span className="profile-dropdown-item-badge">40%</span>
+                </button>
+              </div>
+
+              <div className="profile-dropdown-divider" />
+
+              {/* Log Out */}
+              <button 
+                onClick={() => {
+                  setProfileOpen(false);
+                  onLogout();
+                }}
+                className="profile-dropdown-item profile-dropdown-logout-item"
+              >
+                <LogOut size={14} />
+                <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Trigger Row Button */}
+          <div 
+            onClick={() => setProfileOpen(!profileOpen)}
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
-              padding: '6px',
-              borderRadius: '4px',
+              gap: '10px',
+              width: '100%',
+              padding: '8px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              backgroundColor: profileOpen ? 'var(--panel-muted)' : 'transparent',
+              transition: 'all 0.2s ease',
+              justifyContent: isCollapsed ? 'center' : 'space-between',
+              border: '1px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!profileOpen) {
+                e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!profileOpen) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+              }
             }}
           >
-            <LogOut size={14} />
-          </button>
+            {/* Avatar */}
+            <div style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #10b981, #2563eb)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: '11.5px',
+              flexShrink: 0,
+              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.15)',
+              border: '1.5px solid var(--panel-bg)'
+            }}>
+              {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+            </div>
+
+            {/* User name & email info (Expanded only) */}
+            {!isCollapsed && (
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'start' }}>
+                <div style={{ 
+                  fontSize: '13px', 
+                  fontWeight: 600, 
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {user.name || 'Jasim Kareem'}
+                </div>
+              </div>
+            )}
+
+            {/* Ellipsis icon (Expanded only) */}
+            {!isCollapsed && (
+              <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', lineHeight: 0.5 }}>•••</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {/* 6. Footer (Chat, Language & Theme controls) */}
-      <div style={{ 
-        padding: isCollapsed ? '12px 8px' : '12px 12px', 
-        borderTop: '1px solid var(--border-color)', 
-        display: 'flex', 
-        flexDirection: isCollapsed ? 'column' : 'row', 
-        gap: '6px', 
-        alignItems: 'center' 
-      }}>
-
-        <button 
-          className="btn" 
-          onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} 
-          title={lang === 'en' ? 'عربي' : 'English'} 
-          style={{ 
-            flex: 1,
-            width: isCollapsed ? '100%' : 'auto',
-            padding: '8px', 
-            justifyContent: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            backgroundColor: 'var(--panel-bg)',
-            cursor: 'pointer'
-          }}
-        >
-          <Globe size={13} />
-          {!isCollapsed && <span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '4px', marginRight: '4px', animation: 'fadeIn 0.2s ease' }}>{lang === 'en' ? 'عربي' : 'EN'}</span>}
-        </button>
-
-        <button 
-          className="btn" 
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-          title={lang === 'en' ? 'Toggle Theme' : 'تغيير المظهر'} 
-          style={{ 
-            flex: 1,
-            width: isCollapsed ? '100%' : 'auto',
-            padding: '8px', 
-            justifyContent: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            backgroundColor: 'var(--panel-bg)',
-            cursor: 'pointer'
-          }}
-        >
-          {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
-          {!isCollapsed && <span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '4px', marginRight: '4px', animation: 'fadeIn 0.2s ease' }}>{theme === 'dark' ? (lang === 'en' ? 'Light' : 'فاتح') : (lang === 'en' ? 'Dark' : 'داكن')}</span>}
-        </button>
-
-        {/* Logout (Expanded only, next to theme selector) */}
-        {!isCollapsed && user && (
-          <button 
-            onClick={onLogout}
-            title={t.logout}
-            style={{
-              background: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '8px',
-              borderRadius: '6px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--panel-bg)',
-            }}
-          >
-            <LogOut size={13} />
-          </button>
-        )}
-      </div>
     </div>
   );
 };

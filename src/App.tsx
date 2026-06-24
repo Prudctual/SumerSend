@@ -1,18 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, MessageSquare, Phone, Check, X, Search as SearchIcon, ChevronDown } from 'lucide-react';
+import { 
+  Mail, MessageSquare, Phone, Check, X, Search as SearchIcon, ChevronDown,
+  LayoutDashboard, BarChart3, Activity, Wallet, Server, Globe, Key, 
+  Webhook, ShieldCheck, Cpu, SunMoon, Languages, LogOut, Command, Terminal
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
-import { LogsView } from './components/LogsView';
+import { LogsAnalyticsView } from './components/LogsAnalyticsView';
 import { BillingView } from './components/BillingView';
 import { SettingsIntegrationsView } from './components/SettingsIntegrationsView';
 import { MessagingView } from './components/MessagingView';
 import { LandingView } from './components/LandingView';
-import { ReportsView } from './components/ReportsView';
+import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('landing');
+
+  const handleTabChange = (newTab: string) => {
+    if (!document.startViewTransition) {
+      setCurrentTab(newTab);
+      return;
+    }
+
+    const tabOrder = [
+      'landing', 'dashboard', 'messaging', 'playground', 'campaigns', 
+      'logs', 'reports', 'settings', 'domains', 'apikeys', 'api', 'webhooks', 'quickstart', 
+      'code', 'smtp', 'whatsapp', 'billing', 'security', 'templates', 'system', 'auth-signin', 'auth-signup'
+    ];
+    const oldIdx = tabOrder.indexOf(currentTab);
+    const newIdx = tabOrder.indexOf(newTab);
+    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+
+    const options: any = {
+      update: () => {
+        setCurrentTab(newTab);
+      }
+    };
+    if (direction) {
+      options.types = [direction];
+    }
+    (document as any).startViewTransition(options);
+  };
   const [lang, setLang] = useState<'en' | 'ar'>('ar'); // Default to Arabic for Iraqi market!
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('sumer_theme') as 'light' | 'dark') || 'light';
@@ -135,6 +165,28 @@ export default function App() {
   const [msgBody, setMsgBody] = useState<string>('Your OTP verification code is: 489271. Expires in 5 minutes.');
   const [playgroundChannel, setPlaygroundChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
 
+  const handlePlaygroundChannelChange = (channel: 'email' | 'sms' | 'whatsapp') => {
+    if (!document.startViewTransition) {
+      setPlaygroundChannel(channel);
+      return;
+    }
+
+    const channelOrder = ['email', 'sms', 'whatsapp'];
+    const oldIdx = channelOrder.indexOf(playgroundChannel);
+    const newIdx = channelOrder.indexOf(channel);
+    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+
+    const options: any = {
+      update: () => {
+        setPlaygroundChannel(channel);
+      }
+    };
+    if (direction) {
+      options.types = [direction];
+    }
+    (document as any).startViewTransition(options);
+  };
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sumer_sidebar_collapsed') === 'true';
   });
@@ -206,7 +258,7 @@ export default function App() {
   // Guard routing and redirect guest users to signin screen
   useEffect(() => {
     if (!authLoading && !token && currentTab !== 'landing' && !currentTab.startsWith('auth')) {
-      setCurrentTab('auth-signin');
+      handleTabChange('auth-signin');
     }
   }, [currentTab, token, authLoading]);
 
@@ -226,7 +278,7 @@ export default function App() {
     localStorage.removeItem('sumer_token');
     setToken(null);
     setUser(null);
-    setCurrentTab('landing');
+    handleTabChange('landing');
   };
 
   const renderContent = () => {
@@ -234,11 +286,17 @@ export default function App() {
     let baseTab = currentTab;
     let subTab = '';
     
-    if (['domains', 'api', 'smtp', 'whatsapp', 'webhooks', 'quickstart', 'code', 'templates', 'security', 'system'].includes(currentTab)) {
+    if (['domains', 'api', 'smtp', 'whatsapp', 'webhooks', 'quickstart', 'code'].includes(currentTab)) {
       baseTab = 'settings';
       subTab = currentTab;
     } else if (['playground', 'campaigns'].includes(currentTab)) {
       baseTab = 'messaging';
+      subTab = currentTab;
+    } else if (currentTab === 'reports') {
+      baseTab = 'logs';
+      subTab = 'analytics';
+    } else if (['security', 'templates', 'system'].includes(currentTab)) {
+      baseTab = 'security';
       subTab = currentTab;
     }
 
@@ -248,22 +306,24 @@ export default function App() {
           <DashboardView 
             lang={lang} 
             logs={logs} 
-            setCurrentTab={setCurrentTab} 
+            setCurrentTab={handleTabChange} 
             domains={domains}
             apiKeys={apiKeys}
             walletBalance={walletBalance}
             transactions={transactions}
           />
         );
-      case 'reports':
+      case 'logs':
         return (
-          <ReportsView
+          <LogsAnalyticsView
             lang={lang}
             logs={logs}
+            setLogs={setLogs}
             walletBalance={walletBalance}
             transactions={transactions}
             domains={domains}
-            setCurrentTab={setCurrentTab}
+            setCurrentTab={handleTabChange}
+            initialTab={subTab as any}
           />
         );
       case 'messaging':
@@ -284,7 +344,7 @@ export default function App() {
             msgBody={msgBody}
             setMsgBody={setMsgBody}
             playgroundChannel={playgroundChannel}
-            setPlaygroundChannel={setPlaygroundChannel}
+            setPlaygroundChannel={handlePlaygroundChannelChange}
           />
         );
       case 'settings':
@@ -303,15 +363,27 @@ export default function App() {
             walletBalance={walletBalance}
             setWalletBalance={setWalletBalance}
             setPhoneNotifications={setPhoneNotifications}
-            setCurrentTab={setCurrentTab}
+            setCurrentTab={handleTabChange}
             setEmailBody={setEmailBody}
             setEmailSubject={setEmailSubject}
             setMsgBody={setMsgBody}
-            setPlaygroundChannel={setPlaygroundChannel}
+            setPlaygroundChannel={handlePlaygroundChannelChange}
           />
         );
-      case 'logs':
-        return <LogsView lang={lang} logs={logs} setLogs={setLogs} />;
+      case 'security':
+        return (
+          <SettingsView
+            lang={lang}
+            setEmailBody={setEmailBody}
+            setEmailSubject={setEmailSubject}
+            setMsgBody={setMsgBody}
+            setPlaygroundChannel={handlePlaygroundChannelChange}
+            setCurrentTab={handleTabChange}
+            setLogs={setLogs}
+            setPhoneNotifications={setPhoneNotifications}
+            controlledSubTab={subTab as any}
+          />
+        );
       case 'billing':
         return (
           <BillingView
@@ -327,7 +399,7 @@ export default function App() {
           <DashboardView 
             lang={lang} 
             logs={logs} 
-            setCurrentTab={setCurrentTab} 
+            setCurrentTab={handleTabChange} 
             domains={domains}
             apiKeys={apiKeys}
             walletBalance={walletBalance}
@@ -380,7 +452,7 @@ export default function App() {
       <LandingView
         lang={lang}
         setLang={setLang}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleTabChange}
         theme={theme}
         setTheme={setTheme}
         user={user}
@@ -401,9 +473,9 @@ export default function App() {
           localStorage.setItem('sumer_token', t);
           setToken(t);
           setUser(u);
-          setCurrentTab('dashboard');
+          handleTabChange('dashboard');
         }}
-        onBackToLanding={() => setCurrentTab('landing')}
+        onBackToLanding={() => handleTabChange('landing')}
       />
     );
   }
@@ -416,7 +488,7 @@ export default function App() {
     <div className="app-container">
       <Sidebar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleTabChange}
         lang={lang}
         setLang={setLang}
         walletBalance={walletBalance}
@@ -431,37 +503,31 @@ export default function App() {
         onSearchClick={() => setIsSearchOpen(true)}
       />
       
-      <main id="main-content" className="main-content" style={{ paddingTop: '62px' }}>
+      <main id="main-content" className="main-content" style={{ paddingTop: 'var(--header-height)' }}>
         <div className="top-navbar">
           <div className="breadcrumb">
             <span className="breadcrumb-parent">Sumer Send</span>
             <span className="breadcrumb-separator">/</span>
             <span className="breadcrumb-active">
-              {['dashboard', 'domains', 'api', 'smtp', 'whatsapp', 'webhooks', 'quickstart', 'code', 'templates', 'security', 'system', 'playground', 'campaigns', 'logs', 'billing', 'reports'].includes(currentTab) ? '' : ''}
               {currentTab === 'dashboard' && (lang === 'en' ? 'Dashboard' : 'لوحة التحكم')}
-              {currentTab === 'reports' && (lang === 'en' ? 'Detailed Reports' : 'التقارير التفصيلية')}
-              {['messaging', 'playground', 'campaigns'].includes(currentTab) && (lang === 'en' ? 'Messaging & Campaigns' : 'المراسلة والحملات')}
-              {['settings', 'domains', 'apikeys', 'api', 'smtp', 'whatsapp', 'webhooks', 'quickstart', 'code', 'templates', 'security', 'system'].includes(currentTab) && (lang === 'en' ? 'Settings & Integrations' : 'الإعدادات والربط')}
+              {currentTab === 'messaging' && (lang === 'en' ? 'Messaging & Campaigns' : 'المراسلة والحملات')}
+              {currentTab === 'playground' && (lang === 'en' ? 'Messaging > API Playground' : 'المراسلة > منصة الاختبار')}
+              {currentTab === 'campaigns' && (lang === 'en' ? 'Messaging > Campaigns' : 'المراسلة > الحملات')}
+              {currentTab === 'settings' && (lang === 'en' ? 'Developer Hub' : 'بوابة المطور والـ API')}
+              {currentTab === 'apikeys' && (lang === 'en' ? 'Developer Hub > API Keys' : 'بوابة المطور > مفاتيح الـ API')}
+              {currentTab === 'api' && (lang === 'en' ? 'Developer Hub > API Keys' : 'بوابة المطور > مفاتيح الـ API')}
+              {currentTab === 'domains' && (lang === 'en' ? 'Developer Hub > Domains' : 'بوابة المطور > النطاقات والـ DNS')}
+              {currentTab === 'smtp' && (lang === 'en' ? 'Developer Hub > SMTP Server' : 'بوابة المطور > إرسال البريد SMTP')}
+              {currentTab === 'whatsapp' && (lang === 'en' ? 'Developer Hub > WhatsApp Sync' : 'بوابة المطور > ربط جلسة واتساب')}
+              {currentTab === 'webhooks' && (lang === 'en' ? 'Developer Hub > Webhooks' : 'بوابة المطور > الويب هوكس')}
+              {currentTab === 'code' && (lang === 'en' ? 'Developer Hub > Code Builder' : 'بوابة المطور > منشئ الأكواد')}
               {currentTab === 'logs' && (lang === 'en' ? 'Logs & Traces' : 'سجلات الإرسال')}
+              {currentTab === 'reports' && (lang === 'en' ? 'Logs & Analytics > Reports' : 'السجلات والتحليلات > التقارير التفصيلية')}
               {currentTab === 'billing' && (lang === 'en' ? 'Wallet & Billing' : 'المحفظة والشحن')}
+              {currentTab === 'security' && (lang === 'en' ? 'Security & Settings > Security' : 'الأمان والإعدادات > الأمان')}
+              {currentTab === 'templates' && (lang === 'en' ? 'Security & Settings > Templates' : 'الأمان والإعدادات > معرض القوالب')}
+              {currentTab === 'system' && (lang === 'en' ? 'Security & Settings > System Rates' : 'الأمان والإعدادات > حالة النظام والتعرفة')}
             </span>
-          </div>
- 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div className="workspace-selector" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', cursor: 'pointer', transition: 'all 0.2s' }}>
-              <div className="avatar" style={{ margin: 0, width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>
-                {user && user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'JK'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', textAlign: lang === 'ar' ? 'right' : 'left' }}>
-                <span className="workspace-name" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', display: 'block', lineHeight: 1.2 }}>
-                  {user && user.name ? user.name : (lang === 'en' ? 'Guest Developer' : 'مطور ضيف')}
-                </span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px', lineHeight: 1 }}>
-                  {user && user.role ? user.role : (lang === 'en' ? 'Developer' : 'مطور')}
-                </span>
-              </div>
-              <ChevronDown size={14} style={{ color: 'var(--text-muted)', marginLeft: lang === 'ar' ? '0' : '4px', marginRight: lang === 'ar' ? '4px' : '0' }} />
-            </div>
           </div>
         </div>
 
@@ -474,7 +540,7 @@ export default function App() {
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
         lang={lang}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleTabChange}
         setTheme={setTheme}
         setLang={setLang}
         handleLogout={handleLogout}
@@ -608,7 +674,6 @@ interface CommandPaletteProps {
   setLang: React.Dispatch<React.SetStateAction<'en' | 'ar'>>;
   handleLogout: () => void;
 }
-
 const CommandPalette: React.FC<CommandPaletteProps> = ({
   isOpen,
   onClose,
@@ -634,28 +699,28 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const items = [
     // Navigation
-    { id: 'dashboard', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'لوحة التحكم', titleEn: 'Dashboard', shortcut: 'G D', action: () => setCurrentTab('dashboard') },
-    { id: 'reports', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'التقارير والتحليلات', titleEn: 'Detailed Reports / Analytics', shortcut: 'G R', action: () => setCurrentTab('reports') },
-    { id: 'logs', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'سجلات الإرسال والأنشطة', titleEn: 'Sending Logs & Traces', shortcut: 'G L', action: () => setCurrentTab('logs') },
-    { id: 'billing', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'المحفظة والشحن والفواتير', titleEn: 'Wallet & Local Billing', shortcut: 'G B', action: () => setCurrentTab('billing') },
+    { id: 'dashboard', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'لوحة التحكم', titleEn: 'Dashboard', shortcut: 'G D', icon: <LayoutDashboard size={14} />, action: () => setCurrentTab('dashboard') },
+    { id: 'reports', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'التقارير والتحليلات', titleEn: 'Detailed Reports / Analytics', shortcut: 'G R', icon: <BarChart3 size={14} />, action: () => setCurrentTab('reports') },
+    { id: 'logs', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'سجلات الإرسال والأنشطة', titleEn: 'Sending Logs & Traces', shortcut: 'G L', icon: <Activity size={14} />, action: () => setCurrentTab('logs') },
+    { id: 'billing', categoryAr: 'التنقل', categoryEn: 'Navigation', titleAr: 'المحفظة والشحن والفواتير', titleEn: 'Wallet & Local Billing', shortcut: 'G B', icon: <Wallet size={14} />, action: () => setCurrentTab('billing') },
 
     // Dispatch
-    { id: 'playground', categoryAr: 'قنوات الإرسال', categoryEn: 'Message Dispatch', titleAr: 'حقل التجربة البرمجية التفاعلي', titleEn: 'Interactive API Playground', shortcut: 'D P', action: () => setCurrentTab('playground') },
-    { id: 'campaigns', categoryAr: 'قنوات الإرسال', categoryEn: 'Message Dispatch', titleAr: 'إدارة الحملات والتسويق', titleEn: 'Campaigns Manager', shortcut: 'D C', action: () => setCurrentTab('campaigns') },
+    { id: 'playground', categoryAr: 'قنوات الإرسال', categoryEn: 'Message Dispatch', titleAr: 'حقل التجربة البرمجية التفاعلي', titleEn: 'Interactive API Playground', shortcut: 'D P', icon: <Terminal size={14} />, action: () => setCurrentTab('playground') },
+    { id: 'campaigns', categoryAr: 'قنوات الإرسال', categoryEn: 'Message Dispatch', titleAr: 'إدارة الحملات والتسويق', titleEn: 'Campaigns Manager', shortcut: 'D C', icon: <Mail size={14} />, action: () => setCurrentTab('campaigns') },
 
     // Settings
-    { id: 'smtp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إعدادات خادم البريد SMTP', titleEn: 'SMTP Server Config', shortcut: 'S S', action: () => setCurrentTab('smtp') },
-    { id: 'whatsapp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'ربط حساب واتساب الشخصي/التجاري', titleEn: 'WhatsApp Sync Connection', shortcut: 'S W', action: () => setCurrentTab('whatsapp') },
-    { id: 'domains', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إدارة النطاقات والـ DNS والتوثيق', titleEn: 'Domains & DNS Setup', shortcut: 'S D', action: () => setCurrentTab('domains') },
-    { id: 'api', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'مفاتيح الـ API وصلاحيات المطور', titleEn: 'Developer API Keys', shortcut: 'S A', action: () => setCurrentTab('api') },
-    { id: 'webhooks', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'الويب هوكس (Webhooks) للاستلام', titleEn: 'Webhooks Configuration', shortcut: 'S H', action: () => setCurrentTab('webhooks') },
-    { id: 'security', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'الأمان والتحقق الثنائي (2FA)', titleEn: 'Security & 2FA Settings', shortcut: 'S E', action: () => setCurrentTab('security') },
-    { id: 'system', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'حالة النظام المتكامل وتعرفة الشبكات', titleEn: 'System Rates & Operator status', shortcut: 'S T', action: () => setCurrentTab('system') },
+    { id: 'smtp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إعدادات خادم البريد SMTP', titleEn: 'SMTP Server Config', shortcut: 'S S', icon: <Server size={14} />, action: () => setCurrentTab('smtp') },
+    { id: 'whatsapp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'ربط حساب واتساب الشخصي/التجاري', titleEn: 'WhatsApp Sync Connection', shortcut: 'S W', icon: <MessageSquare size={14} />, action: () => setCurrentTab('whatsapp') },
+    { id: 'domains', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إدارة النطاقات والـ DNS والتوثيق', titleEn: 'Domains & DNS Setup', shortcut: 'S D', icon: <Globe size={14} />, action: () => setCurrentTab('domains') },
+    { id: 'api', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'مفاتيح الـ API وصلاحيات المطور', titleEn: 'Developer API Keys', shortcut: 'S A', icon: <Key size={14} />, action: () => setCurrentTab('api') },
+    { id: 'webhooks', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'الويب هوكس (Webhooks) للاستلام', titleEn: 'Webhooks Configuration', shortcut: 'S H', icon: <Webhook size={14} />, action: () => setCurrentTab('webhooks') },
+    { id: 'security', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'الأمان والتحقق الثنائي (2FA)', titleEn: 'Security & 2FA Settings', shortcut: 'S E', icon: <ShieldCheck size={14} />, action: () => setCurrentTab('security') },
+    { id: 'system', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'حالة النظام المتكامل وتعرفة الشبكات', titleEn: 'System Rates & Operator status', shortcut: 'S T', icon: <Cpu size={14} />, action: () => setCurrentTab('system') },
 
     // Quick Actions
-    { id: 'theme', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تغيير المظهر (فاتح / داكن)', titleEn: 'Toggle Theme (Light / Dark)', shortcut: 'Q T', action: () => setTheme(prev => prev === 'dark' ? 'light' : 'dark') },
-    { id: 'lang', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تغيير لغة المنصة (عربي / English)', titleEn: 'Toggle Language (Arabic / English)', shortcut: 'Q L', action: () => setLang(prev => prev === 'ar' ? 'en' : 'ar') },
-    { id: 'logout', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تسجيل الخروج وإنهاء الجلسة', titleEn: 'Log Out Session', shortcut: 'Q O', action: handleLogout }
+    { id: 'theme', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تغيير المظهر (فاتح / داكن)', titleEn: 'Toggle Theme (Light / Dark)', shortcut: 'Q T', icon: <SunMoon size={14} />, action: () => setTheme(prev => prev === 'dark' ? 'light' : 'dark') },
+    { id: 'lang', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تغيير لغة المنصة (عربي / English)', titleEn: 'Toggle Language (Arabic / English)', shortcut: 'Q L', icon: <Languages size={14} />, action: () => setLang(prev => prev === 'ar' ? 'en' : 'ar') },
+    { id: 'logout', categoryAr: 'عمليات سريعة', categoryEn: 'Quick Actions', titleAr: 'تسجيل الخروج وإنهاء الجلسة', titleEn: 'Log Out Session', shortcut: 'Q O', icon: <LogOut size={14} />, action: handleLogout }
   ];
 
   // Filter based on search query
@@ -741,6 +806,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                       onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
                     >
                       <div className="command-palette-item-content">
+                        {item.icon}
                         <span>{lang === 'ar' ? item.titleAr : item.titleEn}</span>
                       </div>
                       <span className="command-palette-item-shortcut">{item.shortcut}</span>
@@ -750,6 +816,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
               </div>
             ))
           )}
+        </div>
+
+        {/* Footer info bar */}
+        <div className="command-palette-footer">
+          <div className="footer-tip">
+            <span className="key-hint">↵</span>
+            <span>{lang === 'ar' ? 'للاختيار' : 'to select'}</span>
+          </div>
+          <div className="footer-tip">
+            <span className="key-hint">↑↓</span>
+            <span>{lang === 'ar' ? 'للتنقل' : 'to navigate'}</span>
+          </div>
+          <div className="footer-tip">
+            <span className="key-hint">ESC</span>
+            <span>{lang === 'ar' ? 'للإغلاق' : 'to close'}</span>
+          </div>
         </div>
       </div>
     </div>
