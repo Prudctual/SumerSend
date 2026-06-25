@@ -101,7 +101,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      if (
+        profileMenuRef.current && 
+        !profileMenuRef.current.contains(target) &&
+        !target.closest('.profile-menu-trigger')
+      ) {
         setProfileMenuOpen(false);
       }
     };
@@ -660,6 +665,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* User Profile Info & Dropdown Trigger */}
           <div 
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            className="profile-menu-trigger"
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -754,7 +760,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {/* Avatar Profile Toggle */}
-          <div className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <div className="sidebar-item-container profile-menu-trigger" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               style={{
@@ -896,7 +902,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Divider */}
           <div style={{ borderTop: '1px solid var(--border-color)', margin: '6px 0' }} />
 
-          {/* Section 2: Accounts / User Switching */}
+          {/* Section 2: Active Account Info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '2px' }}>
             {/* Account 1 (Active) */}
             <div style={{
@@ -920,66 +926,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 fontWeight: 'bold',
                 fontSize: '10px',
               }}>
-                J
+                {(user?.email || 'J')[0].toUpperCase()}
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'start', overflow: 'hidden' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  Jasim Kareem
+                  {user?.name || (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem')}
                 </span>
                 <span style={{ fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  jasim@prudctual.com
+                  {user?.email || 'jasim@prudctual.com'}
                 </span>
               </div>
               <div style={{
-                width: '10px',
-                height: '10px',
+                width: '6px',
+                height: '6px',
                 borderRadius: '50%',
                 backgroundColor: 'var(--accent-text)',
-                border: '2px solid var(--panel-elevated)',
-                boxShadow: '0 0 0 1px var(--accent-text)',
-              }} />
-            </div>
-
-            {/* Account 2 (Guest / Inactive) */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 8px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-            }}
-            className="sidebar-popover-link"
-            >
-              <div style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '4px',
-                backgroundColor: '#71717a',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '10px',
-              }}>
-                G
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'start', overflow: 'hidden' }}>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  Guest Account
-                </span>
-                <span style={{ fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  guest@sumersend.com
-                </span>
-              </div>
-              <div style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'transparent',
               }} />
             </div>
           </div>
