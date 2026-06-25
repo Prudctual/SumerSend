@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PlaygroundView } from './PlaygroundView';
 import { CampaignsView } from './CampaignsView';
-import { SettingsView } from './SettingsView';
 import { ScrollReveal } from './LandingView';
 import { 
   MessageSquare, 
-  Send, 
-  BookOpen 
+  Send 
 } from 'lucide-react';
 
 interface SendConsoleViewProps {
@@ -27,7 +25,7 @@ interface SendConsoleViewProps {
   playgroundChannel: 'email' | 'sms' | 'whatsapp';
   setPlaygroundChannel: any;
   setCurrentTab: any;
-  initialTab?: 'playground' | 'campaigns' | 'templates';
+  initialTab?: 'playground' | 'campaigns';
 }
 
 export const SendConsoleView: React.FC<SendConsoleViewProps> = (props) => {
@@ -35,7 +33,7 @@ export const SendConsoleView: React.FC<SendConsoleViewProps> = (props) => {
 
   const getFlatTabFromInitial = (tab?: string) => {
     if (!tab) return 'playground';
-    if (['playground', 'campaigns', 'templates'].includes(tab)) return tab;
+    if (['playground', 'campaigns'].includes(tab)) return tab;
     return 'playground';
   };
 
@@ -55,7 +53,6 @@ export const SendConsoleView: React.FC<SendConsoleViewProps> = (props) => {
   const tabs = [
     { id: 'playground', labelAr: 'المختبر التجريبي', labelEn: 'Composer Playground', icon: MessageSquare },
     { id: 'campaigns', labelAr: 'حملات البث الجماعي', labelEn: 'Broadcast Campaigns', icon: Send },
-    { id: 'templates', labelAr: 'معرض وقوالب الرسائل', labelEn: 'Templates & Builder', icon: BookOpen },
   ];
 
   const getHeaderDetails = (tab: string) => {
@@ -71,12 +68,6 @@ export const SendConsoleView: React.FC<SendConsoleViewProps> = (props) => {
         titleEn: 'Broadcast Campaigns',
         descAr: 'قم بإرسال رسائل جماعية للجمهور والزبائن دفعة واحدة مع تتبع فوري للحالة.',
         descEn: 'Send broadcast campaigns to your audience and track real-time delivery status.'
-      },
-      templates: {
-        titleAr: 'معرض وقوالب الرسائل',
-        titleEn: 'Templates & Custom Builder',
-        descAr: 'صمم قوالب رسائل البريد الإلكتروني والواتساب الخاصة بك يدوياً أو برمجياً.',
-        descEn: 'Design visual or code templates for your transactional and promotional messages.'
       }
     };
     return details[tab] || details['playground'];
@@ -157,20 +148,6 @@ export const SendConsoleView: React.FC<SendConsoleViewProps> = (props) => {
             setLogs={props.setLogs}
             setPhoneNotifications={props.setPhoneNotifications}
             hideHeader={true}
-          />
-        )}
-        {activeTab === 'templates' && (
-          <SettingsView
-            lang={props.lang}
-            theme={props.theme}
-            setEmailBody={props.setEmailBody}
-            setEmailSubject={props.setEmailSubject}
-            setMsgBody={props.setMsgBody}
-            setPlaygroundChannel={props.setPlaygroundChannel}
-            setCurrentTab={props.setCurrentTab}
-            setLogs={props.setLogs}
-            setPhoneNotifications={props.setPhoneNotifications}
-            controlledSubTab="templates"
           />
         )}
       </div>

@@ -17,7 +17,11 @@ import {
   Info,
   TrendingUp,
   Zap,
-  CreditCard
+  CreditCard,
+  Mail,
+  MessageSquare,
+  MessageCircle,
+  Check
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -368,26 +372,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     }
   };
 
-  const handleExport = () => {
-    setGeneratingReport(true);
-    setExportSuccess(false);
-    setTimeout(() => {
-      setGeneratingReport(false);
-      setExportSuccess(true);
-      
-      const event = new CustomEvent('sumer-toast', {
-        detail: {
-          message: lang === 'ar' ? 'تم إنشاء تقرير PDF بنجاح!' : 'Custom PDF report generated successfully!',
-          type: 'success',
-          duration: 3000
-        }
-      });
-      window.dispatchEvent(event);
-    }, 2500);
-  };
-
-  const handleDownloadReport = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const downloadReportLogic = async () => {
     const rangeText = timeRange === '24h' ? '24 Hours' : timeRange === '7d' ? '7 Days' : timeRange === '30d' ? '30 Days' : '90 Days';
     const rangeTextAr = timeRange === '24h' ? '24 ساعة' : timeRange === '7d' ? '7 أيام' : timeRange === '30d' ? '30 يوم' : '90 يوم';
     
@@ -472,8 +457,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     margin-bottom: 28px;
   }
   .card {
-    border: 1px solid #eaeaea;
-    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
     padding: 16px 20px;
     background-color: #ffffff;
   }
@@ -737,16 +722,57 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 </div>
     `;
     
-    const event = new CustomEvent('sumer-toast', {
+    await generatePDFFromHTML(htmlContent, `sumer_send_report_${timeRange}.pdf`);
+  };
+
+  const handleExport = async () => {
+    setGeneratingReport(true);
+    setExportSuccess(false);
+    
+    const startEvent = new CustomEvent('sumer-toast', {
       detail: {
-        message: lang === 'ar' ? 'جاري تحميل التقرير بصيغة PDF...' : 'Downloading PDF report...',
-        type: 'success',
+        message: lang === 'ar' ? 'جاري توليد تقرير PDF وتحميله برمجياً...' : 'Generating and downloading PDF report...',
+        type: 'info',
         duration: 2500
       }
     });
-    window.dispatchEvent(event);
-    
-    await generatePDFFromHTML(htmlContent, `sumer_send_report_${timeRange}.pdf`);
+    window.dispatchEvent(startEvent);
+
+    try {
+      // Small delay to let spinner show
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Perform the actual PDF generation and download
+      await downloadReportLogic();
+      
+      setExportSuccess(true);
+      
+      const successEvent = new CustomEvent('sumer-toast', {
+        detail: {
+          message: lang === 'ar' ? 'تم تنزيل التقرير بصيغة PDF بنجاح!' : 'PDF report downloaded successfully!',
+          type: 'success',
+          duration: 3000
+        }
+      });
+      window.dispatchEvent(successEvent);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      const errEvent = new CustomEvent('sumer-toast', {
+        detail: {
+          message: lang === 'ar' ? 'فشل تصدير ملف التقرير.' : 'Failed to export report file.',
+          type: 'error',
+          duration: 3000
+        }
+      });
+      window.dispatchEvent(errEvent);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleDownloadReport = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await downloadReportLogic();
   };
 
   const handleDownloadInvoice = async (inv: any) => {
@@ -1183,7 +1209,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Interactive Comparison Chart Card */}
-          <div className="card" style={{ padding: '24px', borderRadius: '24px', overflow: 'visible' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '8px', overflow: 'visible' }}>
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{t.volumeOverTime}</h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{t.volumeSub}</p>
@@ -1276,7 +1302,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   pointerEvents: 'none',
                   zIndex: 10,
                   backgroundColor: 'var(--panel-bg)',
-                  border: '1px solid var(--border-color)',
+                  border: '1px solid var(--card-border-color)',
                   borderRadius: '6px',
                   padding: '8px 12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -1337,7 +1363,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
             
             {/* Iraqi Telecom Distribution */}
-            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.operatorDist}</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1377,7 +1403,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
 
             {/* Email Domain Share */}
-            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
                 {lang === 'ar' ? 'توزيع نطاقات البريد الإلكتروني للمستقبلين' : 'Recipient Email Domains share'}
               </h3>
@@ -1421,7 +1447,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Quick actions links */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px', borderInlineStart: '4px solid var(--accent-color)' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px', borderInlineStart: '4px solid var(--accent-color)' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>{t.quickIntegration}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               <button onClick={() => setCurrentTab('billing')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'inherit', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }} className="hover-link">
@@ -1451,7 +1477,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Email Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-color)' }} />
@@ -1492,7 +1518,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* SMS Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
@@ -1531,7 +1557,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* WhatsApp Channel Performance Card */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--channel-whatsapp)' }} />
@@ -1580,7 +1606,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
             
             {/* Spend Breakdown card */}
-            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
                 {lang === 'ar' ? 'توزيع التكاليف على القنوات (IQD)' : 'Cost Allocation by Channel (IQD)'}
               </h3>
@@ -1622,7 +1648,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
 
             {/* Wallet Summary card */}
-            <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+            <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.costSummary}</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1652,7 +1678,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
 
           {/* Transactions Table block */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
               {lang === 'ar' ? 'سجل العمليات المالية الأخيرة للمحفظة' : 'Recent Wallet Transactions'}
             </h3>
@@ -1662,33 +1688,33 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                <table className="v-table" style={{ fontSize: '12px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                      <th style={{ padding: '8px' }}>{lang === 'ar' ? 'المعرف' : 'ID'}</th>
-                      <th style={{ padding: '8px' }}>{lang === 'ar' ? 'القيمة' : 'Amount'}</th>
-                      <th style={{ padding: '8px' }}>{lang === 'ar' ? 'الوسيلة' : 'Method'}</th>
-                      <th style={{ padding: '8px' }}>{lang === 'ar' ? 'الحالة' : 'Status'}</th>
-                      <th style={{ padding: '8px' }}>{lang === 'ar' ? 'التاريخ' : 'Date'}</th>
+                    <tr>
+                      <th>{lang === 'ar' ? 'المعرف' : 'ID'}</th>
+                      <th>{lang === 'ar' ? 'القيمة' : 'Amount'}</th>
+                      <th>{lang === 'ar' ? 'الوسيلة' : 'Method'}</th>
+                      <th>{lang === 'ar' ? 'الحالة' : 'Status'}</th>
+                      <th>{lang === 'ar' ? 'التاريخ' : 'Date'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.map((tx, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                        <td style={{ padding: '8px', color: 'var(--text-primary)', fontWeight: 600 }}>{tx.id || `TX-${idx + 1000}`}</td>
-                        <td style={{ padding: '8px', color: 'var(--text-primary)', fontWeight: 700 }}>+{tx.amount.toLocaleString()} {t.iqd}</td>
-                        <td style={{ padding: '8px', color: 'var(--text-secondary)' }}>{tx.method || 'Zain Cash'}</td>
-                        <td style={{ padding: '8px' }}>
+                      <tr key={idx}>
+                        <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{tx.id || `TX-${idx + 1000}`}</td>
+                        <td style={{ color: 'var(--text-primary)', fontWeight: 700 }}>+{tx.amount.toLocaleString()} {t.iqd}</td>
+                        <td>{tx.method || 'Zain Cash'}</td>
+                        <td>
                           <span style={{ 
                             fontSize: '10px', 
-                            color: '#28a948', 
+                            color: 'var(--success-text)', 
                             backgroundColor: 'var(--success-bg)', 
                             padding: '2px 6px', 
                             borderRadius: '8px',
                             fontWeight: 600
                           }}>{lang === 'ar' ? 'ناجحة' : 'Completed'}</span>
                         </td>
-                        <td style={{ padding: '8px', color: 'var(--text-muted)' }}>{tx.date || 'Just now'}</td>
+                        <td style={{ color: 'var(--text-muted)' }}>{tx.date || 'Just now'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1705,48 +1731,366 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Custom PDF Exporter module */}
-          <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-primary)' }}>{t.customReport}</h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
               {lang === 'ar' ? 'حدد البيانات والتواريخ المطلوبة لتوليد وتصدير ملف تقارير PDF بتصميم متناسق.' : 'Define dates and variables below to generate custom printed reports for corporate review.'}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
               {/* Channel Selector */}
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: '10px' }}>{t.selectChannels}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportChannels.email} onChange={(e) => setExportChannels({ ...exportChannels, email: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'بريد المعاملات' : 'Email API Bridge'}</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportChannels.sms} onChange={(e) => setExportChannels({ ...exportChannels, sms: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'رسائل الـ SMS والتحقق' : 'SMS OTP Gateway'}</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportChannels.whatsapp} onChange={(e) => setExportChannels({ ...exportChannels, whatsapp: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'الواتساب للأعمال' : 'WhatsApp Business API'}</span>
-                  </label>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', letterSpacing: '0.05em' }}>
+                  {t.selectChannels}
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  
+                  {/* Email Channel */}
+                  <div 
+                    onClick={() => !generatingReport && setExportChannels({ ...exportChannels, email: !exportChannels.email })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportChannels.email ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportChannels.email 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportChannels.email ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportChannels.email ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportChannels.email ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <Mail size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'بريد المعاملات' : 'Email API Bridge'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'حجم إرسال البريد والـ SMTP' : 'Email API and SMTP gateway traffic'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportChannels.email ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportChannels.email ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportChannels.email && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
+                  {/* SMS Channel */}
+                  <div 
+                    onClick={() => !generatingReport && setExportChannels({ ...exportChannels, sms: !exportChannels.sms })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportChannels.sms ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportChannels.sms 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportChannels.sms ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportChannels.sms ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportChannels.sms ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <MessageSquare size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'رسائل الـ SMS والتحقق' : 'SMS OTP Gateway'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'رسائل الـ SMS الثنائية والمحلية' : 'SMS verification and carrier gateway logs'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportChannels.sms ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportChannels.sms ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportChannels.sms && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Channel */}
+                  <div 
+                    onClick={() => !generatingReport && setExportChannels({ ...exportChannels, whatsapp: !exportChannels.whatsapp })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportChannels.whatsapp ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportChannels.whatsapp 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportChannels.whatsapp ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportChannels.whatsapp ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportChannels.whatsapp ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <MessageCircle size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'الواتساب للأعمال' : 'WhatsApp Business API'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'حملات وسحابة الواتساب للأعمال' : 'WhatsApp Cloud API interactions'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportChannels.whatsapp ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportChannels.whatsapp ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportChannels.whatsapp && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
               {/* Metrics selector */}
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: '10px' }}>{t.selectMetrics}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportMetrics.volume} onChange={(e) => setExportMetrics({ ...exportMetrics, volume: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'حجم تدفق الرسائل والإرسال' : 'Sending Volume & Success'}</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportMetrics.costs} onChange={(e) => setExportMetrics({ ...exportMetrics, costs: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'التكاليف والمصروفات المالية' : 'Financial Spend & Invoices'}</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input type="checkbox" checked={exportMetrics.latency} onChange={(e) => setExportMetrics({ ...exportMetrics, latency: e.target.checked })} style={{ accentColor: 'var(--text-primary)' }} />
-                    <span>{lang === 'ar' ? 'معدلات السرعة والاستجابة (SLA)' : 'Dispatch Latency & SLA Metrics'}</span>
-                  </label>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', letterSpacing: '0.05em' }}>
+                  {t.selectMetrics}
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  
+                  {/* Volume Metric */}
+                  <div 
+                    onClick={() => !generatingReport && setExportMetrics({ ...exportMetrics, volume: !exportMetrics.volume })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportMetrics.volume ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportMetrics.volume 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportMetrics.volume ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportMetrics.volume ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportMetrics.volume ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <TrendingUp size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'حجم تدفق الرسائل والإرسال' : 'Sending Volume & Success'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'مخطط حجم الحركة ومعدلات التسليم' : 'Total delivery rate & traffic analytics'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportMetrics.volume ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportMetrics.volume ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportMetrics.volume && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
+                  {/* Costs Metric */}
+                  <div 
+                    onClick={() => !generatingReport && setExportMetrics({ ...exportMetrics, costs: !exportMetrics.costs })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportMetrics.costs ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportMetrics.costs 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportMetrics.costs ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportMetrics.costs ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportMetrics.costs ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <Wallet size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'التكاليف والمصروفات المالية' : 'Financial Spend & Invoices'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'الإنفاق بالدينار والخصومات التراكمية' : 'Billed costs and wallet spend records'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportMetrics.costs ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportMetrics.costs ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportMetrics.costs && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
+                  {/* Latency Metric */}
+                  <div 
+                    onClick={() => !generatingReport && setExportMetrics({ ...exportMetrics, latency: !exportMetrics.latency })}
+                    className="report-choice-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      cursor: generatingReport ? 'not-allowed' : 'pointer',
+                      border: exportMetrics.latency ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                      background: exportMetrics.latency 
+                        ? 'var(--report-choice-active-bg)' 
+                        : 'var(--report-choice-bg)',
+                      color: exportMetrics.latency ? '#10b981' : 'var(--text-primary)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: exportMetrics.latency ? 'rgba(16, 185, 129, 0.12)' : 'var(--panel-muted)',
+                      color: exportMetrics.latency ? '#10b981' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}>
+                      <Clock size={16} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, textAlign: 'start' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'معدلات السرعة والاستجابة (SLA)' : 'Dispatch Latency & SLA Metrics'}
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'أزمنة التأخير وتوصيل رموز الـ OTP' : 'Average transit delays and SLA performance'}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '5px',
+                      border: exportMetrics.latency ? '2px solid #10b981' : '2px solid var(--border-color)',
+                      background: exportMetrics.latency ? '#10b981' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      {exportMetrics.latency && <Check size={11} strokeWidth={3} />}
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -1761,72 +2105,59 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '8px', 
-                  padding: '10px 20px',
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 600,
                   opacity: (generatingReport || (!exportChannels.email && !exportChannels.sms && !exportChannels.whatsapp)) ? 0.6 : 1,
-                  cursor: (generatingReport || (!exportChannels.email && !exportChannels.sms && !exportChannels.whatsapp)) ? 'not-allowed' : 'pointer'
+                  cursor: (generatingReport || (!exportChannels.email && !exportChannels.sms && !exportChannels.whatsapp)) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                <Download size={14} className={generatingReport ? 'spin-loading' : ''} />
-                <span>{generatingReport ? t.generating : t.generate}</span>
+                {generatingReport ? (
+                  <span className="btn-spinner" />
+                ) : (
+                  <Download size={15} />
+                )}
+                <span>{generatingReport ? (lang === 'ar' ? 'جاري التوليد والتحميل...' : 'Generating & Downloading...') : (lang === 'ar' ? 'توليد وتحميل تقرير PDF مخصص' : 'Generate & Download Custom PDF')}</span>
               </button>
-
-              {exportSuccess && (
-                <div style={{ 
-                  padding: '12px 16px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--success-bg)', 
-                  border: '1px solid var(--success-color)', 
-                  color: 'var(--success-text)', 
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginTop: '10px'
-                }}>
-                  <CheckCircle2 size={16} style={{ color: 'var(--success-color)', flexShrink: 0 }} />
-                  <span>{t.exportMsg}</span>
-                  <a href="#" onClick={handleDownloadReport} style={{ color: 'var(--text-primary)', fontWeight: 700, textDecoration: 'underline', marginInlineStart: 'auto' }}>
-                    {lang === 'ar' ? 'اضغط للتحميل المباشر' : 'Click to Download PDF'}
-                  </a>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Invoices List block */}
-          <div className="card" style={{ padding: '20px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '20px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-primary)' }}>{t.invoiceList}</h3>
             
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+              <table className="v-table" style={{ fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                    <th style={{ padding: '10px 8px' }}>{lang === 'ar' ? 'رقم الفاتورة' : 'Invoice Number'}</th>
-                    <th style={{ padding: '10px 8px' }}>{lang === 'ar' ? 'الفترة الزمنية' : 'Billing Period'}</th>
-                    <th style={{ padding: '10px 8px' }}>{lang === 'ar' ? 'حجم الاستهلاك' : 'Message Volume'}</th>
-                    <th style={{ padding: '10px 8px' }}>{lang === 'ar' ? 'التكلفة الإجمالية' : 'Invoice Cost'}</th>
-                    <th style={{ padding: '10px 8px' }}>{lang === 'ar' ? 'الحالة' : 'Status'}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center' }}>{lang === 'ar' ? 'الإجراء' : 'Action'}</th>
+                  <tr>
+                    <th>{lang === 'ar' ? 'رقم الفاتورة' : 'Invoice Number'}</th>
+                    <th>{lang === 'ar' ? 'الفترة الزمنية' : 'Billing Period'}</th>
+                    <th>{lang === 'ar' ? 'حجم الاستهلاك' : 'Message Volume'}</th>
+                    <th>{lang === 'ar' ? 'التكلفة الإجمالية' : 'Invoice Cost'}</th>
+                    <th>{lang === 'ar' ? 'الحالة' : 'Status'}</th>
+                    <th style={{ textAlign: 'center' }}>{lang === 'ar' ? 'الإجراء' : 'Action'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoices.map((inv, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'middle' }}>
-                      <td style={{ padding: '10px 8px', fontWeight: 600, color: 'var(--text-primary)' }}>{inv.id}</td>
-                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)' }}>{inv.period}</td>
-                      <td style={{ padding: '10px 8px', color: 'var(--text-secondary)' }}>{inv.volume.toLocaleString()} {lang === 'ar' ? 'رسالة' : 'msgs'}</td>
-                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontWeight: 700 }}>{inv.cost.toLocaleString()} {t.iqd}</td>
-                      <td style={{ padding: '10px 8px' }}>
+                    <tr key={idx}>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inv.id}</td>
+                      <td>{inv.period}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{inv.volume.toLocaleString()} {lang === 'ar' ? 'رسالة' : 'msgs'}</td>
+                      <td style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inv.cost.toLocaleString()} {t.iqd}</td>
+                      <td>
                         <span style={{ 
                           fontSize: '10px', 
-                          color: '#28a948', 
+                          color: 'var(--success-text)', 
                           backgroundColor: 'var(--success-bg)', 
                           padding: '2px 6px', 
                           borderRadius: '8px',
                           fontWeight: 600
                         }}>{lang === 'ar' ? 'مدفوعة' : 'Paid'}</span>
                       </td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                      <td style={{ textAlign: 'center' }}>
                         <button 
                           onClick={() => handleDownloadInvoice(inv)}
                           className="btn" 

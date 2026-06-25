@@ -214,11 +214,11 @@ export const SkeletonView: React.FC<SkeletonViewProps> = ({ tab, lang }) => {
       {/* Main table card */}
       <Card style={{ padding: '0px', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', width: '100%' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="v-table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <tr>
                 {Array.from({ length: colCount }).map((_, i) => (
-                  <th key={i} style={{ padding: '16px', textAlign: isRtl ? 'right' : 'left' }}>
+                  <th key={i}>
                     <Bar width={i === 0 ? '30px' : i === 1 ? '120px' : '80px'} height={10} />
                   </th>
                 ))}
@@ -226,9 +226,9 @@ export const SkeletonView: React.FC<SkeletonViewProps> = ({ tab, lang }) => {
             </thead>
             <tbody>
               {Array.from({ length: rowCount }).map((_, r) => (
-                <tr key={r} style={{ borderBottom: r < rowCount - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                <tr key={r}>
                   {Array.from({ length: colCount }).map((_, c) => (
-                    <td key={c} style={{ padding: '16px' }}>
+                    <td key={c}>
                       {c === 0 ? (
                         <Bar width="18px" height={18} style={{ borderRadius: '4px' }} />
                       ) : c === 1 ? (

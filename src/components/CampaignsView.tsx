@@ -26,8 +26,10 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { templatesDb } from '../data/templates';
+import type { TemplateItem } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { renderTemplateIcon } from './IconHelper';
+import { TemplateBuilder } from './TemplateBuilder';
 
 interface CampaignsViewProps {
   lang: 'en' | 'ar';
@@ -183,46 +185,11 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       .catch(err => console.warn('Could not load SMTP config in campaigns:', err));
   }, []);
 
-  // Custom Template Form State
+  // Custom Template Builder State
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [tmplNameAr, setTmplNameAr] = useState('');
-  const [tmplNameEn, setTmplNameEn] = useState('');
-  const [tmplDescAr, setTmplDescAr] = useState('');
-  const [tmplDescEn, setTmplDescEn] = useState('');
-  const [tmplIcon, setTmplIcon] = useState('FileText');
-  const [tmplChannel, setTmplChannel] = useState<'email' | 'sms' | 'whatsapp'>('sms');
-  const [tmplSubjectAr, setTmplSubjectAr] = useState('');
-  const [tmplSubjectEn, setTmplSubjectEn] = useState('');
-  const [tmplBody, setTmplBody] = useState('');
-  const [tmplVariables, setTmplVariables] = useState<any[]>([]);
+  const [editingBuilderTemplate, setEditingBuilderTemplate] = useState<TemplateItem | null>(null);
 
-  // Auto-detect template body variables
-  useEffect(() => {
-    const regex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
-    const matches: string[] = [];
-    let match;
-    while ((match = regex.exec(tmplBody)) !== null) {
-      const key = match[1];
-      if (!matches.includes(key) && key !== 'name') {
-        matches.push(key);
-      }
-    }
 
-    setTmplVariables(prev => {
-      return matches.map(key => {
-        const existing = prev.find(v => v.key === key);
-        if (existing) return existing;
-        return {
-          key,
-          labelAr: key,
-          labelEn: key,
-          defaultValAr: '',
-          defaultValEn: ''
-        };
-      });
-    });
-  }, [tmplBody]);
 
   // Load custom templates from server
   useEffect(() => {
@@ -252,58 +219,26 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     return allMerged.filter(t => t.type === activeTemplateFilter);
   };
 
-  const handleSaveTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tmplNameAr.trim() || !tmplNameEn.trim()) {
-      alert(lang === 'en' ? 'Template name is required in both Arabic and English.' : 'اسم القالب مطلوب باللغتين العربية والإنجليزية.');
-      return;
-    }
-    if (!tmplBody.trim()) {
-      alert(lang === 'en' ? 'Template body content is required.' : 'محتوى نص القالب مطلوب.');
-      return;
-    }
-
-    const payload = {
-      id: editingTemplateId || undefined,
-      nameAr: tmplNameAr,
-      nameEn: tmplNameEn,
-      descAr: tmplDescAr,
-      descEn: tmplDescEn,
-      subjectAr: tmplSubjectAr,
-      subjectEn: tmplSubjectEn,
-      body: tmplBody,
-      icon: tmplIcon,
-      variables: tmplVariables,
-      type: tmplChannel
-    };
-
+  const handleBuilderSave = async (payload: TemplateItem) => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const saved = await res.json();
-      
-      if (editingTemplateId) {
-        setCustomTemplates(prev => prev.map(t => t.id === editingTemplateId ? saved : t));
-      } else {
-        setCustomTemplates(prev => [...prev, saved]);
+      if (res.ok) {
+        const saved = await res.json();
+        setCustomTemplates(prev => {
+          const idx = prev.findIndex(t => t.id === saved.id);
+          if (idx !== -1) {
+            return prev.map(t => t.id === saved.id ? saved : t);
+          } else {
+            return [...prev, saved];
+          }
+        });
+        setIsCreatingTemplate(false);
+        setEditingBuilderTemplate(null);
       }
-
-      // Reset form
-      setIsCreatingTemplate(false);
-      setEditingTemplateId(null);
-      setTmplNameAr('');
-      setTmplNameEn('');
-      setTmplDescAr('');
-      setTmplDescEn('');
-      setTmplIcon('📝');
-      setTmplChannel('sms');
-      setTmplSubjectAr('');
-      setTmplSubjectEn('');
-      setTmplBody('');
-      setTmplVariables([]);
     } catch (err) {
       console.error('Failed to save custom template:', err);
       alert(lang === 'en' ? 'Failed to save template. Make sure server is running.' : 'فشل حفظ القالب. تأكد من تشغيل الخادم.');
@@ -329,18 +264,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   };
 
   const handleEditTemplate = (template: any) => {
-    setEditingTemplateId(template.id);
+    setEditingBuilderTemplate(template as TemplateItem);
     setIsCreatingTemplate(true);
-    setTmplNameAr(template.nameAr || '');
-    setTmplNameEn(template.nameEn || '');
-    setTmplDescAr(template.descAr || '');
-    setTmplDescEn(template.descEn || '');
-    setTmplIcon(template.icon || '📝');
-    setTmplChannel(template.type || 'sms');
-    setTmplSubjectAr(template.subjectAr || '');
-    setTmplSubjectEn(template.subjectEn || '');
-    setTmplBody(template.body || '');
-    setTmplVariables(template.variables || []);
   };
 
   // Form Wizard State
@@ -386,6 +311,39 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       })
       .catch(err => console.warn('Could not load subscribers in CampaignsView:', err));
   }, [viewState]);
+
+  // Pre-populate template if directed from Templates tab
+  useEffect(() => {
+    const pendingTemplateId = localStorage.getItem('sumersend_selected_template_id');
+    if (pendingTemplateId) {
+      let foundTemplate: any = null;
+      const channels: ('email' | 'sms' | 'whatsapp')[] = ['email', 'sms', 'whatsapp'];
+      for (const ch of channels) {
+        const list = getMergedTemplates(ch);
+        const match = list.find(t => t.id === pendingTemplateId);
+        if (match) {
+          foundTemplate = match;
+          break;
+        }
+      }
+
+      if (foundTemplate) {
+        setCampChannel(foundTemplate.type || 'email');
+        setCampTemplateId(foundTemplate.id);
+        setCampBody(foundTemplate.body);
+        if (foundTemplate.type === 'email') {
+          setCampSubject(lang === 'ar' ? (foundTemplate.subjectAr || '') : (foundTemplate.subjectEn || ''));
+        }
+        setCampName(lang === 'ar'
+          ? `حملة ${foundTemplate.nameAr || foundTemplate.nameEn}`
+          : `Campaign: ${foundTemplate.nameEn || foundTemplate.nameAr}`
+        );
+        setViewState('create');
+        setStep(1);
+      }
+      localStorage.removeItem('sumersend_selected_template_id');
+    }
+  }, [customTemplates, lang]);
 
   // Execution Progress State
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
@@ -1438,7 +1396,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
           {campaignSubTab === 'campaigns' ? (
             /* Campaigns History */
-            <BentoCard className="card" glowColor="59, 130, 246" style={{ padding: '24px', borderRadius: '24px' }}>
+            <BentoCard className="card glass-history-card" glowColor="59, 130, 246" style={{ padding: '24px', borderRadius: '8px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>{t.historyTitle}</h3>
               
               {campaigns.length === 0 ? (
@@ -1517,18 +1475,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                       className="btn btn-primary"
                       style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '8px 14px' }}
                       onClick={() => {
+                        setEditingBuilderTemplate(null);
                         setIsCreatingTemplate(true);
-                        setEditingTemplateId(null);
-                        setTmplNameAr('');
-                        setTmplNameEn('');
-                        setTmplDescAr('');
-                        setTmplDescEn('');
-                        setTmplIcon('📝');
-                        setTmplChannel('sms');
-                        setTmplSubjectAr('');
-                        setTmplSubjectEn('');
-                        setTmplBody('');
-                        setTmplVariables([]);
                       }}
                     >
                       <Plus size={14} />
@@ -1654,297 +1602,17 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   </div>
                 </div>
               ) : (
-                /* FORM COMPOSER VIEW */
-                <form onSubmit={handleSaveTemplate} className="card" style={{ padding: '24px', borderRadius: '24px' }}>
-                  <div className="flex-between" style={{ marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
-                      {editingTemplateId 
-                        ? (lang === 'ar' ? 'تعديل القالب المخصص' : 'Edit Custom Template') 
-                        : (lang === 'ar' ? 'إنشاء قالب مخصص جديد' : 'Create New Custom Template')}
-                    </h3>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => {
-                        setIsCreatingTemplate(false);
-                        setEditingTemplateId(null);
-                      }}
-                    >
-                      {lang === 'ar' ? 'إلغاء والعودة' : 'Cancel & Go Back'}
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Channel Selector */}
-                    <div>
-                      <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                        {lang === 'ar' ? 'نوع قناة الإرسال المستهدفة' : 'Target Channel Type'}
-                      </label>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        {(['sms', 'email', 'whatsapp'] as const).map(ch => (
-                          <button
-                            key={ch}
-                            type="button"
-                            className="btn"
-                            style={{
-                              flex: 1,
-                              padding: '10px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: '6px',
-                              borderColor: tmplChannel === ch ? 'var(--text-primary)' : 'var(--border-color)',
-                              backgroundColor: tmplChannel === ch ? 'rgba(0,0,0,0.03)' : 'transparent',
-                            }}
-                            onClick={() => setTmplChannel(ch)}
-                          >
-                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {ch === 'sms' && <MessageSquare size={16} />}
-                              {ch === 'email' && <Mail size={16} />}
-                              {ch === 'whatsapp' && <Send size={16} />}
-                            </span>
-                            <span style={{ fontWeight: 600, fontSize: '12px', textTransform: 'capitalize' }}>{ch}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Name inputs (AR & EN) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                          {lang === 'ar' ? 'اسم القالب (بالعربية)' : 'Template Name (Arabic)'}
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={tmplNameAr}
-                          onChange={(e) => setTmplNameAr(e.target.value)}
-                          placeholder="مثال: إشعار عرض العيد"
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                          {lang === 'ar' ? 'اسم القالب (بالإنجليزية)' : 'Template Name (English)'}
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={tmplNameEn}
-                          onChange={(e) => setTmplNameEn(e.target.value)}
-                          placeholder="e.g., Eid Promo Alert"
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Icon and descriptions */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                          {lang === 'ar' ? 'أيقونة القالب' : 'Template Icon'}
-                        </label>
-                        <select
-                          className="form-input"
-                          value={tmplIcon}
-                          onChange={(e) => setTmplIcon(e.target.value)}
-                          style={{ height: '40px' }}
-                        >
-                          {['FileText', 'Megaphone', 'Gift', 'MessageSquare', 'Building', 'Package', 'BarChart2', 'Lock', 'Coins', 'BookOpen', 'Receipt', 'Star', 'Bell', 'Rocket'].map(iconName => (
-                            <option key={iconName} value={iconName}>{iconName}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                          {lang === 'ar' ? 'وصف القالب (بالعربية)' : 'Description (Arabic)'}
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={tmplDescAr}
-                          onChange={(e) => setTmplDescAr(e.target.value)}
-                          placeholder="وصف مختصر لاستخدام القالب..."
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                          {lang === 'ar' ? 'وصف القالب (بالإنجليزية)' : 'Description (English)'}
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={tmplDescEn}
-                          onChange={(e) => setTmplDescEn(e.target.value)}
-                          placeholder="Brief template usage details..."
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email Subjects (Visible only for Email Channel) */}
-                    {tmplChannel === 'email' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', backgroundColor: 'var(--panel-bg)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                        <div>
-                          <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                            {lang === 'ar' ? 'عنوان الرسالة (بالعربية)' : 'Email Subject (Arabic)'}
-                          </label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={tmplSubjectAr}
-                            onChange={(e) => setTmplSubjectAr(e.target.value)}
-                            placeholder="موضوع البريد الإلكتروني..."
-                            style={{ height: '40px' }}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                            {lang === 'ar' ? 'عنوان الرسالة (بالإنجليزية)' : 'Email Subject (English)'}
-                          </label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={tmplSubjectEn}
-                            onChange={(e) => setTmplSubjectEn(e.target.value)}
-                            placeholder="Email subject line..."
-                            style={{ height: '40px' }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Body Composer */}
-                    <div>
-                      <label className="form-label" style={{ marginBottom: '4px', display: 'block' }}>
-                        {lang === 'ar' ? 'محتوى نص القالب' : 'Template Body Content'}
-                      </label>
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
-                        {lang === 'ar' 
-                          ? 'أدخل النص. اكتب {{name}} لاسم العميل، ويمكنك إضافة متغيرات مخصصة مثل {{discount}} أو {{expiry}}.'
-                          : 'Write the body text. Use {{name}} for name, or write custom tags like {{discount}} or {{expiry}}.'}
-                      </p>
-                      <textarea
-                        className="form-input"
-                        rows={8}
-                        value={tmplBody}
-                        onChange={(e) => setTmplBody(e.target.value)}
-                        placeholder={lang === 'ar' ? 'اكتب نص القالب هنا...' : 'Write your template content here...'}
-                        style={{ fontFamily: 'monospace', fontSize: '13px', padding: '12px', lineHeight: 1.5 }}
-                      />
-                    </div>
-
-                    {/* Dynamic Variables definition dashboard */}
-                    <div style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 700, margin: '0 0 12px 0' }}>
-                        {lang === 'ar' ? 'المتغيرات والذكاء الديناميكي المكتشفة' : 'Detected Smart Variables'}
-                      </h4>
-                      {tmplVariables.length === 0 ? (
-                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          {lang === 'ar' 
-                            ? 'لم يتم اكتشاف متغيرات مخصصة. اكتب نصاً مثل {{discount}} داخل المحرر لتنشيط المدخلات الديناميكية.'
-                            : 'No custom variables detected. Type placeholders like {{discount}} in the body to configure dynamic fallbacks.'}
-                        </p>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {tmplVariables.map((variable, idx) => (
-                            <div key={variable.key} style={{ border: '1px solid var(--border-color)', borderRadius: '4px', padding: '12px', backgroundColor: 'var(--background-color)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-color)', fontFamily: 'monospace' }}>
-                                  {`{{${variable.key}}}`}
-                                </span>
-                              </div>
-                              
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '11px', marginBottom: '8px' }}>
-                                <div>
-                                  <label style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>العنوان بالعربية</label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ height: '28px', padding: '4px 8px', fontSize: '11px' }}
-                                    value={variable.labelAr}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setTmplVariables(prev => prev.map((v, i) => i === idx ? { ...v, labelAr: val } : v));
-                                    }}
-                                    placeholder="العنوان المناسب في قائمة الإدخال"
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>English Label</label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ height: '28px', padding: '4px 8px', fontSize: '11px' }}
-                                    value={variable.labelEn}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setTmplVariables(prev => prev.map((v, i) => i === idx ? { ...v, labelEn: val } : v));
-                                    }}
-                                    placeholder="Input label in Wizard"
-                                  />
-                                </div>
-                              </div>
-
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '11px' }}>
-                                <div>
-                                  <label style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>القيمة الافتراضية بالعربية</label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ height: '28px', padding: '4px 8px', fontSize: '11px' }}
-                                    value={variable.defaultValAr}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setTmplVariables(prev => prev.map((v, i) => i === idx ? { ...v, defaultValAr: val } : v));
-                                    }}
-                                    placeholder="مثال: %15 خصم"
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>English Fallback Value</label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ height: '28px', padding: '4px 8px', fontSize: '11px' }}
-                                    value={variable.defaultValEn}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setTmplVariables(prev => prev.map((v, i) => i === idx ? { ...v, defaultValEn: val } : v));
-                                    }}
-                                    placeholder="e.g., 15% OFF"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Submit Buttons */}
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => {
-                          setIsCreatingTemplate(false);
-                          setEditingTemplateId(null);
-                        }}
-                      >
-                        {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-                      </button>
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                      >
-                        {lang === 'ar' ? 'حفظ القالب وتعميمه' : 'Save Template'}
-                      </button>
-                    </div>
-                  </div>
-                </form>
+                /* Visual Template Builder */
+                <TemplateBuilder
+                  lang={lang}
+                  template={editingBuilderTemplate}
+                  initialCategory={activeTemplateFilter === 'all' ? 'email' : activeTemplateFilter as 'email' | 'sms' | 'whatsapp'}
+                  onSave={handleBuilderSave}
+                  onCancel={() => {
+                    setIsCreatingTemplate(false);
+                    setEditingBuilderTemplate(null);
+                  }}
+                />
               )}
             </div>
           )}
@@ -1963,7 +1631,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             <span>{lang === 'en' ? 'Back to Campaigns' : 'العودة لقائمة الحملات'}</span>
           </button>
 
-          <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '8px', marginBottom: '24px' }}>
             <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '16px' }}>
               <div>
                 <span className="badge badge-success" style={{ textTransform: 'uppercase', fontSize: '10px', marginBottom: '6px', display: 'inline-block' }}>{selectedCampaign.type}</span>
@@ -2011,7 +1679,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </div>
 
           {/* Recipients Table list inside campaign detail */}
-          <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '8px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>{lang === 'en' ? 'Campaign Dispatch Matrix' : 'جدول توزيع وتسليم الرسائل'}</h3>
             <div className="table-container">
               <table className="v-table">
@@ -2047,7 +1715,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
       {/* VIEW 3: CAMPAIGN BUILDER WIZARD */}
       {viewState === 'create' && (
-        <BentoCard className="card" glowColor="37, 99, 235" style={{ padding: '24px', borderRadius: '24px', maxWidth: '800px', margin: '0 auto' }}>
+        <BentoCard className="card" glowColor="37, 99, 235" style={{ padding: '24px', borderRadius: '8px', maxWidth: '800px', margin: '0 auto' }}>
           {/* Wizard Steps indicator bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
             {[1, 2, 3, 4].map(s => (
@@ -2775,7 +2443,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
       {/* VIEW 4: LIVE DISPATCHING PROGRESS */}
       {viewState === 'progress' && activeCampaign && (
-        <BentoCard className="card" glowColor="16, 185, 129" style={{ padding: '24px', borderRadius: '24px', maxWidth: '800px', margin: '0 auto' }}>
+        <BentoCard className="card" glowColor="16, 185, 129" style={{ padding: '24px', borderRadius: '8px', maxWidth: '800px', margin: '0 auto' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px', display: 'flex', gap: '10px', alignItems: 'center' }}>
             <span className="pulse-dot" style={{ display: execProgress < 100 ? 'inline-block' : 'none' }}></span>
             <span>{t.progressTitle}</span>
@@ -2882,7 +2550,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             boxShadow: 'var(--shadow-large)',
             border: '1px solid var(--border-color)',
             backgroundColor: 'var(--panel-bg)',
-            borderRadius: '24px',
+            borderRadius: '8px',
             animation: 'fadeIn 0.2s ease-out'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>

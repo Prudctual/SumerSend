@@ -186,20 +186,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   useEffect(() => {
     const list = mockNotifications[lang];
     const interval = setInterval(() => {
-      setVisibleNotifs(prev => {
-        const nextNotif = list[activeNotifIndex % list.length];
-        const updatedNotif = { ...nextNotif, uniqueId: Date.now() };
-        const nextList = [...prev, updatedNotif];
-        if (nextList.length > 3) {
-          nextList.shift();
-        }
-        return nextList;
+      setActiveNotifIndex(prevIndex => {
+        setVisibleNotifs(prevNotifs => {
+          const nextNotif = list[prevIndex % list.length];
+          const updatedNotif = { ...nextNotif, uniqueId: Date.now() };
+          const nextList = [...prevNotifs, updatedNotif];
+          if (nextList.length > 3) {
+            nextList.shift();
+          }
+          return nextList;
+        });
+        return prevIndex + 1;
       });
-      setActiveNotifIndex(prev => prev + 1);
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [lang, activeNotifIndex, mockNotifications]);
+  }, [lang, mockNotifications]);
 
   // --- Showcase Carousel States ---
   const showcaseItems = useMemo(() => {
@@ -1493,22 +1495,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="dashboard-card" style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '24px', textAlign: 'start' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '14px' }}>{t.transactionHistory}</h3>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <table className="v-table" style={{ fontSize: '12px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                        <th style={{ textAlign: 'start', padding: '8px 4px' }}>Txn ID</th>
-                        <th style={{ textAlign: 'start', padding: '8px 4px' }}>{t.method}</th>
-                        <th style={{ textAlign: 'start', padding: '8px 4px' }}>{t.date}</th>
-                        <th style={{ textAlign: 'end', padding: '8px 4px' }}>{t.amount}</th>
+                      <tr>
+                        <th>Txn ID</th>
+                        <th>{t.method}</th>
+                        <th>{t.date}</th>
+                        <th style={{ textAlign: 'end' }}>{t.amount}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {transactions.map((tx: any) => (
-                        <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                          <td style={{ padding: '10px 4px', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{tx.id}</td>
-                          <td style={{ padding: '10px 4px', color: 'var(--text-secondary)' }}>{tx.method || 'Zain Cash'}</td>
-                          <td style={{ padding: '10px 4px', color: 'var(--text-secondary)' }}>{new Date(tx.date).toLocaleDateString()}</td>
-                          <td style={{ padding: '10px 4px', textAlign: 'end', fontWeight: 700, color: '#10b981', fontFamily: 'monospace' }}>
+                        <tr key={tx.id}>
+                          <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{tx.id}</td>
+                          <td>{tx.method || 'Zain Cash'}</td>
+                          <td>{new Date(tx.date).toLocaleDateString()}</td>
+                          <td style={{ textAlign: 'end', fontWeight: 700, color: 'var(--success-color)', fontFamily: 'var(--font-mono)' }}>
                             +{tx.amount.toLocaleString()} د.ع
                           </td>
                         </tr>
@@ -1687,7 +1689,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="timeline-event-card-new yellow">
                         <div className="timeline-card-info">
                           <span className="timeline-card-title">{t.dnsSync}</span>
-                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
+                          <span className="timeline-card-time">10:00 AM - 11:30 AM</span>
                         </div>
                         <div className="timeline-card-icon">
                           <RefreshCw size={13} />
@@ -1716,7 +1718,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="timeline-event-card-new red">
                         <div className="timeline-card-info">
                           <span className="timeline-card-title">{t.sandboxUpdate}</span>
-                          <span className="timeline-card-time">12:00 PM - 03:30 PM</span>
+                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
                         </div>
                         <div className="timeline-card-icon">
                           <Zap size={13} />
@@ -1756,7 +1758,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="timeline-event-card-new yellow">
                         <div className="timeline-card-info">
                           <span className="timeline-card-title">{t.waTemplateSync}</span>
-                          <span className="timeline-card-time">01:00 PM - 02:30 PM</span>
+                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
                         </div>
                         <div className="timeline-card-icon">
                           <MessageSquare size={13} />
@@ -1796,7 +1798,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="timeline-event-card-new green">
                         <div className="timeline-card-info">
                           <span className="timeline-card-title">{t.billingCycleCheck}</span>
-                          <span className="timeline-card-time">02:00 PM - 03:30 PM</span>
+                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
                         </div>
                         <div className="timeline-card-icon">
                           <Zap size={13} />

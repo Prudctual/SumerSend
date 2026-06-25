@@ -1905,7 +1905,7 @@ echo "Webhook Processed";
                   </div>
 
                   {/* Code Editor Mockup wrapper */}
-                  <div style={{ backgroundColor: '#08080a', borderRadius: '24px', border: '1px solid var(--border-color)', overflow: 'hidden', direction: 'ltr', textAlign: 'left', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
+                  <div className="mac-code-window" style={{ backgroundColor: '#08080a', overflow: 'hidden', direction: 'ltr', textAlign: 'left', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
                     <div style={{ display: 'flex', gap: '6px', backgroundColor: '#101012', borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '12px 18px', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }}></span>

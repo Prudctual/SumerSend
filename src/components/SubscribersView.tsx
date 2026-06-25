@@ -1758,8 +1758,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         .sch-stat-card {
           background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(14px) saturate(110%);
-          -webkit-backdrop-filter: blur(14px) saturate(110%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: 8px;
           padding: 0;
@@ -1961,7 +1961,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           align-items: start;
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 1300px) {
           .sch-content-grid {
             grid-template-columns: 1fr;
           }
@@ -1970,8 +1970,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         /* ─── Panel Cards ─── */
         .sch-panel {
           background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(14px) saturate(110%);
-          -webkit-backdrop-filter: blur(14px) saturate(110%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: 8px;
           padding: 24px;
@@ -2471,8 +2471,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         /* ─── Quick Add Card ─── */
         .sch-quick-add-card {
           background: rgba(255, 255, 255, 0.4);
-          backdrop-filter: blur(14px) saturate(110%);
-          -webkit-backdrop-filter: blur(14px) saturate(110%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           border: 1.5px dashed rgba(0, 0, 0, 0.1);
           border-radius: 8px;
           padding: 24px;
@@ -2664,7 +2664,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           align-items: start;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1150px) {
           .sch-settings-grid {
             grid-template-columns: 1fr;
           }
@@ -2828,8 +2828,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         .sch-showcase-card {
           background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(14px) saturate(110%);
-          -webkit-backdrop-filter: blur(14px) saturate(110%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: 8px;
           padding: 32px;
@@ -5056,7 +5056,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                         <button 
                           type="button" 
                           onClick={handleGenerateCampaign}
-                          className="sch-btn" 
+                          className="sch-btn sch-btn-primary" 
                           style={{ 
                             width: '100%', 
                             height: '36px', 

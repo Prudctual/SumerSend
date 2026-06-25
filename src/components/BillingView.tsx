@@ -762,40 +762,40 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 {lang === 'ar' ? 'تفاصيل تعرفة الشبكات المحلية' : 'Local Operators Tariff Rates'}
               </h3>
               
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table className="v-table" style={{ fontSize: '13px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                    <th style={{ textAlign: lang === 'ar' ? 'right' : 'left', paddingBottom: '8px' }}>
+                  <tr>
+                    <th>
                       {lang === 'ar' ? 'الخدمة / القناة' : 'Service / Channel'}
                     </th>
-                    <th style={{ textAlign: lang === 'ar' ? 'left' : 'right', paddingBottom: '8px' }}>
+                    <th style={{ textAlign: 'end' }}>
                       {lang === 'ar' ? 'التعرفة والرسوم' : 'Tariff Cost'}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
+                  <tr>
+                    <td style={{ fontWeight: 500 }}>
                       {lang === 'ar' ? 'البريد الإلكتروني (Email API)' : 'Email API Delivery'}
                     </td>
-                    <td style={{ padding: '12px 0', color: 'var(--accent-color)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      10 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
+                    <td style={{ color: 'var(--accent-color)', fontWeight: 'bold', textAlign: 'end' }}>
+                      10 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ رسالة</span>
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
+                  <tr>
+                    <td style={{ fontWeight: 500 }}>
                       {lang === 'ar' ? 'رسائل الجوال القصيرة (SMS Gateway)' : 'Local SMS Delivery'}
                     </td>
-                    <td style={{ padding: '12px 0', color: 'var(--success-text)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      120 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
+                    <td style={{ color: 'var(--success-text)', fontWeight: 'bold', textAlign: 'end' }}>
+                      120 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ رسالة</span>
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: 500 }}>
+                  <tr>
+                    <td style={{ fontWeight: 500 }}>
                       {lang === 'ar' ? 'رسائل الواتساب للشركات (WhatsApp)' : 'WhatsApp Messaging'}
                     </td>
-                    <td style={{ padding: '12px 0', color: 'var(--warning-text)', fontWeight: 'bold', textAlign: lang === 'ar' ? 'left' : 'right' }}>
-                      150 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ رسالة</span>
+                    <td style={{ color: 'var(--warning-text)', fontWeight: 'bold', textAlign: 'end' }}>
+                      150 د.ع <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ رسالة</span>
                     </td>
                   </tr>
                 </tbody>
@@ -1119,21 +1119,21 @@ export const BillingView: React.FC<BillingViewProps> = ({
             <div style={{ marginBottom: '40px' }}>
               <h2 style={{ fontSize: '18px', borderBottom: '1px solid #eaeaea', paddingBottom: '10px', marginBottom: '20px' }}>تفاصيل الشحن والدفع</h2>
               
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="v-table">
                 <thead>
-                  <tr style={{ backgroundColor: '#f4f4f5' }}>
-                    <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>الوصف</th>
-                    <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #ddd' }}>بوابة الدفع (Provider)</th>
-                    <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #ddd' }}>الحالة (Status)</th>
-                    <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>المبلغ (Amount)</th>
+                  <tr>
+                    <th>الوصف</th>
+                    <th style={{ textAlign: 'center' }}>بوابة الدفع (Provider)</th>
+                    <th style={{ textAlign: 'center' }}>الحالة (Status)</th>
+                    <th style={{ textAlign: 'end' }}>المبلغ (Amount)</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>شحن رصيد المحفظة المركزية</td>
-                    <td style={{ padding: '16px 12px', textAlign: 'center', borderBottom: '1px solid #eee', fontWeight: 600 }}>{invoiceTx.provider}</td>
-                    <td style={{ padding: '16px 12px', textAlign: 'center', borderBottom: '1px solid #eee', color: '#10b981', fontWeight: 600 }}>مدفوعة (Paid)</td>
-                    <td style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '1px solid #eee', fontWeight: 700 }}>{invoiceTx.amount.toLocaleString()} د.ع</td>
+                    <td>شحن رصيد المحفظة المركزية</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{invoiceTx.provider}</td>
+                    <td style={{ textAlign: 'center', color: 'var(--success-color)', fontWeight: 600 }}>مدفوعة (Paid)</td>
+                    <td style={{ textAlign: 'end', fontWeight: 700 }}>{invoiceTx.amount.toLocaleString()} د.ع</td>
                   </tr>
                 </tbody>
               </table>

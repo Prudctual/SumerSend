@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Trash2, 
   Copy, 
@@ -151,6 +151,26 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   
   // Text-based Builder States: SMS/WhatsApp body
   const [textBody, setTextBody] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertTag = (field: string) => {
+    if (!textareaRef.current) {
+      setTextBody(prev => prev + ` {{${field}}}`);
+      return;
+    }
+    const textarea = textareaRef.current;
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    const currentText = textarea.value;
+    const tagToInsert = `{{${field}}}`;
+    const newText = currentText.substring(0, startPos) + tagToInsert + currentText.substring(endPos);
+    setTextBody(newText);
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = startPos + tagToInsert.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
 
   // Editor configuration states
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -2533,56 +2553,204 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         {(category === 'sms' || category === 'whatsapp') && (
           <>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div className="card" style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {isAr ? 'محتوى نص الإرسال' : 'Message Text Body'}
-                  </label>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {isAr ? 'تأثير المتغيرات يظهر بالمعاينة' : 'Variables display compiled values in preview'}
+              <div className="card" style={{ 
+                padding: '24px', 
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '20px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--panel-bg)',
+                boxShadow: 'var(--card-shadow)',
+                borderTop: category === 'whatsapp' ? '4px solid #10b981' : '4px solid #3b82f6',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Card Header */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  borderBottom: '1px solid var(--border-color)',
+                  paddingBottom: '16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '6px',
+                      backgroundColor: category === 'whatsapp' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      color: category === 'whatsapp' ? '#10b981' : '#3b82f6',
+                      fontWeight: 'bold'
+                    }}>
+                      {category === 'whatsapp' ? '💬' : '📱'}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                        {isAr ? 'محتوى نص الرسالة' : 'Message Text Content'}
+                      </h3>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                        {category === 'whatsapp' 
+                          ? (isAr ? 'قالب الواتساب التفاعلي' : 'Interactive WhatsApp template') 
+                          : (isAr ? 'رسالة نصية قصيرة مباشرة' : 'Direct SMS template')
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--panel-muted)',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    border: '1px solid var(--border-color)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <span style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      backgroundColor: category === 'whatsapp' ? '#10b981' : '#3b82f6',
+                      boxShadow: `0 0 8px ${category === 'whatsapp' ? '#10b981' : '#3b82f6'}`
+                    }} />
+                    {isAr ? 'مترابط بالمعاينة' : 'Linked to preview'}
                   </span>
                 </div>
 
-                <textarea
-                  value={textBody}
-                  onChange={(e) => setTextBody(e.target.value)}
-                  placeholder={
-                    category === 'whatsapp' 
-                      ? (isAr ? 'أدخل كود رسالة الواتساب...\nمثال: مرحباً بك {{reader_name}}...' : 'Enter WhatsApp message text...\nExample: Hello {{reader_name}}...')
-                      : (isAr ? 'أدخل نص رسالة الـ SMS المباشرة...\nمثال: رمز التحقق {{otp_code}}...' : 'Enter SMS text content...\nExample: Your verification OTP is {{otp_code}}...')
-                  }
-                  style={{
-                    width: '100%',
-                    flex: 1,
-                    resize: 'none',
-                    padding: '16px',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    direction: isAr ? 'rtl' : 'ltr',
-                    textAlign: isAr ? 'right' : 'left'
-                  }}
-                />
-
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                    {isAr ? 'إدراج حقل:' : 'Insert Field:'}
-                  </span>
+                {/* Suggestions Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>✨</span>
+                      <span>{isAr ? 'حقول الإدراج السريع:' : 'Quick insert fields:'}</span>
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                      {isAr ? '(سيتم إدراج الحقل المختار عند موضع مؤشر الكتابة)' : '(Selected field will be inserted at the cursor)'}
+                    </span>
+                  </div>
                   
-                  {['reader_name', 'writer_name', 'otp_code', 'blog_name', 'quote_text', 'amount'].map(field => (
-                    <button
-                      key={field}
-                      type="button"
-                      onClick={() => {
-                        setTextBody(prev => {
-                          return prev + ` {{${field}}}`;
-                        });
-                      }}
-                      className="btn"
-                      style={{ fontSize: '11px', padding: '4px 8px', fontFamily: 'monospace' }}
-                    >
-                      {`{{${field}}}`}
-                    </button>
-                  ))}
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '8px', 
+                    flexWrap: 'wrap', 
+                    padding: '14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-color)',
+                    direction: isAr ? 'rtl' : 'ltr'
+                  }}>
+                    {[
+                      { key: 'reader_name', labelAr: 'اسم المستلم (القارئ)', labelEn: 'Recipient Name', icon: '👤', color: '#3b82f6' },
+                      { key: 'writer_name', labelAr: 'اسم المرسل (الكاتب)', labelEn: 'Sender Name', icon: '✍️', color: '#10b981' },
+                      { key: 'email', labelAr: 'البريد الإلكتروني', labelEn: 'Email Address', icon: '✉️', color: '#f59e0b' },
+                      { key: 'phone', labelAr: 'رقم الهاتف', labelEn: 'Phone Number', icon: '📞', color: '#8b5cf6' },
+                      { key: 'otp_code', labelAr: 'رمز التحقق (OTP)', labelEn: 'OTP Code', icon: '🔒', color: '#ef4444' },
+                      { key: 'blog_name', labelAr: 'اسم الموقع / المدونة', labelEn: 'Site/Blog Name', icon: '🌐', color: '#06b6d4' },
+                      { key: 'amount', labelAr: 'المبلغ / الفاتورة', labelEn: 'Amount', icon: '💰', color: '#10b981' },
+                      { key: 'date', labelAr: 'التاريخ', labelEn: 'Date', icon: '📅', color: '#6b7280' }
+                    ].map(s => (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => handleInsertTag(s.key)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: '6px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                          e.currentTarget.style.borderColor = s.color;
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = `0 4px 10px rgba(0,0,0,0.04)`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                          e.currentTarget.style.borderColor = 'var(--border-color)';
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
+                        }}
+                      >
+                        <span style={{ color: s.color, display: 'inline-flex', alignItems: 'center' }}>{s.icon}</span>
+                        <span>{isAr ? s.labelAr : s.labelEn}</span>
+                        <span style={{ 
+                          fontSize: '9.5px', 
+                          color: s.color, 
+                          backgroundColor: `${s.color}12`,
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          fontFamily: 'monospace',
+                          fontWeight: 600
+                        }}>
+                          {`{{${s.key}}}`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Textarea Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    {isAr ? 'نص الرسالة:' : 'Message Text:'}
+                  </span>
+                  <textarea
+                    ref={textareaRef}
+                    value={textBody}
+                    onChange={(e) => setTextBody(e.target.value)}
+                    placeholder={
+                      category === 'whatsapp' 
+                        ? (isAr ? 'أدخل كود رسالة الواتساب...\nمثال: مرحباً بك {{reader_name}}...' : 'Enter WhatsApp message text...\nExample: Hello {{reader_name}}...')
+                        : (isAr ? 'أدخل نص رسالة الـ SMS المباشرة...\nمثال: رمز التحقق {{otp_code}}...' : 'Enter SMS text content...\nExample: Your verification OTP is {{otp_code}}...')
+                    }
+                    style={{
+                      width: '100%',
+                      height: '120px',
+                      minHeight: '100px',
+                      maxHeight: '220px',
+                      resize: 'vertical',
+                      padding: '14px 16px',
+                      fontFamily: 'Cairo, sans-serif',
+                      fontSize: '13.5px',
+                      lineHeight: '1.6',
+                      direction: isAr ? 'rtl' : 'ltr',
+                      textAlign: isAr ? 'right' : 'left',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: '#ffffff',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = category === 'whatsapp' ? '#10b981' : '#3b82f6';
+                      e.currentTarget.style.boxShadow = `0 0 0 3px ${category === 'whatsapp' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)'}, inset 0 1px 2px rgba(0,0,0,0.02)`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                      e.currentTarget.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)';
+                    }}
+                  />
                 </div>
               </div>
             </div>

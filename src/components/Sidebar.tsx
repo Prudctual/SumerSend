@@ -142,12 +142,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return currentTab === 'dashboard' && activeDashboardSubTab === 'wallet';
     }
     if (itemId === 'send') {
-      return ['send', 'playground', 'campaigns', 'templates'].includes(currentTab);
+      return ['send', 'playground', 'campaigns'].includes(currentTab);
     }
     if (itemId === 'subscribers') {
       return ['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab);
     }
-    if (itemId === 'logs') {
+    if (itemId === 'reports' || itemId === 'logs') {
       return ['logs', 'reports', 'logs-list'].includes(currentTab);
     }
     return currentTab === itemId;
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'wallet', subTab: 'wallet', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing', icon: WalletIcon },
     { id: 'send', labelAr: 'منصة الإرسال', labelEn: 'Send Console', icon: MessageSquare },
     { id: 'subscribers', labelAr: 'الجهات والمشتركين', labelEn: 'Contacts & List', icon: User },
-    { id: 'logs', labelAr: 'السجلات والتحليلات', labelEn: 'Analytics & Logs', icon: History },
+    { id: 'reports', labelAr: 'السجلات والتحليلات', labelEn: 'Analytics & Logs', icon: History },
   ];
 
   return (

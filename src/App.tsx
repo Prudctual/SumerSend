@@ -87,8 +87,6 @@ export default function App() {
         return `${mainSection} > ${lang === 'ar' ? 'منصة الاختبار (Playground)' : 'API Playground'}`;
       case 'campaigns':
         return `${mainSection} > ${lang === 'ar' ? 'إرسال الحملات' : 'Campaigns'}`;
-      case 'templates':
-        return `${mainSection} > ${lang === 'ar' ? 'معرض القوالب' : 'Templates Gallery'}`;
       case 'logs':
         return `${mainSection} > ${lang === 'ar' ? 'سجلات الإرسال' : 'Logs & Traces'}`;
       case 'reports':
@@ -376,8 +374,8 @@ export default function App() {
       );
     }
     
-    // 1. Send Console: includes 'send', 'playground', 'campaigns', 'templates'
-    if (['send', 'playground', 'campaigns', 'templates'].includes(currentTab)) {
+    // 1. Send Console: includes 'send', 'playground', 'campaigns'
+    if (['send', 'playground', 'campaigns'].includes(currentTab)) {
       const initialSubTab = currentTab === 'send' ? 'playground' : (currentTab as any);
       return (
         <SendConsoleView
@@ -639,7 +637,6 @@ export default function App() {
                 (lang === 'ar' ? 'لوحة التحكم > المحفظة والشحن' : 'Dashboard > Wallet & Billing')
                ) : 
                ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns') :
-               currentTab === 'templates' ? (lang === 'ar' ? 'معرض القوالب' : 'Templates Gallery') :
                ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'السجلات والتحليلات' : 'Logs & Analytics') :
                currentTab === 'billing' ? (lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing') :
                (lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub')}

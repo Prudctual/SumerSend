@@ -326,8 +326,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                   left: lang === 'ar' ? 0 : 'auto',
                   marginTop: '8px',
                   backgroundColor: 'var(--panel-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
+                  border: '1px solid var(--card-border-color)',
+                  borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   padding: '6px 0',
                   minWidth: '155px',
@@ -487,7 +487,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
             </thead>
             <tbody>
               {filteredLogs.slice().reverse().map((log) => (
-                <tr key={log.id} onClick={() => { setSelectedLog(log); setActiveDetailTab('preview'); setCopiedPayload(false); }} style={{ transition: 'background-color 0.15s ease' }}>
+                <tr key={log.id} onClick={() => { setSelectedLog(log); setActiveDetailTab('preview'); setCopiedPayload(false); }} style={{ transition: 'background-color 0.15s ease', cursor: 'pointer' }}>
                   <td className="tabular-nums-stat" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
                     #{log.id.slice(-6)}
                   </td>
@@ -602,8 +602,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                     fontSize: '13px', 
                     backgroundColor: 'var(--bg-color)',
                     padding: '16px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border-color)',
                     lineHeight: 1.5
                   }}>
                     <strong style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'القناة:' : 'Channel:'}</strong>
@@ -691,8 +691,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                     ) : selectedLog.type === 'whatsapp' ? (
                       /* WhatsApp Simulator Mockup */
                       <div style={{
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '16px',
+                        border: '1px solid var(--card-border-color)',
+                        borderRadius: '8px',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
@@ -806,8 +806,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                     ) : (
                       /* SMS Simulator Mockup */
                       <div style={{
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '16px',
+                        border: '1px solid var(--card-border-color)',
+                        borderRadius: '8px',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
@@ -891,8 +891,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                   <div style={{ 
                     backgroundColor: 'var(--bg-color)',
                     padding: '20px',
-                    borderRadius: '16px',
-                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border-color)',
                   }}>
                     <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>
                       {lang === 'ar' ? 'خط التتبع الزمني للإرسال' : 'Delivery Audit Timeline'}
@@ -958,8 +958,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                   {/* Diagnostic Information */}
                   <div style={{
                     backgroundColor: 'var(--bg-color)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '16px',
+                    border: '1px solid var(--card-border-color)',
+                    borderRadius: '8px',
                     padding: '20px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
@@ -1037,8 +1037,8 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                   <pre style={{
                     margin: 0,
                     padding: '16px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border-color)',
                     backgroundColor: '#09090b',
                     color: '#e4e4e7',
                     fontSize: '12px',

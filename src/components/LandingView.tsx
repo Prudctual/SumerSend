@@ -62,7 +62,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, style
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={className}
+      className={`card ${className || ''}`.trim()}
       style={{
         ...style,
         position: 'relative',
@@ -1364,6 +1364,7 @@ func main() {
             <div className="dropdown-stagger-item" style={{ display: 'flex', flexDirection: 'column', gap: '8px', transitionDelay: '0.32s', alignItems: 'center' }}>
               <button 
                 onClick={() => { setIsMobileMenuOpen(false); setCurrentTab('auth-signup'); }} 
+                className="btn-landing-primary"
                 style={{
                   width: '180px',
                   height: '36px',
@@ -1439,6 +1440,7 @@ func main() {
         <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
           <button 
             onClick={() => setCurrentTab('dashboard')} 
+            className="btn-landing-primary"
             style={{ 
               backgroundColor: 'var(--text-primary)',
               color: 'var(--bg-color)',
@@ -1979,6 +1981,7 @@ func main() {
 
                       <button 
                         onClick={handleTriggerApiCall}
+                        className="btn-landing-primary"
                         style={{
                           width: '100%',
                           backgroundColor: 'var(--text-primary)',
