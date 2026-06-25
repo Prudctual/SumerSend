@@ -582,6 +582,350 @@ export const templatesDb: { email: TemplateItem[]; sms: TemplateItem[]; whatsapp
     <a href="#" style="color: #2563eb; text-decoration: none; margin-top: 5px; display: inline-block;">إلغاء الاشتراك</a>
   </div>
 </div>`
+    },
+    {
+      id: 'nps_survey',
+      nameAr: 'تقييم الخدمة واستطلاع الرأي (NPS)',
+      nameEn: 'Customer Feedback & NPS',
+      descAr: 'قالب استطلاع آراء العملاء وتجربتهم مع أزرار تفاعلية ونظام تقييم رقمي (1-10) أنيق.',
+      descEn: 'A minimalist feedback email layout containing an interactive NPS scale (1-10) for customer reviews.',
+      subjectAr: 'شاركنا رأيك: كيف كانت تجربتك مع {{platform_name}}؟ ⭐',
+      subjectEn: 'We\'d love your feedback: How was your experience with {{platform_name}}? ⭐',
+      icon: 'Star',
+      variables: [
+        { key: 'platform_name', labelAr: 'اسم المنصة', labelEn: 'Platform Name', defaultValAr: 'منصتنا الرقمية', defaultValEn: 'Our Digital Platform' },
+        { key: 'customer_name', labelAr: 'اسم العميل', labelEn: 'Customer Name', defaultValAr: 'عميلنا العزيز', defaultValEn: 'Valued Customer' },
+        { key: 'product_service', labelAr: 'الخدمة / المنتج', labelEn: 'Product/Service Name', defaultValAr: 'طلبك الأخير', defaultValEn: 'your recent interaction' },
+        { key: 'survey_link', labelAr: 'رابط الاستطلاع المخصص', labelEn: 'Custom Survey Link', defaultValAr: 'https://example.com/survey', defaultValEn: 'https://example.com/survey' }
+      ],
+      body: `<div style="font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; background-color: #ffffff; direction: rtl; text-align: right; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+  <!-- Header Banner -->
+  <div style="background-color: #09090b; padding: 35px 20px; text-align: center; color: #ffffff;">
+    <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.5px;">استطلاع رأي العملاء • FEEDBACK</div>
+    <h1 style="margin: 0; font-size: 20px; font-weight: 700; font-family: 'Cairo', sans-serif;">{{platform_name}}</h1>
+  </div>
+  
+  <!-- Content -->
+  <div style="padding: 30px 25px;">
+    <h2 style="font-size: 17px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 15px;">مرحباً {{customer_name}}،</h2>
+    <p style="color: #3f3f46; font-size: 14px; line-height: 1.8; margin-bottom: 25px;">
+      نشكرك على اختيارك <strong>{{platform_name}}</strong> لاستخدام <strong>{{product_service}}</strong>. نحن نسعى دائماً لتقديم أفضل تجربة ممكنة، ويسعدنا جداً معرفة رأيك لمساعدتنا في تحسين خدماتنا باستمرار.
+    </p>
+
+    <!-- NPS Question -->
+    <h3 style="font-size: 14px; font-weight: 700; color: #09090b; text-align: center; margin-bottom: 20px; line-height: 1.6;">
+      ما هي احتمالية توصيتك بـ {{platform_name}} لصديق أو زميل؟
+    </h3>
+
+    <!-- Interactive Scale -->
+    <div style="margin: 25px 0; direction: ltr; text-align: center;">
+      <table align="center" style="margin: 0 auto; border-collapse: separate; border-spacing: 6px;">
+        <tr>
+          <!-- 1 to 10 scale buttons -->
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=1" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">1</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=2" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">2</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=3" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">3</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=4" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">4</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=5" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">5</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=6" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">6</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=7" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">7</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=8" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">8</a>
+          </td>
+          <td style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=9" style="color: #52525b; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">9</a>
+          </td>
+          <td style="background-color: #09090b; border: 1px solid #09090b; border-radius: 8px; width: 38px; height: 38px; text-align: center; vertical-align: middle;">
+            <a href="{{survey_link}}?score=10" style="color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; display: block; line-height: 38px;">10</a>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Scale Labels -->
+      <table align="center" style="width: 440px; margin: 8px auto 0 auto; border-collapse: collapse; font-size: 11px; color: #71717a;">
+        <tr>
+          <td style="text-align: left; width: 50%;">1 - غير محتمل أبداً</td>
+          <td style="text-align: right; width: 50%;">10 - محتمل جداً 🚀</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Additional Comment Box Info -->
+    <p style="color: #71717a; font-size: 12px; line-height: 1.6; text-align: center; margin-bottom: 25px;">
+      عند اختيارك لأي رقم، سيتم فتح صفحة استطلاع قصيرة تتيح لك كتابة ملاحظات إضافية.
+    </p>
+
+    <!-- Alternative Link CTA -->
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="{{survey_link}}" style="display: inline-block; background-color: #fafafa; border: 1px solid #e4e4e7; color: #09090b; padding: 12px 30px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">تقديم استبيان تفصيلي</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background-color: #fafafa; padding: 20px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #e4e4e7; line-height: 1.6;">
+    تصلك هذه الرسالة بناءً على تعاملك الأخير مع {{platform_name}}.<br>
+    © 2026 {{platform_name}}. جميع الحقوق محفوظة.<br>
+    <a href="#" style="color: #2563eb; text-decoration: none; margin-top: 5px; display: inline-block;">إلغاء الاشتراك</a>
+  </div>
+</div>`
+    },
+    {
+      id: 'analytics_report',
+      nameAr: 'تقرير الأداء والإحصائيات الدوري',
+      nameEn: 'Monthly Analytics Dashboard',
+      descAr: 'قالب يعرض ملخص البيانات الدورية ونسب النجاح بأسلوب البطاقات التفاعلية الأنيق.',
+      descEn: 'A rich visual report template for sending usage statistics, delivery metrics, and highlights.',
+      subjectAr: 'تقريرك الإحصائي لـ {{platform_name}} لشهر {{report_month}} 📈',
+      subjectEn: 'Your {{platform_name}} Monthly Report for {{report_month}} 📈',
+      icon: 'BarChart2',
+      variables: [
+        { key: 'platform_name', labelAr: 'اسم المنصة', labelEn: 'Platform Name', defaultValAr: 'منصتنا الرقمية', defaultValEn: 'Our Digital Platform' },
+        { key: 'report_month', labelAr: 'شهر التقرير', labelEn: 'Report Month', defaultValAr: 'يونيو 2026', defaultValEn: 'June 2026' },
+        { key: 'user_name', labelAr: 'اسم المستخدم', labelEn: 'User Name', defaultValAr: 'شريكنا العزيز', defaultValEn: 'Valued Partner' },
+        { key: 'stat_sent', labelAr: 'إجمالي الرسائل المرسلة', labelEn: 'Total Sent Messages', defaultValAr: '142,500', defaultValEn: '142,500' },
+        { key: 'stat_delivered', labelAr: 'نسبة وصول الرسائل', labelEn: 'Delivery Rate', defaultValAr: '99.85%', defaultValEn: '99.85%' },
+        { key: 'stat_saved', labelAr: 'التكلفة التي تم توفيرها', labelEn: 'Cost Saved', defaultValAr: '$1,240', defaultValEn: '$1,240' },
+        { key: 'stat_api_calls', labelAr: 'إجمالي طلبات الـ API', labelEn: 'Total API Requests', defaultValAr: '320,410', defaultValEn: '320,410' }
+      ],
+      body: `<div style="font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; background-color: #ffffff; direction: rtl; text-align: right; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+  <!-- Header Banner -->
+  <div style="background: linear-gradient(135deg, #09090b 0%, #27272a 100%); padding: 35px 20px; text-align: center; color: #ffffff;">
+    <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.5px;">التقرير الإحصائي الشهري • ANALYTICS</div>
+    <h1 style="margin: 0; font-size: 20px; font-weight: 700; font-family: 'Cairo', sans-serif;">{{platform_name}}</h1>
+    <p style="margin: 5px 0 0 0; font-size: 12px; color: #a1a1aa;">تحديث الأداء لـ {{report_month}}</p>
+  </div>
+  
+  <!-- Content -->
+  <div style="padding: 30px 25px;">
+    <h2 style="font-size: 17px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 15px;">مرحباً {{user_name}}،</h2>
+    <p style="color: #3f3f46; font-size: 14px; line-height: 1.8; margin-bottom: 25px;">
+      نضع بين يديك تقرير الأداء الشهري الخاص بنشاطك على منصتنا. نأمل أن تساهم هذه الإحصائيات في تحسين فهمك لفاعلية وسرعة توصيل إشعاراتك الرقمية.
+    </p>
+
+    <!-- Grid Cards (2x2) -->
+    <div style="margin: 25px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <!-- Card 1 -->
+          <td style="width: 50%; padding: 0 0 12px 6px; vertical-align: top;">
+            <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px;">
+              <span style="font-size: 11px; color: #71717a; display: block; margin-bottom: 8px; font-weight: 600;">الرسائل الصادرة</span>
+              <strong style="font-size: 22px; color: #09090b; display: block; font-family: sans-serif;">{{stat_sent}}</strong>
+              <span style="font-size: 11px; color: #10b981; display: block; margin-top: 4px;">+12% زيادة عن الشهر الماضي</span>
+            </div>
+          </td>
+          <!-- Card 2 -->
+          <td style="width: 50%; padding: 0 6px 12px 0; vertical-align: top;">
+            <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px;">
+              <span style="font-size: 11px; color: #71717a; display: block; margin-bottom: 8px; font-weight: 600;">معدل الوصول</span>
+              <strong style="font-size: 22px; color: #09090b; display: block; font-family: sans-serif;">{{stat_delivered}}</strong>
+              <span style="font-size: 11px; color: #71717a; display: block; margin-top: 4px;">ضمن النطاق الأمثل</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <!-- Card 3 -->
+          <td style="width: 50%; padding: 12px 0 0 6px; vertical-align: top;">
+            <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px;">
+              <span style="font-size: 11px; color: #71717a; display: block; margin-bottom: 8px; font-weight: 600;">التكلفة الموفرة</span>
+              <strong style="font-size: 22px; color: #10b981; display: block; font-family: sans-serif;">{{stat_saved}}</strong>
+              <span style="font-size: 11px; color: #71717a; display: block; margin-top: 4px;">بفضل توجيه القنوات الذكي</span>
+            </div>
+          </td>
+          <!-- Card 4 -->
+          <td style="width: 50%; padding: 12px 6px 0 0; vertical-align: top;">
+            <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px;">
+              <span style="font-size: 11px; color: #71717a; display: block; margin-bottom: 8px; font-weight: 600;">طلبات الـ API</span>
+              <strong style="font-size: 22px; color: #09090b; display: block; font-family: sans-serif;">{{stat_api_calls}}</strong>
+              <span style="font-size: 11px; color: #71717a; display: block; margin-top: 4px;">متوسط وقت الاستجابة 85ms</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background-color: rgba(9, 9, 11, 0.02); border: 1px solid #e4e4e7; border-radius: 8px; padding: 15px; margin-bottom: 25px; font-size: 12px; color: #52525b; line-height: 1.6;">
+      <strong>تحليل الشهر:</strong> يوضح التقرير ارتفاعاً إيجابياً في جودة توصيل الإشعارات بنسبة 0.4% عن الشهر السابق، مع بقاء معدلات الأمان والحماية متطابقة تماماً مع المعايير المطلوبة.
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="https://example.com/dashboard" style="display: inline-block; background-color: #09090b; color: #ffffff; padding: 12px 30px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">عرض التفاصيل في لوحة التحكم</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background-color: #fafafa; padding: 20px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #e4e4e7; line-height: 1.6;">
+    تصلك هذه الرسالة بناءً على اشتراك حسابك في التقارير الإحصائية الدورية لـ {{platform_name}}.<br>
+    © 2026 {{platform_name}}. جميع الحقوق محفوظة.<br>
+    <a href="#" style="color: #2563eb; text-decoration: none; margin-top: 5px; display: inline-block;">تعديل تفضيلات الإشعارات</a>
+  </div>
+</div>`
+    },
+    {
+      id: 'workspace_invite',
+      nameAr: 'دعوة انضمام لمساحة عمل أو مشروع',
+      nameEn: 'Workspace & Team Invitation',
+      descAr: 'قالب دعوة احترافي يوضح اسم الداعي، الدور المقترح، ومساحة العمل مع زر قبول فوري جذاب.',
+      descEn: 'A premium invitation email design letting users invite collaborators to their workspace, project, or organization.',
+      subjectAr: 'لقد دعاك {{inviter_name}} للانضمام إلى مساحة العمل {{workspace_name}} 🚀',
+      subjectEn: '{{inviter_name}} invited you to join the {{workspace_name}} workspace 🚀',
+      icon: 'Rocket',
+      variables: [
+        { key: 'platform_name', labelAr: 'اسم المنصة', labelEn: 'Platform Name', defaultValAr: 'منصتنا الرقمية', defaultValEn: 'Our Digital Platform' },
+        { key: 'inviter_name', labelAr: 'اسم المرسل/الداعي', labelEn: 'Inviter Name', defaultValAr: 'جاسم كريم', defaultValEn: 'Jasim Kareem' },
+        { key: 'workspace_name', labelAr: 'اسم مساحة العمل', labelEn: 'Workspace Name', defaultValAr: 'فريق التطوير والمنتجات', defaultValEn: 'Dev & Product Team' },
+        { key: 'role_name', labelAr: 'الدور المقترح للمدعو', labelEn: 'Proposed Role', defaultValAr: 'مطور برمجيات', defaultValEn: 'Software Developer' },
+        { key: 'invite_link', labelAr: 'رابط قبول الدعوة', labelEn: 'Accept Invite Link', defaultValAr: 'https://example.com/invite/accept?token=xyz', defaultValEn: 'https://example.com/invite/accept?token=xyz' }
+      ],
+      body: `<div style="font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; background-color: #ffffff; direction: rtl; text-align: right; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+  <!-- Top Accent -->
+  <div style="height: 6px; background-color: #09090b;"></div>
+  
+  <!-- Content -->
+  <div style="padding: 35px 30px;">
+    <!-- Visual Representation of Collaboration -->
+    <div style="text-align: center; margin-bottom: 25px; direction: ltr;">
+      <table align="center" style="margin: 0 auto; border-collapse: collapse;">
+        <tr>
+          <!-- Inviter Avatar Placeholder -->
+          <td>
+            <div style="width: 44px; height: 44px; line-height: 44px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 50%; color: #09090b; font-weight: bold; font-size: 14px; text-align: center;">JK</div>
+          </td>
+          <!-- Connector line -->
+          <td style="padding: 0 15px;">
+            <div style="width: 30px; height: 1px; border-top: 1px dashed #a1a1aa;"></div>
+          </td>
+          <!-- App Logo / Platform representation -->
+          <td>
+            <div style="width: 48px; height: 48px; line-height: 48px; background-color: #09090b; border-radius: 12px; color: #ffffff; font-weight: bold; font-size: 18px; text-align: center;">SS</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <h2 style="font-size: 18px; font-weight: 700; color: #09090b; margin-top: 0; margin-bottom: 15px; text-align: center;">انضم إلى مساحة العمل</h2>
+    
+    <p style="color: #3f3f46; font-size: 14px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
+      لقد قام <strong>{{inviter_name}}</strong> بدعوتك للانضمام ومشاركة العمل في مساحة <strong>{{workspace_name}}</strong> على منصة {{platform_name}} بصفتك <strong>{{role_name}}</strong>.
+    </p>
+
+    <!-- Invitation details card -->
+    <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #444444;">
+        <tr>
+          <td style="padding: 6px 0; color: #71717a;">الداعي:</td>
+          <td style="padding: 6px 0; font-weight: 600; text-align: left; color: #09090b;">{{inviter_name}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #71717a;">مساحة العمل:</td>
+          <td style="padding: 6px 0; font-weight: 600; text-align: left; color: #09090b;">{{workspace_name}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #71717a;">الدور المقترح:</td>
+          <td style="padding: 6px 0; font-weight: 600; text-align: left; color: #09090b;">{{role_name}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align: center; margin-bottom: 25px;">
+      <a href="{{invite_link}}" style="display: inline-block; background-color: #09090b; color: #ffffff; padding: 12px 30px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">قبول الدعوة والانضمام للمشروع</a>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #f4f4f5; margin: 20px 0;">
+
+    <p style="color: #888888; font-size: 11px; line-height: 1.5; margin: 0; text-align: center;">
+      إذا لم تكن تتوقع هذه الدعوة، يمكنك ببساطة تجاهلها. لن يتم إضافتك للمشروع إلا بعد النقر على زر القبول.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background-color: #fafafa; padding: 20px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #e4e4e7; line-height: 1.6;">
+    تصلك هذه الدعوة لأن {{inviter_name}} أرسلها إلى بريدك الإلكتروني.<br>
+    © 2026 {{platform_name}}. جميع الحقوق محفوظة.
+  </div>
+</div>`
+    },
+    {
+      id: 'trial_expiration',
+      nameAr: 'تنبيه قرب انتهاء الفترة التجريبية',
+      nameEn: 'Trial Expiration Reminder',
+      descAr: 'تصميم تذكيري راقٍ لحث العملاء على ترقية الاشتراك قبل توقف الميزات المجانية، مع مقارنة سريعة للباقات.',
+      descEn: 'A professional trial expiry reminder showing days remaining, features list, and direct pricing upgrade routes.',
+      subjectAr: 'تنبيه: متبقي {{days_left}} أيام فقط على انتهاء فترتك التجريبية ⏳',
+      subjectEn: 'Warning: Only {{days_left}} days left in your free trial ⏳',
+      icon: 'Bell',
+      variables: [
+        { key: 'platform_name', labelAr: 'اسم المنصة', labelEn: 'Platform Name', defaultValAr: 'منصتنا الرقمية', defaultValEn: 'Our Digital Platform' },
+        { key: 'user_name', labelAr: 'اسم المستخدم', labelEn: 'User Name', defaultValAr: 'مستخدمنا العزيز', defaultValEn: 'Valued User' },
+        { key: 'days_left', labelAr: 'أيام الصلاحية المتبقية', labelEn: 'Days Remaining', defaultValAr: '3', defaultValEn: '3' },
+        { key: 'upgrade_link', labelAr: 'رابط صفحة الترقية', labelEn: 'Upgrade Page Link', defaultValAr: 'https://example.com/billing', defaultValEn: 'https://example.com/billing' }
+      ],
+      body: `<div style="font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; background-color: #ffffff; direction: rtl; text-align: right; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+  <!-- Top Warning Accent -->
+  <div style="height: 6px; background-color: #f59e0b;"></div>
+  
+  <!-- Content -->
+  <div style="padding: 35px 30px;">
+    <h2 style="font-size: 18px; font-weight: 700; color: #09090b; margin-top: 0; margin-bottom: 15px;">الفترة التجريبية أوشكت على الانتهاء</h2>
+    
+    <p style="color: #3f3f46; font-size: 14px; line-height: 1.8; margin-bottom: 25px;">
+      مرحباً {{user_name}}، نود تذكيرك بأنه متبقي <strong>{{days_left}} أيام فقط</strong> على انتهاء الفترة التجريبية المجانية الخاصة بك في <strong>{{platform_name}}</strong>.
+    </p>
+
+    <!-- Visual Countdown Progress -->
+    <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
+      <span style="font-size: 12px; color: #71717a; display: block; margin-bottom: 10px;">انقضى 11 يوماً من أصل 14 يوماً</span>
+      <!-- Progress Bar Container -->
+      <div style="height: 8px; background-color: #e4e4e7; border-radius: 4px; overflow: hidden; direction: ltr; margin: 0 auto; max-width: 320px;">
+        <!-- 78% filled bar -->
+        <div style="height: 8px; width: 78%; background-color: #f59e0b; border-radius: 4px;"></div>
+      </div>
+      <span style="font-size: 12px; color: #ef4444; display: block; margin-top: 10px; font-weight: 600;">أكمل ترقية حسابك الآن لتفادي انقطاع الخدمة</span>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 700; color: #09090b; margin-top: 0; margin-bottom: 12px;">الميزات التي ستفقد صلاحية استخدامها:</h3>
+    
+    <div style="margin-bottom: 10px; font-size: 13px; color: #52525b; line-height: 1.5; padding-right: 15px; position: relative;">
+      <span style="position: absolute; right: 0; color: #ef4444;">•</span>
+      إمكانية إرسال حملات البريد المتعددة للمشتركين.
+    </div>
+    <div style="margin-bottom: 10px; font-size: 13px; color: #52525b; line-height: 1.5; padding-right: 15px; position: relative;">
+      <span style="position: absolute; right: 0; color: #ef4444;">•</span>
+      الوصول غير المحدود لـ Webhooks والربط المقبل.
+    </div>
+    <div style="margin-bottom: 25px; font-size: 13px; color: #52525b; line-height: 1.5; padding-right: 15px; position: relative;">
+      <span style="position: absolute; right: 0; color: #ef4444;">•</span>
+      تقارير التحليلات المتقدمة وتتبع نسبة الفتح والنقر.
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align: center; margin-bottom: 15px;">
+      <a href="{{upgrade_link}}" style="display: inline-block; background-color: #09090b; color: #ffffff; padding: 12px 30px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">ترقية الاشتراك للمستوى الاحترافي</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background-color: #fafafa; padding: 20px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #e4e4e7; line-height: 1.6;">
+    تصلك هذه الرسالة التنبيهية التلقائية بخصوص حالة حسابك التجريبي في {{platform_name}}.<br>
+    © 2026 {{platform_name}}. جميع الحقوق محفوظة.
+  </div>
+</div>`
     }
   ],
   sms: [
@@ -626,6 +970,21 @@ export const templatesDb: { email: TemplateItem[]; sms: TemplateItem[]; whatsapp
         { key: 'domain_name', labelAr: 'النطاق', labelEn: 'Domain Name', defaultValAr: 'mystore.iq', defaultValEn: 'mystore.iq' }
       ],
       body: 'تنبيه من {{platform_name}}: تم تفعيل نطاقك {{domain_name}} بنجاح. يمكنك الآن بدء الإرسال الحقيقي عبر الـ API.'
+    },
+    {
+      id: 'sms_campaign_alert',
+      nameAr: 'حملة تسويقية ورابط فوري (SMS)',
+      nameEn: 'SMS Marketing Campaign',
+      descAr: 'رسالة ترويجية قصيرة ومباشرة مع كود خصم ورابط تتبع قصير.',
+      descEn: 'A short marketing message including a discount code and target link.',
+      icon: 'Megaphone',
+      variables: [
+        { key: 'brand_name', labelAr: 'اسم العلامة التجارية', labelEn: 'Brand Name', defaultValAr: 'سومر سنِد', defaultValEn: 'SumerSend' },
+        { key: 'discount_pct', labelAr: 'نسبة الخصم', labelEn: 'Discount Percent', defaultValAr: '25%', defaultValEn: '25%' },
+        { key: 'coupon', labelAr: 'كود الكوبون', labelEn: 'Coupon Code', defaultValAr: 'SMS25', defaultValEn: 'SMS25' },
+        { key: 'link', labelAr: 'رابط الشراء', labelEn: 'Action Link', defaultValAr: 'sumer.me/sale', defaultValEn: 'sumer.me/sale' }
+      ],
+      body: 'عروض {{brand_name}} الحصرية! احصل على خصم {{discount_pct}} باستخدام الكوبون: {{coupon}} عند الدفع. تسوق الآن عبر الرابط: {{link}}'
     }
   ],
   whatsapp: [
@@ -672,6 +1031,21 @@ export const templatesDb: { email: TemplateItem[]; sms: TemplateItem[]; whatsapp
         { key: 'remaining_balance', labelAr: 'الرصيد المتبقي', labelEn: 'Remaining Balance', defaultValAr: '15,200 د.ع', defaultValEn: '15,200 IQD' }
       ],
       body: 'تقريرك الشهري من {{platform_name}}: إجمالي الرسائل المرسلة: {{sent_count}}. نسبة التوصيل: {{delivery_rate}}. الرصيد المتبقي: {{remaining_balance}}. يرجى شحن الرصيد لتجنب انقطاع الخدمة.'
+    },
+    {
+      id: 'wa_usage_alert',
+      nameAr: 'تنبيه استهلاك الموارد المرتفع',
+      nameEn: 'WhatsApp High Usage Alert',
+      descAr: 'إشعار فوري للمطورين عند اقتراب استهلاك الرصيد أو الموارد من الحد الأقصى.',
+      descEn: 'Urgent notification for developers indicating API usage has exceeded a specific threshold.',
+      icon: 'Bell',
+      variables: [
+        { key: 'dev_name', labelAr: 'اسم المطور', labelEn: 'Developer Name', defaultValAr: 'جاسم', defaultValEn: 'Jasim' },
+        { key: 'threshold', labelAr: 'نسبة الاستهلاك', labelEn: 'Usage Threshold', defaultValAr: '90%', defaultValEn: '90%' },
+        { key: 'platform_name', labelAr: 'اسم المنصة', labelEn: 'Platform Name', defaultValAr: 'SumerSend', defaultValEn: 'SumerSend' },
+        { key: 'action_link', labelAr: 'رابط الشحن', labelEn: 'Recharge Link', defaultValAr: 'https://sumersend.com/billing', defaultValEn: 'https://sumersend.com/billing' }
+      ],
+      body: 'مرحباً {{dev_name}}، تنبيه عاجل من {{platform_name}}: استهلاكك للحصة الحالية تجاوز {{threshold}}. لتفادي انقطاع الخدمة، يرجى ترقية باقتك أو شحن الرصيد الآن: {{action_link}}'
     }
   ]
 };

@@ -1,22 +1,21 @@
 {
-  "name": "sumer-send-server",
+  "name": "sumer-send-whatsapp-service",
   "version": "1.0.0",
-  "description": "Backend engine for Sumer Send email delivery system",
+  "description": "WhatsApp socket microservice for Sumer Send using Baileys",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon --ignore '*.json' --ignore 'baileys_auth_info/' index.js"
+    "dev": "nodemon --ignore '*.json' index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
-    "bcryptjs": "^3.0.3",
+    "@whiskeysockets/baileys": "^7.0.0-rc13",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "express-rate-limit": "^8.5.2",
-    "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^6.9.13"
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

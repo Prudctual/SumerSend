@@ -57,9 +57,13 @@ window.fetch = async (input, init) => {
   return originalFetch(input, init);
 };
 
+import { SumerProvider } from './context/SumerContext'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <SumerProvider>
+      <App />
+    </SumerProvider>
   </StrictMode>,
 )
 

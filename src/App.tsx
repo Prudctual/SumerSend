@@ -27,75 +27,58 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { AdminPortalView } from './components/AdminPortalView';
 
 
+import { useSumer } from './context/SumerContext';
+
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const { tab } = getTabFromPath(window.location.pathname);
-    return tab;
-  });
-  const [activeDashboardSubTab, setActiveDashboardSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates'>(() => {
-    const { subTab } = getTabFromPath(window.location.pathname);
-    return subTab || 'channels';
-  });
-  const [viewLoading, setViewLoading] = useState<boolean>(false);
-  const loadingTimerRef = React.useRef<any>(null);
-
-  const handleTabChange = (newTab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => {
-    let targetTab = newTab;
-    let targetSubTab: any = undefined;
-    if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing', 'templates'].includes(newTab)) {
-      targetTab = 'dashboard';
-      if (newTab === 'domains') {
-        setActiveDashboardSubTab('domains');
-        targetSubTab = 'domains';
-      } else if (newTab === 'apikeys' || newTab === 'api') {
-        setActiveDashboardSubTab('apikeys');
-        targetSubTab = 'apikeys';
-      } else if (newTab === 'wallet' || newTab === 'billing') {
-        setActiveDashboardSubTab('wallet');
-        targetSubTab = 'wallet';
-      } else if (newTab === 'templates') {
-        setActiveDashboardSubTab('templates');
-        targetSubTab = 'templates';
-      } else if (newTab === 'dashboard') {
-        setActiveDashboardSubTab(subTab || 'channels');
-        targetSubTab = subTab || 'channels';
-      }
-    }
-
-    // Sync with browser history
-    const newPath = getPathFromTab(targetTab, targetSubTab);
-    if (window.location.pathname !== newPath) {
-      window.history.pushState(null, '', newPath);
-    }
-
-    if (targetTab !== currentTab) {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-      
-      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'admin-portal'].includes(targetTab);
-      
-      if (isConsoleTab) {
-        setViewLoading(true);
-        setCurrentTab(targetTab);
-        loadingTimerRef.current = setTimeout(() => {
-          setViewLoading(false);
-        }, 250);
-      } else {
-        setCurrentTab(targetTab);
-      }
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-    };
-  }, []);
-
-  const [lang, setLang] = useState<'en' | 'ar'>('ar'); // Default to Arabic for Iraqi market!
+  const {
+    currentTab,
+    setCurrentTab,
+    activeDashboardSubTab,
+    setActiveDashboardSubTab,
+    viewLoading,
+    setViewLoading,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    lang,
+    setLang,
+    theme,
+    setTheme,
+    showSuccessOverlay,
+    setShowSuccessOverlay,
+    isSearchOpen,
+    setIsSearchOpen,
+    profileOpen,
+    setProfileOpen,
+    token,
+    setToken,
+    user,
+    setUser,
+    authLoading,
+    setAuthLoading,
+    walletBalance,
+    setWalletBalance,
+    domains,
+    setDomains,
+    apiKeys,
+    setApiKeys,
+    webhooks,
+    setWebhooks,
+    logs,
+    setLogs,
+    transactions,
+    setTransactions,
+    phoneNotifications,
+    setPhoneNotifications,
+    emailSubject,
+    setEmailSubject,
+    emailBody,
+    setEmailBody,
+    msgBody,
+    setMsgBody,
+    playgroundChannel,
+    setPlaygroundChannel,
+    handleLogout
+  } = useSumer();
 
   const renderBreadcrumb = () => {
     const mainSection = lang === 'ar' ? 'الخدمات الأساسية' : 'Core Services';
@@ -142,381 +125,6 @@ export default function App() {
         return lang === 'ar' ? 'الرئيسية' : 'Home';
     }
   };
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('sumer_theme') as 'light' | 'dark') || 'light';
-  });
-  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  
-  // User Authentication State
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('sumer_token'));
-  const [user, setUser] = useState<any | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  useEffect(() => {
-    const handleSuccessOverlay = () => {
-      setShowSuccessOverlay(true);
-      confetti({
-        particleCount: 120,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      const timer = setTimeout(() => {
-        setShowSuccessOverlay(false);
-      }, 1500);
-      return () => clearTimeout(timer);
-    };
-    window.addEventListener('sumer-success-screen', handleSuccessOverlay);
-    return () => window.removeEventListener('sumer-success-screen', handleSuccessOverlay);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger search modal if user is typing in form inputs
-      const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable;
-      if (isInput) return;
-
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === '/')) {
-        e.preventDefault();
-        setIsSearchOpen(prev => !prev);
-      } else if (e.key === '/') {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-  
-  // Balance starts at 50,000 IQD
-  const [walletBalance, setWalletBalance] = useState<number>(50000);
-
-  // Pre-populated data for immersive demo
-  const [domains, setDomains] = useState<any[]>([
-    { id: '1', name: 'mystore.iq', status: 'verified', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
-    { id: '2', name: 'iraqdev.org', status: 'pending', createdAt: new Date().toISOString(), cnames: [
-      { type: 'CNAME', host: 'sm1._domainkey.iraqdev.org', value: 'dkim1.sumersend.com' },
-      { type: 'CNAME', host: 'sm2._domainkey.iraqdev.org', value: 'dkim2.sumersend.com' },
-      { type: 'CNAME', host: 'sm3._domainkey.iraqdev.org', value: 'dkim3.sumersend.com' },
-    ]}
-  ]);
-
-  const [apiKeys, setApiKeys] = useState<any[]>([
-    { id: '1', name: 'Main Application Key', key: 'sm_live_8f0a2e5d9c7b1a2e3f4d5c6b7a8f9e0d', scope: 'full', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() }
-  ]);
-
-  const [webhooks, setWebhooks] = useState<any[]>(() => {
-    const saved = localStorage.getItem('sumer_webhooks');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', url: 'https://mystore.iq/api/sumer-receiver', events: ['email.failed', 'sms.delivered'], secret: 'whsec_8f0a2e5d9c7b1a2e3f4d5c6b7a8f9e0d', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() }
-    ];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('sumer_webhooks', JSON.stringify(webhooks));
-  }, [webhooks]);
-
-  const [logs, setLogs] = useState<any[]>([
-    { id: '1', type: 'email', from: 'support@mystore.iq', to: 'customer@gmail.com', subject: 'Your Order #9283 has shipped!', body: '<p>Your order is on its way via Zain Delivery.</p>', status: 'delivered', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-    { id: '2', type: 'sms', from: 'Sumer Send API', to: '07801234567', body: 'Your Zain Cash OTP is 9281. Do not share it.', status: 'delivered', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
-    { id: '3', type: 'whatsapp', from: 'Sumer Send API', to: '07709876543', body: 'Hi Ahmed, your booking at Grand Millenium Basra is confirmed!', status: 'delivered', timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString() }
-  ]);
-
-  const [transactions, setTransactions] = useState<any[]>([
-    { id: 'TX928172', provider: 'Zain Cash', amount: 50000, status: 'completed', date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() }
-  ]);
-
-  const [phoneNotifications, setPhoneNotifications] = useState<any[]>([
-    { id: '1', type: 'whatsapp', title: 'WhatsApp: Sumer Send', body: 'Hi Ahmed, your booking at Grand Millenium Basra is confirmed!', time: '15m ago' },
-    { id: '2', type: 'sms', title: 'SMS: Sumer Send', body: 'Your Zain Cash OTP is 9281. Do not share it.', time: '1h ago' }
-  ]);
-
-  const [emailSubject, setEmailSubject] = useState<string>('Welcome to Sumer Send!');
-  const [emailBody, setEmailBody] = useState<string>(`<div style="font-family: sans-serif; max-width: 550px; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; direction: rtl; text-align: right; background-color: #ffffff; margin: 0 auto;">
-  <div style="background-color: #09090b; padding: 20px; text-align: center; color: #ffffff;">
-    <h2 style="margin: 0; font-size: 18px;">سومر سيند | Sumer Send</h2>
-  </div>
-  <div style="padding: 24px;">
-    <h3 style="margin-top: 0; color: #09090b; font-size: 16px;">مرحباً بك من بغداد!</h3>
-    <p style="color: #444444; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">هذه الرسالة تم إرسالها حياً عبر منصة الاختبار البرمجية. إليك نبذة عن إمكانيات قنوات الإشعارات المتوفرة لدينا:</p>
-    
-    <div style="margin-top: 15px; padding: 12px; background-color: #fafafa; border: 1px solid #eaeaea; border-radius: 6px;">
-      <strong style="color: #2563eb; font-size: 13px; display: block; margin-bottom: 4px;">1. خدمة البريد الإلكتروني (Email API):</strong>
-      <span style="color: #555555; font-size: 12px;">ربط النطاقات وتوصيل البريد مباشرة للصندوق الوارد بـ 10 د.ع فقط.</span>
-    </div>
-    
-    <div style="margin-top: 10px; padding: 12px; background-color: #fafafa; border: 1px solid #eaeaea; border-radius: 6px;">
-      <strong style="color: #10b981; font-size: 13px; display: block; margin-bottom: 4px;">2. إشعارات الـ SMS المحلية:</strong>
-      <span style="color: #555555; font-size: 12px;">توصيل فوري لرموز الـ OTP لجميع الشبكات العراقية بـ 120 د.ع فقط.</span>
-    </div>
-    
-    <div style="margin-top: 10px; padding: 12px; background-color: #fafafa; border: 1px solid #eaeaea; border-radius: 6px;">
-      <strong style="color: #f59e0b; font-size: 13px; display: block; margin-bottom: 4px;">3. إشعارات الواتساب (WhatsApp):</strong>
-      <span style="color: #555555; font-size: 12px;">إرسال رسائل وحجوزات تفاعلية وذكية لعملائك بـ 150 د.ع فقط.</span>
-    </div>
-  </div>
-  <div style="background-color: #f4f4f5; padding: 12px; text-align: center; font-size: 11px; color: #71717a; border-top: 1px solid #eaeaea;">
-    بوابة Sumer Send للمطورين • بغداد، العراق
-  </div>
-</div>`);
-
-  const [msgBody, setMsgBody] = useState<string>('Your OTP verification code is: 489271. Expires in 5 minutes.');
-  const [playgroundChannel, setPlaygroundChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
-
-  const handlePlaygroundChannelChange = (channel: 'email' | 'sms' | 'whatsapp') => {
-    setPlaygroundChannel(channel);
-  };
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('sumer_sidebar_collapsed') === 'true';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('sumer_sidebar_collapsed', String(sidebarCollapsed));
-    const width = sidebarCollapsed ? '72px' : '260px';
-    document.documentElement.style.setProperty('--sidebar-width', width);
-  }, [sidebarCollapsed]);
-
-  // Collapse sidebar automatically on smaller screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 768) {
-        setSidebarCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-
-  // Verify token and restore session on mount
-  useEffect(() => {
-    if (!token) {
-      setAuthLoading(false);
-      return;
-    }
-    setAuthLoading(true);
-    fetch('http://127.0.0.1:3000/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Session expired');
-      return res.json();
-    })
-    .then(data => {
-      setUser(data.user);
-    })
-    .catch(() => {
-      localStorage.removeItem('sumer_token');
-      setToken(null);
-      setUser(null);
-    })
-    .finally(() => {
-      setAuthLoading(false);
-    });
-  }, [token]);
-
-  // Load user data once authenticated via a single bootstrap call to reduce network waterfalls and boost initial page load speed
-  useEffect(() => {
-    if (!token) return;
-
-    fetch('http://127.0.0.1:3000/api/bootstrap')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to bootstrap dashboard data');
-        return res.json();
-      })
-      .then(data => {
-        if (data.logs && Array.isArray(data.logs)) {
-          setLogs(data.logs);
-        }
-        if (data.wallet) {
-          if (typeof data.wallet.balance === 'number') {
-            setWalletBalance(data.wallet.balance);
-          }
-          if (Array.isArray(data.wallet.transactions)) {
-            setTransactions(data.wallet.transactions);
-          }
-        }
-        if (data.apiKeys && Array.isArray(data.apiKeys)) {
-          setApiKeys(data.apiKeys);
-        }
-        if (data.webhooks && Array.isArray(data.webhooks)) {
-          setWebhooks(data.webhooks);
-        }
-      })
-      .catch(err => console.error('Bootstrap data fetch failed:', err));
-  }, [token]);
-
-  // Guard routing and redirect guest users to signin screen
-  useEffect(() => {
-    if (!authLoading && !token && currentTab !== 'landing' && !currentTab.startsWith('auth') && currentTab !== 'admin-portal') {
-      handleTabChange('auth-signin');
-    }
-  }, [currentTab, token, authLoading]);
-
-  // Sync state from popstate (back/forward navigation)
-  useEffect(() => {
-    const handlePopState = () => {
-      const { tab, subTab } = getTabFromPath(window.location.pathname);
-      setCurrentTab(tab);
-      if (subTab) {
-        setActiveDashboardSubTab(subTab);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const [adminSettingsTrigger, setAdminSettingsTrigger] = useState(0);
-  
-  // Sync custom event from Admin portal
-  useEffect(() => {
-    const handleUpdate = () => {
-      setAdminSettingsTrigger(prev => prev + 1);
-    };
-    window.addEventListener('sumer-admin-settings-updated', handleUpdate);
-    return () => window.removeEventListener('sumer-admin-settings-updated', handleUpdate);
-  }, []);
-
-  // Dynamic SEO metadata updates
-  useEffect(() => {
-    updateSEOMetadata(currentTab, lang);
-  }, [currentTab, lang, adminSettingsTrigger]);
-
-  // Dynamic Analytics Script Injection
-  useEffect(() => {
-    const savedAnalytics = localStorage.getItem('sumer_admin_analytics');
-    if (!savedAnalytics) return;
-    try {
-      const analytics = JSON.parse(savedAnalytics);
-      
-      // Handle Google Analytics (Gtag)
-      const gaId = analytics.googleAnalyticsId;
-      if (gaId) {
-        const scriptExists = document.querySelector(`script[src*="googletagmanager.com/gtag"]`);
-        if (!scriptExists) {
-          const newScript = document.createElement('script');
-          newScript.async = true;
-          newScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-          document.head.appendChild(newScript);
-
-          const inlineScript = document.createElement('script');
-          inlineScript.innerHTML = `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${gaId}');
-          `;
-          document.head.appendChild(inlineScript);
-          console.log(`%c[SumerSend Integration] Loaded Google Analytics ID: ${gaId}`, 'color: #10b981; font-weight: bold;');
-        }
-      }
-
-      // Handle GTM
-      const gtmId = analytics.gtmContainerId;
-      if (gtmId) {
-        let gtmScript = document.querySelector(`script[src*="gtm.js?id="]`);
-        if (!gtmScript) {
-          const scriptEl = document.createElement('script');
-          scriptEl.innerHTML = `
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${gtmId}');
-          `;
-          document.head.appendChild(scriptEl);
-          console.log(`%c[SumerSend Integration] Loaded Google Tag Manager: ${gtmId}`, 'color: #8b5cf6; font-weight: bold;');
-        }
-      }
-
-      // Handle Meta Pixel
-      const pixelId = analytics.metaPixelId;
-      if (pixelId) {
-        let pixelScript = document.querySelector(`script[src*="connect.facebook.net"]`);
-        if (!pixelScript) {
-          const scriptEl = document.createElement('script');
-          scriptEl.innerHTML = `
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
-            fbq('track', 'PageView');
-          `;
-          document.head.appendChild(scriptEl);
-          console.log(`%c[SumerSend Integration] Loaded Meta Pixel: ${pixelId}`, 'color: #3b82f6; font-weight: bold;');
-        }
-      }
-
-      // Handle Custom Header scripts
-      if (analytics.customHeadScript) {
-        const id = 'sumer-custom-head-scripts';
-        let wrapper = document.getElementById(id);
-        if (wrapper) wrapper.remove();
-        
-        wrapper = document.createElement('div');
-        wrapper.id = id;
-        wrapper.style.display = 'none';
-        wrapper.innerHTML = analytics.customHeadScript;
-        document.head.appendChild(wrapper);
-        const scripts = wrapper.getElementsByTagName('script');
-        for (let i = 0; i < scripts.length; i++) {
-          const s = document.createElement('script');
-          if (scripts[i].src) s.src = scripts[i].src;
-          s.innerHTML = scripts[i].innerHTML;
-          document.head.appendChild(s);
-        }
-      }
-
-      // Handle Custom Body scripts
-      if (analytics.customBodyScript) {
-        const id = 'sumer-custom-body-scripts';
-        let wrapper = document.getElementById(id);
-        if (wrapper) wrapper.remove();
-        
-        wrapper = document.createElement('div');
-        wrapper.id = id;
-        wrapper.style.display = 'none';
-        wrapper.innerHTML = analytics.customBodyScript;
-        document.body.appendChild(wrapper);
-        const scripts = wrapper.getElementsByTagName('script');
-        for (let i = 0; i < scripts.length; i++) {
-          const s = document.createElement('script');
-          if (scripts[i].src) s.src = scripts[i].src;
-          s.innerHTML = scripts[i].innerHTML;
-          document.body.appendChild(s);
-        }
-      }
-
-    } catch (e) {
-      console.error('Failed to inject analytics scripts', e);
-    }
-  }, [adminSettingsTrigger]);
-
-  // Handle HTML document adjustments (RTL and Theme toggles)
-  useEffect(() => {
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  }, [lang]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('sumer_theme', theme);
-  }, [theme]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('sumer_token');
-    setToken(null);
-    setUser(null);
-    handleTabChange('landing');
-  };
 
   const renderContent = () => {
     // Group tabs into our 7 new unified sections
@@ -527,7 +135,7 @@ export default function App() {
           theme={theme}
           logs={logs} 
           setLogs={setLogs}
-          setCurrentTab={handleTabChange} 
+          setCurrentTab={setCurrentTab} 
           domains={domains}
           setDomains={setDomains}
           apiKeys={apiKeys}
@@ -543,7 +151,7 @@ export default function App() {
           setEmailBody={setEmailBody}
           setEmailSubject={setEmailSubject}
           setMsgBody={setMsgBody}
-          setPlaygroundChannel={handlePlaygroundChannelChange}
+          setPlaygroundChannel={setPlaygroundChannel}
         />
       );
     }
@@ -568,8 +176,8 @@ export default function App() {
           msgBody={msgBody}
           setMsgBody={setMsgBody}
           playgroundChannel={playgroundChannel}
-          setPlaygroundChannel={handlePlaygroundChannelChange}
-          setCurrentTab={handleTabChange}
+          setPlaygroundChannel={setPlaygroundChannel}
+          setCurrentTab={setCurrentTab}
           initialTab={initialSubTab}
         />
       );
@@ -587,7 +195,7 @@ export default function App() {
           setWalletBalance={setWalletBalance}
           setPhoneNotifications={setPhoneNotifications}
           setLogs={setLogs}
-          setCurrentTab={handleTabChange}
+          setCurrentTab={setCurrentTab}
         />
       );
     }
@@ -603,7 +211,7 @@ export default function App() {
           walletBalance={walletBalance}
           transactions={transactions}
           domains={domains}
-          setCurrentTab={handleTabChange}
+          setCurrentTab={setCurrentTab}
           initialTab={initialSubTab}
         />
       );
@@ -621,8 +229,8 @@ export default function App() {
           setEmailBody={setEmailBody}
           setEmailSubject={setEmailSubject}
           setMsgBody={setMsgBody}
-          setPlaygroundChannel={handlePlaygroundChannelChange}
-          setCurrentTab={handleTabChange}
+          setPlaygroundChannel={setPlaygroundChannel}
+          setCurrentTab={setCurrentTab}
           setLogs={setLogs}
           setPhoneNotifications={setPhoneNotifications}
           initialTab={initialSubTab}
@@ -649,11 +257,11 @@ export default function App() {
           walletBalance={walletBalance}
           setWalletBalance={setWalletBalance}
           setPhoneNotifications={setPhoneNotifications}
-          setCurrentTab={handleTabChange}
+          setCurrentTab={setCurrentTab}
           setEmailBody={setEmailBody}
           setEmailSubject={setEmailSubject}
           setMsgBody={setMsgBody}
-          setPlaygroundChannel={handlePlaygroundChannelChange}
+          setPlaygroundChannel={setPlaygroundChannel}
         />
       );
     }
@@ -672,8 +280,8 @@ export default function App() {
           setEmailBody={setEmailBody}
           setEmailSubject={setEmailSubject}
           setMsgBody={setMsgBody}
-          setPlaygroundChannel={handlePlaygroundChannelChange}
-          setCurrentTab={handleTabChange}
+          setPlaygroundChannel={setPlaygroundChannel}
+          setCurrentTab={setCurrentTab}
           setLogs={setLogs}
           setPhoneNotifications={setPhoneNotifications}
           initialTab={initialSubTab}
@@ -686,7 +294,7 @@ export default function App() {
         <AdminPortalView 
           lang={lang}
           setLang={setLang}
-          setCurrentTab={handleTabChange}
+          setCurrentTab={setCurrentTab}
         />
       );
     }
@@ -698,7 +306,7 @@ export default function App() {
         theme={theme}
         logs={logs} 
         setLogs={setLogs}
-        setCurrentTab={handleTabChange} 
+        setCurrentTab={setCurrentTab} 
         domains={domains}
         setDomains={setDomains}
         apiKeys={apiKeys}
@@ -714,7 +322,7 @@ export default function App() {
         setEmailBody={setEmailBody}
         setEmailSubject={setEmailSubject}
         setMsgBody={setMsgBody}
-        setPlaygroundChannel={handlePlaygroundChannelChange}
+        setPlaygroundChannel={setPlaygroundChannel}
       />
     );
   };
@@ -762,7 +370,7 @@ export default function App() {
       <LandingView
         lang={lang}
         setLang={setLang}
-        setCurrentTab={handleTabChange}
+        setCurrentTab={setCurrentTab}
         theme={theme}
         setTheme={setTheme}
         user={user}
@@ -783,9 +391,9 @@ export default function App() {
           localStorage.setItem('sumer_token', t);
           setToken(t);
           setUser(u);
-          handleTabChange('dashboard');
+          setCurrentTab('dashboard');
         }}
-        onBackToLanding={() => handleTabChange('landing')}
+        onBackToLanding={() => setCurrentTab('landing')}
       />
     );
   }
@@ -798,7 +406,7 @@ export default function App() {
     <div className="app-container">
       <Sidebar
         currentTab={currentTab}
-        setCurrentTab={handleTabChange}
+        setCurrentTab={setCurrentTab}
         lang={lang}
         setLang={setLang}
         walletBalance={walletBalance}
@@ -867,7 +475,7 @@ export default function App() {
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
         lang={lang}
-        setCurrentTab={handleTabChange}
+        setCurrentTab={setCurrentTab}
         setTheme={setTheme}
         setLang={setLang}
         handleLogout={handleLogout}

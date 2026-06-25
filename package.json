@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm --prefix server run dev & vite",
+    "dev": "npm --prefix server run dev & npm --prefix whatsapp-service run dev & vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
