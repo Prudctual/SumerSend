@@ -509,6 +509,7 @@ export default function App() {
       <DashboardView 
         lang={lang} 
         logs={logs} 
+        setLogs={setLogs}
         setCurrentTab={handleTabChange} 
         domains={domains}
         setDomains={setDomains}
@@ -518,6 +519,8 @@ export default function App() {
         setWalletBalance={setWalletBalance}
         transactions={transactions}
         setTransactions={setTransactions}
+        phoneNotifications={phoneNotifications}
+        setPhoneNotifications={setPhoneNotifications}
         activeSubTab={activeDashboardSubTab}
         setActiveSubTab={setActiveDashboardSubTab}
       />

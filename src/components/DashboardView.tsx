@@ -33,6 +33,7 @@ import { ScrollReveal } from './LandingView';
 interface DashboardViewProps {
   lang: 'en' | 'ar';
   logs: any[];
+  setLogs?: React.Dispatch<React.SetStateAction<any[]>>;
   setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => void;
   domains?: any[];
   setDomains?: React.Dispatch<React.SetStateAction<any[]>>;
@@ -42,6 +43,8 @@ interface DashboardViewProps {
   setWalletBalance?: React.Dispatch<React.SetStateAction<number>>;
   transactions?: any[];
   setTransactions?: React.Dispatch<React.SetStateAction<any[]>>;
+  phoneNotifications?: any[];
+  setPhoneNotifications?: React.Dispatch<React.SetStateAction<any[]>>;
   activeSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet';
   setActiveSubTab?: React.Dispatch<React.SetStateAction<'channels' | 'domains' | 'apikeys' | 'wallet'>> | ((tab: 'channels' | 'domains' | 'apikeys' | 'wallet') => void);
 }
@@ -49,6 +52,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
   lang, 
   logs = [], 
+  setLogs,
   setCurrentTab,
   domains = [],
   setDomains,
@@ -58,6 +62,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   setWalletBalance,
   transactions = [],
   setTransactions,
+  phoneNotifications = [],
+  setPhoneNotifications,
   activeSubTab: propActiveSubTab,
   setActiveSubTab: propSetActiveSubTab
 }) => {
@@ -194,6 +200,98 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return () => clearInterval(interval);
   }, [lang, activeNotifIndex, mockNotifications]);
+
+  // --- Quick Send Console States ---
+  const [quickChannel, setQuickChannel] = useState<'sms' | 'whatsapp'>('sms');
+  const [quickPhone, setQuickPhone] = useState('07801234567');
+  const [quickBody, setQuickBody] = useState(
+    lang === 'ar' 
+      ? 'مرحباً من سومر سيند! رمز التفعيل الخاص بك هو 5928' 
+      : 'Hello from Sumer Send! Your activation code is 5928'
+  );
+  const [quickSending, setQuickSending] = useState(false);
+  const [quickSentSuccess, setQuickSentSuccess] = useState(false);
+
+  // Sync quick message template when language changes
+  useEffect(() => {
+    setQuickBody(
+      lang === 'ar'
+        ? 'مرحباً من سومر سيند! رمز التفعيل الخاص بك هو 5928'
+        : 'Hello from Sumer Send! Your activation code is 5928'
+    );
+  }, [lang]);
+
+  const handleQuickSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickPhone.trim() || !quickBody.trim()) return;
+
+    if (walletBalance < 20) {
+      alert(lang === 'ar' ? 'رصيد المحفظة غير كافٍ! (تكلفة الإرسال 20 د.ع)' : 'Insufficient wallet balance! (Cost is 20 IQD)');
+      return;
+    }
+
+    setQuickSending(true);
+
+    setTimeout(() => {
+      // 1. Deduct cost
+      if (setWalletBalance) {
+        setWalletBalance(prev => Math.max(0, prev - 20));
+      }
+
+      // 2. Append new log
+      if (setLogs) {
+        setLogs(prev => [
+          {
+            id: Date.now().toString(),
+            type: quickChannel,
+            from: 'Sumer Send Console',
+            to: quickPhone.trim(),
+            body: quickBody.trim(),
+            status: 'delivered',
+            timestamp: new Date().toISOString()
+          },
+          ...prev
+        ]);
+      }
+
+      // 3. Trigger live notification on phone simulator (Card 3)
+      const liveNotif = {
+        id: Date.now(),
+        uniqueId: Date.now(),
+        appName: quickChannel === 'sms' ? 'Sumer OTP' : 'WhatsApp',
+        icon: quickChannel === 'sms' ? '💬' : '🟢',
+        time: lang === 'ar' ? 'الآن' : 'now',
+        title: quickChannel === 'sms' ? 'رمز تحقق سريع' : 'إرسال سريع',
+        desc: quickBody.trim()
+      };
+      
+      setVisibleNotifs(prev => {
+        const nextList = [...prev, liveNotif];
+        if (nextList.length > 3) {
+          nextList.shift();
+        }
+        return nextList;
+      });
+
+      // 4. Update phone notification alerts list
+      if (setPhoneNotifications) {
+        setPhoneNotifications(prev => [
+          {
+            id: Date.now().toString(),
+            type: quickChannel,
+            title: quickChannel === 'sms' ? 'SMS: Sumer Send' : 'WhatsApp: Sumer Send',
+            body: quickBody.trim(),
+            time: lang === 'ar' ? 'الآن' : 'now'
+          },
+          ...prev
+        ]);
+      }
+
+      setQuickSending(false);
+      setQuickSentSuccess(true);
+      setTimeout(() => setQuickSentSuccess(false), 2000);
+    }, 800);
+  };
 
 
   // Onboarding status calculations
@@ -959,26 +1057,156 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
 
-                {/* Card 5: Teal Promo Banner */}
-                <div className="bento-card-flat bento-card-promo bento-card-teal">
-                  <div className="bento-card-teal-content">
-                    <span style={{ fontSize: '10px', fontWeight: 700, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      PROMO OFFERS
-                    </span>
-                    <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '2px 0 4px 0', lineHeight: 1.3 }}>
-                      {t.promoTitle}
-                    </h3>
-                    <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>
-                      {t.promoDesc}
-                    </p>
-                  </div>
-                  <div className="bento-card-teal-code" onClick={handleCopyPromo}>
-                    <span style={{ fontSize: '15px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '1px' }}>ZAIN10</span>
-                    <span style={{ fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                      {promoCopied ? <Check size={10} /> : <Copy size={10} />}
-                      {promoCopied ? (lang === 'ar' ? 'نسخ!' : 'Copied!') : (lang === 'ar' ? 'نسخ الكود' : 'Copy code')}
-                    </span>
-                  </div>
+                {/* Card 5: Quick Sandbox Composer */}
+                <div className="bento-card-flat bento-card-promo bento-card-quick-composer" style={{ padding: '16px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+                  <form onSubmit={handleQuickSend} style={{ display: 'flex', width: '100%', gap: '16px', height: '100%', alignItems: 'stretch' }}>
+                    
+                    {/* Left Column: Config & Action */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: '150px' }}>
+                      <div>
+                        {/* Title */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                          <span style={{ 
+                            fontSize: '9px', 
+                            fontWeight: 700, 
+                            color: '#10b981', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            {lang === 'ar' ? 'منصة الاختبار السريعة' : 'QUICK SANDBOX'}
+                          </span>
+                        </div>
+                        
+                        {/* Channel selector tabs */}
+                        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '2px', marginBottom: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setQuickChannel('sms')}
+                            style={{
+                              flex: 1,
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              background: quickChannel === 'sms' ? 'var(--text-primary)' : 'transparent',
+                              color: quickChannel === 'sms' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            SMS
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickChannel('whatsapp')}
+                            style={{
+                              flex: 1,
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              background: quickChannel === 'whatsapp' ? 'var(--text-primary)' : 'transparent',
+                              color: quickChannel === 'whatsapp' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            WhatsApp
+                          </button>
+                        </div>
+                        
+                        {/* Phone Number Input */}
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            value={quickPhone}
+                            onChange={(e) => setQuickPhone(e.target.value)}
+                            placeholder={lang === 'ar' ? 'رقم الهاتف المستلم' : 'Recipient phone'}
+                            style={{
+                              width: '100%',
+                              fontSize: '11px',
+                              background: 'var(--input-bg)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '8px',
+                              padding: '6px 8px',
+                              color: 'var(--text-primary)',
+                              fontFamily: 'monospace'
+                            }}
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Send Button */}
+                      <button
+                        type="submit"
+                        disabled={quickSending || !quickPhone || !quickBody}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: quickSentSuccess 
+                            ? '#10b981' 
+                            : (quickSending ? 'var(--text-muted)' : 'var(--text-primary)'),
+                          color: quickSentSuccess ? '#ffffff' : 'var(--panel-bg)',
+                          fontWeight: 700,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s',
+                          marginTop: '6px'
+                        }}
+                      >
+                        {quickSending ? (
+                          <span>{lang === 'ar' ? 'جاري الإرسال...' : 'Sending...'}</span>
+                        ) : quickSentSuccess ? (
+                          <>
+                            <Check size={11} />
+                            <span>{lang === 'ar' ? 'تم الإرسال!' : 'Sent successfully!'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={11} />
+                            <span>{lang === 'ar' ? 'إرسال رسالة تجريبية' : 'Send Test Notification'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Right Column: Message Content */}
+                    <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', minWidth: '150px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textAlign: 'start' }}>
+                        {lang === 'ar' ? 'نص الرسالة' : 'Message Body'}
+                      </span>
+                      <textarea
+                        value={quickBody}
+                        onChange={(e) => setQuickBody(e.target.value)}
+                        placeholder={lang === 'ar' ? 'اكتب نص الرسالة هنا...' : 'Type your message body here...'}
+                        style={{
+                          flex: 1,
+                          width: '100%',
+                          fontSize: '11px',
+                          background: 'var(--input-bg)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          color: 'var(--text-primary)',
+                          resize: 'none',
+                          lineHeight: '1.4'
+                        }}
+                        required
+                      />
+                    </div>
+                  </form>
                 </div>
 
                 {/* Card 6: Dark Forest Green API Status */}
