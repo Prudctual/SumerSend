@@ -6703,3 +6703,72 @@ textarea.auth-input {
     opacity: 0.6;
   }
 }
+
+/* Professional Showcase/Status Card Styles */
+.showcase-card-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 4px 6px;
+  position: relative;
+}
+
+.showcase-content-wrapper {
+  animation: professionalShowcaseFade 4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.showcase-tag {
+  align-self: flex-start;
+  font-size: 9px;
+  font-weight: 700;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(16, 185, 129, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+}
+
+.showcase-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.showcase-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+@keyframes professionalShowcaseFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(1px);
+  }
+  6% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  94% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(1px);
+  }
+}
+
