@@ -2327,7 +2327,13 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
             {/* Card 1: Total Subscribers */}
             <div className="sch-stat-card mint">
               <div className="sch-stat-header">
-                <div className="sch-stat-icon"><Users size={18} /></div>
+                <div className="sch-stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.18" />
+                    <circle cx="12" cy="10" r="3" />
+                    <path d="M6 18c0-2 2-3.5 6-3.5s6 1.5 6 3.5" />
+                  </svg>
+                </div>
                 <span className="sch-stat-badge">
                   <TrendingUp size={10} style={{ marginInlineEnd: '2px' }} />
                   {totalCount > 0 ? '+' + Math.min(totalCount, 12) + '%' : '—'}
@@ -2340,7 +2346,15 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
             {/* Card 2: Active Subscribers */}
             <div className="sch-stat-card amber">
               <div className="sch-stat-header">
-                <div className="sch-stat-icon"><CheckCircle2 size={18} /></div>
+                <div className="sch-stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.18" />
+                    <circle cx="10" cy="10" r="2.5" />
+                    <path d="M6 17c0-1.5 1.5-2.5 4-2.5s4 1 4 2.5" />
+                    <circle cx="17" cy="8" r="3.5" fill="currentColor" fillOpacity="0.3" stroke="none" />
+                    <path d="M15.5 8l1 1 2-2" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
+                </div>
                 <span className="sch-stat-badge">
                   {activePercent}%
                 </span>
@@ -2352,7 +2366,15 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
             {/* Card 3: Unsubscribed */}
             <div className="sch-stat-card rose">
               <div className="sch-stat-header">
-                <div className="sch-stat-icon"><XCircle size={18} /></div>
+                <div className="sch-stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.18" />
+                    <circle cx="10" cy="10" r="2.5" />
+                    <path d="M6 17c0-1.5 1.5-2.5 4-2.5s4 1 4 2.5" />
+                    <circle cx="17" cy="8" r="3.5" fill="currentColor" fillOpacity="0.3" stroke="none" />
+                    <path d="M15.5 8h3" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
+                </div>
                 <span className="sch-stat-badge">
                   {unsubPercent}%
                 </span>
@@ -2364,7 +2386,15 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
             {/* Card 4: Welcome Emails Sent */}
             <div className="sch-stat-card sky">
               <div className="sch-stat-header">
-                <div className="sch-stat-icon"><Mail size={18} /></div>
+                <div className="sch-stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.18" />
+                    <path d="M7 9l5 3.5L17 9" />
+                    <rect x="6" y="8" width="12" height="8" rx="1.5" />
+                    <path d="M12 5v1" strokeWidth="1.5" strokeDasharray="1 1" />
+                    <path d="M15 4.5l1.5-1.5M7.5 4.5L9 3" strokeWidth="1.5" />
+                  </svg>
+                </div>
                 <span className="sch-stat-badge">
                   {lang === 'ar' ? 'تلقائي' : 'AUTO'}
                 </span>
@@ -2392,7 +2422,11 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                 </span>
                 <div className="sch-showcase-header">
                   <div className="sch-showcase-icon orange">
-                    <UserPlus size={16} />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fillOpacity="0.15" />
+                      <path d="M9 12h6M12 9v6" />
+                      <circle cx="12" cy="12" r="7" strokeDasharray="3 3" />
+                    </svg>
                   </div>
                   <h3 className="sch-showcase-title">
                     {lang === 'ar' ? 'لوحة تحكم المشتركين' : 'Subscribers Database'}
@@ -2438,7 +2472,12 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                 </span>
                 <div className="sch-showcase-header">
                   <div className="sch-showcase-icon blue">
-                    <Code size={16} />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fillOpacity="0.15" />
+                      <circle cx="7" cy="12" r="2.5" />
+                      <circle cx="17" cy="12" r="2.5" fill="currentColor" />
+                      <path d="M9.5 12h5" />
+                    </svg>
                   </div>
                   <h3 className="sch-showcase-title">
                     {lang === 'ar' ? 'أكواد ونماذج التضمين' : 'Embeddable Forms'}
