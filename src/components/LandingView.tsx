@@ -637,6 +637,26 @@ func main() {
         .apple-animate-fade {
           animation: appleFade 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        .bento-features-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        @media (max-width: 768px) {
+          .bento-features-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+        }
+        .bento-col-span-2 {
+          grid-column: span 2;
+        }
+        @media (max-width: 768px) {
+          .bento-col-span-2 {
+            grid-column: span 1 !important;
+          }
+        }
         
         .apple-bento-card {
           position: relative;
@@ -1500,18 +1520,13 @@ func main() {
           }}>
             {isAr ? 'قنوات الإرسال المدعومة' : 'Supported Delivery Channels'}
           </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '24px'
-          }}>
+          <div className="bento-features-grid">
             {/* Email API Card - Large (Span 2) */}
             <BentoCard glowColor="37, 99, 235" style={{
-              gridColumn: 'span 2',
               minHeight: '340px'
-            }} className="apple-bento-card">
+            }} className="apple-bento-card bento-col-span-2">
               {/* Visual Simulator */}
-              <div className="bento-sim-container">
+              <div className="bento-sim-container" style={{ height: '120px', position: 'relative' }}>
                 {/* Animated envelope and screen */}
                 <div style={{
                   width: '60px',
@@ -1561,7 +1576,7 @@ func main() {
                     <span style={{ 
                       fontSize: '7px', 
                       fontWeight: 700, 
-                      color: 'var(--success-color)', 
+                      color: 'var(--success-text)', 
                       backgroundColor: 'var(--success-bg)', 
                       padding: '1px 3px', 
                       borderRadius: '2px' 
@@ -1587,7 +1602,7 @@ func main() {
               minHeight: '340px'
             }} className="apple-bento-card">
               {/* Radar Simulator */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
+              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', height: '110px' }}>
                 <div style={{
                   position: 'relative',
                   width: '70px',
@@ -1643,10 +1658,10 @@ func main() {
               minHeight: '340px'
             }} className="apple-bento-card">
               {/* Live routing visual */}
-              <div className="bento-sim-container" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+              <div className="bento-sim-container" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', height: '110px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
                   <span style={{ fontWeight: 700 }}>CARRIER ROUTER</span>
-                  <span style={{ color: 'var(--success-color)', marginInlineStart: 'auto' }}>100% Tunnel UP</span>
+                  <span style={{ color: 'var(--success-text)', marginInlineStart: 'auto' }}>100% Tunnel UP</span>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <span style={{ fontSize: '8px', backgroundColor: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>ZAIN</span>
@@ -1661,7 +1676,7 @@ func main() {
               </div>
 
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success-color)', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success-text)', marginBottom: '14px' }}>
                   <Cpu size={22} />
                   <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Iraq Carriers</span>
                 </div>
@@ -1674,11 +1689,10 @@ func main() {
 
             {/* SMS API Card - Large (Span 2) */}
             <BentoCard glowColor="16, 185, 129" style={{
-              gridColumn: 'span 2',
               minHeight: '340px'
-            }} className="apple-bento-card">
+            }} className="apple-bento-card bento-col-span-2">
               {/* SMS Simulator visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
                 <div style={{
                   width: '180px',
                   height: '80px',
@@ -1703,7 +1717,7 @@ func main() {
                         <span style={{ fontSize: '11px', fontWeight: 600 }}> ]</span>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success-text)' }}>
                         <CheckCircle2 size={13} />
                         <span style={{ fontSize: '11.5px', fontWeight: 700 }}>9281 Verified</span>
                       </div>
@@ -1734,11 +1748,10 @@ func main() {
 
             {/* WhatsApp API Card - Large (Span 2) */}
             <BentoCard glowColor="37, 211, 102" style={{
-              gridColumn: 'span 2',
               minHeight: '340px'
-            }} className="apple-bento-card">
+            }} className="apple-bento-card bento-col-span-2">
               {/* Interactive WhatsApp chat visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' }}>
+              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', height: '130px' }}>
                 <div style={{
                   width: '240px',
                   border: '1px solid var(--border-color)',
@@ -1747,7 +1760,7 @@ func main() {
                   boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
                   overflow: 'hidden'
                 }}>
-                  <div style={{ backgroundColor: 'var(--channel-whatsapp)', padding: '6px 12px', color: 'white', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ backgroundColor: '#075e54', padding: '6px 12px', color: 'white', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'white' }} />
                     <span>Sumer Send Whatsapp Bridge</span>
                   </div>
@@ -1768,13 +1781,13 @@ func main() {
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button 
                           onClick={() => setWhatsappMockState('confirmed')}
-                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--success-color)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
+                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--success-text)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
                         >
                           Confirm
                         </button>
                         <button 
                           onClick={() => setWhatsappMockState('cancelled')}
-                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--danger-color)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
+                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--danger-text)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
                         >
                           Cancel
                         </button>
@@ -1809,7 +1822,7 @@ func main() {
               minHeight: '340px'
             }} className="apple-bento-card">
               {/* Key signature visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
                 <div style={{
                   border: '1.5px solid var(--border-color)',
                   borderRadius: '8px',
@@ -1823,7 +1836,7 @@ func main() {
                   gap: '4px'
                 }}>
                   <div style={{ color: 'var(--text-muted)' }}># API KEY VERIFICATION</div>
-                  <div style={{ color: 'var(--success-color)' }}>KEY_AUTHORIZED: true</div>
+                  <div style={{ color: 'var(--success-text)' }}>KEY_AUTHORIZED: true</div>
                   <div style={{ color: 'var(--accent-color)' }}>SIGNATURE: sha256_0a21f...</div>
                 </div>
               </div>
@@ -1899,7 +1912,7 @@ func main() {
                 <div style={{
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: 'var(--success-color)',
+                  color: 'var(--success-text)',
                   backgroundColor: 'var(--success-bg)',
                   padding: '2px 8px',
                   borderRadius: '6px'
@@ -1941,7 +1954,7 @@ func main() {
                     </div>
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px 16px' }}>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>Delivery Rate</span>
-                      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--success-color)' }}>{mockStats.rate}%</span>
+                      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--success-text)' }}>{mockStats.rate}%</span>
                     </div>
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px 16px' }}>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>Wallet Balance</span>
@@ -2084,7 +2097,7 @@ func main() {
                             <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{log.to}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
                               {log.status}
                             </span>
@@ -2193,7 +2206,7 @@ func main() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: activeCodeTab === tab ? '#ffffff' : '#71717a',
+                        color: activeCodeTab === tab ? '#ffffff' : '#a1a1aa',
                         fontSize: '11px',
                         fontWeight: 700,
                         padding: '4px 10px',
@@ -2215,7 +2228,7 @@ func main() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#71717a',
+                      color: '#a1a1aa',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -2225,10 +2238,10 @@ func main() {
                       transition: 'color 0.2s'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#e2e8f0'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#71717a'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#a1a1aa'}
                     title="Copy snippet"
                   >
-                    {copied ? <Check size={11} style={{ color: 'var(--success-color)' }} /> : <Copy size={11} />}
+                    {copied ? <Check size={11} style={{ color: 'var(--success-text)' }} /> : <Copy size={11} />}
                     <span>{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -2504,8 +2517,7 @@ func main() {
                       fontSize: '44px', 
                       fontWeight: 800, 
                       letterSpacing: '-2px', 
-                      color: 'var(--text-primary)',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                      color: 'var(--text-primary)'
                     }}>
                       {totalCost.toLocaleString()}
                     </span>
