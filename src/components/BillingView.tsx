@@ -518,7 +518,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
                   <input type="checkbox" style={{ opacity: 0, width: 0, height: 0 }} checked={autoTopUp} onChange={(e) => setAutoTopUp(e.target.checked)} />
                   <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: autoTopUp ? 'var(--accent-color)' : 'var(--border-color)', transition: '0.4s', borderRadius: '24px' }}>
-                    <span style={{ position: 'absolute', content: '""', height: '18px', width: '18px', left: autoTopUp ? '22px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></span>
+                    <span style={{ position: 'absolute', content: '""', height: '18px', width: '18px', left: lang === 'ar' ? (autoTopUp ? '3px' : '23px') : (autoTopUp ? '23px' : '3px'), bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></span>
                   </span>
                 </label>
               </div>

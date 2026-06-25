@@ -2570,6 +2570,16 @@ select:focus {
   transform: translateX(20px);
 }
 
+/* Global RTL support for toggle switches */
+[dir="rtl"] .switch-slider:before {
+  left: auto;
+  right: 3px;
+}
+
+[dir="rtl"] .switch-control input:checked + .switch-slider:before {
+  transform: translateX(-20px);
+}
+
 /* Mobile responsive settings menu */
 .settings-sidebar-section {
   display: flex;
