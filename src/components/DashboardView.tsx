@@ -452,9 +452,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         dashboardTitle: 'Main Dashboard',
         manage: 'Manage System',
         tabOverview: 'Overview',
-        tabDomains: 'Domains',
-        tabApiKeys: 'API Keys',
-        tabWallet: 'Wallet & Billing',
+        tabWhatsApp: 'WhatsApp Connection',
+        tabCampaigns: 'Campaigns',
+        tabSubscribers: 'Audience & Lists',
         tabTemplates: 'Template Management',
         todaySends: "Today's Sends",
         activeKeys: 'Active Keys',
@@ -526,9 +526,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         dashboardTitle: 'لوحة التحكم',
         manage: 'إدارة النظام',
         tabOverview: 'نظرة عامة',
-        tabDomains: 'النطاقات',
-        tabApiKeys: 'مفاتيح الـ API',
-        tabWallet: 'المحفظة والشحن',
+        tabWhatsApp: 'ربط واتساب',
+        tabCampaigns: 'حملات الإرسال',
+        tabSubscribers: 'إدارة المشتركين',
         tabTemplates: 'تصميم وإدارة القوالب',
         todaySends: 'إرسال اليوم',
         activeKeys: 'المفاتيح النشطة',
@@ -834,45 +834,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Left Area (2/3 width) */}
         <div className="dashboard-left-col">
           
-          {/* Header Row */}
-          <div className="flex-between" style={{ alignItems: 'flex-end' }}>
-            <div style={{ textAlign: 'start' }}>
-              <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                {t.dashboardTitle}
-              </h1>
-              {/* Tabs list inside dashboard */}
-              <div className="dashboard-header-tabs">
-                <button 
-                  onClick={() => handleTabClick('channels')} 
-                  className={`dashboard-tab-btn ${activeSubTab === 'channels' ? 'active' : ''}`}
-                >
-                  {t.tabOverview}
-                </button>
-                <button 
-                  onClick={() => handleTabClick('domains')} 
-                  className={`dashboard-tab-btn ${activeSubTab === 'domains' ? 'active' : ''}`}
-                >
-                  {t.tabDomains}
-                </button>
-                <button 
-                  onClick={() => handleTabClick('apikeys')} 
-                  className={`dashboard-tab-btn ${activeSubTab === 'apikeys' ? 'active' : ''}`}
-                >
-                  {t.tabApiKeys}
-                </button>
-                <button 
-                  onClick={() => handleTabClick('wallet')} 
-                  className={`dashboard-tab-btn ${activeSubTab === 'wallet' ? 'active' : ''}`}
-                >
-                  {t.tabWallet}
-                </button>
-                <button 
-                  onClick={() => handleTabClick('templates')} 
-                  className={`dashboard-tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
-                >
-                  {t.tabTemplates}
-                </button>
-              </div>
+          {/* Title Row */}
+          <div style={{ textAlign: 'start', marginBottom: '4px' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+              {t.dashboardTitle}
+            </h1>
+          </div>
+
+          {/* Tabs & Actions Bar */}
+          <div className="flex-between" style={{ 
+            alignItems: 'center', 
+            borderBottom: '1px solid var(--border-color)',
+            paddingBottom: '8px',
+            marginBottom: '20px'
+          }}>
+            <div className="dashboard-header-tabs" style={{ borderBottom: 'none', paddingBottom: 0, marginTop: 0 }}>
+              <button 
+                onClick={() => handleTabClick('channels')} 
+                className={`dashboard-tab-btn ${activeSubTab === 'channels' ? 'active' : ''}`}
+              >
+                {t.tabOverview}
+              </button>
+              <button 
+                onClick={() => setCurrentTab('whatsapp')} 
+                className="dashboard-tab-btn"
+              >
+                {t.tabWhatsApp}
+              </button>
+              <button 
+                onClick={() => setCurrentTab('campaigns')} 
+                className="dashboard-tab-btn"
+              >
+                {t.tabCampaigns}
+              </button>
+              <button 
+                onClick={() => setCurrentTab('subscribers')} 
+                className="dashboard-tab-btn"
+              >
+                {t.tabSubscribers}
+              </button>
+              <button 
+                onClick={() => handleTabClick('templates')} 
+                className={`dashboard-tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
+              >
+                {t.tabTemplates}
+              </button>
             </div>
             
             {/* Manage system dropdown */}
@@ -886,12 +892,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 fontSize: '13px',
                 fontWeight: 700,
                 borderRadius: '12px',
-                height: '38px',
-                padding: '0 16px',
+                height: '34px',
+                padding: '0 14px',
                 backgroundColor: 'var(--panel-bg)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-primary)',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                alignSelf: 'center'
               }}
             >
               <span>{t.manage}</span>
