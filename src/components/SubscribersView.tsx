@@ -1019,7 +1019,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           padding: 22px 24px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 12px;
           position: relative;
           overflow: hidden;
           box-shadow: var(--card-shadow);
@@ -1027,22 +1027,46 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           cursor: default;
         }
 
+        /* Ambient Glow Behind Stats Cards */
+        .sch-stat-card::before {
+          content: "";
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          filter: blur(35px);
+          opacity: 0.12;
+          z-index: 0;
+          top: -20px;
+          right: -20px;
+        }
+        .sch-stat-card.mint::before { background: #10b981; }
+        .sch-stat-card.amber::before { background: #f59e0b; }
+        .sch-stat-card.rose::before { background: #ef4444; }
+        .sch-stat-card.sky::before { background: #3b82f6; }
+
         .sch-stat-card:hover {
           transform: translateY(-3px);
           box-shadow: var(--card-shadow-hover);
-          border-color: rgba(16, 185, 129, 0.12);
         }
+        .sch-stat-card.mint:hover { border-color: rgba(16, 185, 129, 0.25); }
+        .sch-stat-card.amber:hover { border-color: rgba(245, 158, 11, 0.25); }
+        .sch-stat-card.rose:hover { border-color: rgba(239, 68, 68, 0.25); }
+        .sch-stat-card.sky:hover { border-color: rgba(59, 130, 246, 0.25); }
 
         /* Color-Specific Icon Badges & Accents */
         .sch-stat-card .sch-stat-icon {
           width: 36px;
           height: 36px;
-          border-radius: 12px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
           transition: transform 0.25s ease;
+          z-index: 1;
+          color: #ffffff !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .sch-stat-card:hover .sch-stat-icon {
@@ -1051,42 +1075,22 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         /* Mint (Total Subscribers) */
         .sch-stat-card.mint .sch-stat-icon {
-          background: rgba(16, 185, 129, 0.08);
-          color: #047857;
-        }
-        [data-theme="dark"] .sch-stat-card.mint .sch-stat-icon {
-          background: rgba(16, 185, 129, 0.16);
-          color: #34d399;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
 
         /* Amber (Active) */
         .sch-stat-card.amber .sch-stat-icon {
-          background: rgba(245, 158, 11, 0.08);
-          color: #b45309;
-        }
-        [data-theme="dark"] .sch-stat-card.amber .sch-stat-icon {
-          background: rgba(245, 158, 11, 0.16);
-          color: #fbbf24;
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
 
         /* Rose (Unsubscribed) */
         .sch-stat-card.rose .sch-stat-icon {
-          background: rgba(239, 68, 68, 0.08);
-          color: #b91c1c;
-        }
-        [data-theme="dark"] .sch-stat-card.rose .sch-stat-icon {
-          background: rgba(239, 68, 68, 0.16);
-          color: #f87171;
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         }
 
         /* Sky (Welcome Sent) */
         .sch-stat-card.sky .sch-stat-icon {
-          background: rgba(59, 130, 246, 0.08);
-          color: #1e40af;
-        }
-        [data-theme="dark"] .sch-stat-card.sky .sch-stat-icon {
-          background: rgba(59, 130, 246, 0.16);
-          color: #93c5fd;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
         .sch-stat-value {
@@ -1095,25 +1099,62 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           letter-spacing: -1px;
           line-height: 1;
           color: var(--text-primary);
+          z-index: 1;
         }
 
         .sch-stat-label {
           font-size: 13px;
           font-weight: 600;
           color: var(--text-secondary);
+          z-index: 1;
         }
 
         .sch-stat-badge {
           display: inline-flex;
           align-items: center;
           gap: 3px;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 700;
-          padding: 2px 8px;
-          border-radius: 99px;
-          background: var(--panel-muted);
-          color: var(--text-secondary);
-          border: 1px solid var(--border-color);
+          padding: 3px 8px;
+          border-radius: 6px;
+          border: none;
+          z-index: 1;
+        }
+
+        .sch-stat-card.mint .sch-stat-badge {
+          background: rgba(16, 185, 129, 0.08);
+          color: #047857;
+        }
+        [data-theme="dark"] .sch-stat-card.mint .sch-stat-badge {
+          background: rgba(16, 185, 129, 0.16);
+          color: #34d399;
+        }
+
+        .sch-stat-card.amber .sch-stat-badge {
+          background: rgba(245, 158, 11, 0.08);
+          color: #b45309;
+        }
+        [data-theme="dark"] .sch-stat-card.amber .sch-stat-badge {
+          background: rgba(245, 158, 11, 0.16);
+          color: #fbbf24;
+        }
+
+        .sch-stat-card.rose .sch-stat-badge {
+          background: rgba(239, 68, 68, 0.08);
+          color: #b91c1c;
+        }
+        [data-theme="dark"] .sch-stat-card.rose .sch-stat-badge {
+          background: rgba(239, 68, 68, 0.16);
+          color: #f87171;
+        }
+
+        .sch-stat-card.sky .sch-stat-badge {
+          background: rgba(59, 130, 246, 0.08);
+          color: #1e40af;
+        }
+        [data-theme="dark"] .sch-stat-card.sky .sch-stat-badge {
+          background: rgba(59, 130, 246, 0.16);
+          color: #93c5fd;
         }
 
         /* ─── Main Content Layout ─── */
@@ -2282,13 +2323,13 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         /* ═══════════════════════════════════════ */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
           
-          {/* ─── Pastel Stat Cards ─── */}
           <div className="sch-stats-row">
+            {/* Card 1: Total Subscribers */}
             <div className="sch-stat-card mint">
               <div className="sch-stat-header">
                 <div className="sch-stat-icon"><Users size={18} /></div>
                 <span className="sch-stat-badge">
-                  <TrendingUp size={10} />
+                  <TrendingUp size={10} style={{ marginInlineEnd: '2px' }} />
                   {totalCount > 0 ? '+' + Math.min(totalCount, 12) + '%' : '—'}
                 </span>
               </div>
@@ -2296,6 +2337,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
               <div className="sch-stat-label">{t.statTotal}</div>
             </div>
 
+            {/* Card 2: Active Subscribers */}
             <div className="sch-stat-card amber">
               <div className="sch-stat-header">
                 <div className="sch-stat-icon"><CheckCircle2 size={18} /></div>
@@ -2307,6 +2349,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
               <div className="sch-stat-label">{t.statActive}</div>
             </div>
 
+            {/* Card 3: Unsubscribed */}
             <div className="sch-stat-card rose">
               <div className="sch-stat-header">
                 <div className="sch-stat-icon"><XCircle size={18} /></div>
@@ -2318,16 +2361,23 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
               <div className="sch-stat-label">{t.statUnsubscribed}</div>
             </div>
 
+            {/* Card 4: Welcome Emails Sent */}
             <div className="sch-stat-card sky">
               <div className="sch-stat-header">
                 <div className="sch-stat-icon"><Mail size={18} /></div>
+                <span className="sch-stat-badge">
+                  {lang === 'ar' ? 'تلقائي' : 'AUTO'}
+                </span>
               </div>
-              <div className="sch-stat-value" style={{ fontSize: '20px', fontWeight: 700 }}>
+              <div className="sch-stat-value" style={{ 
+                color: settings.welcomeEnabled ? 'var(--success-color)' : 'var(--danger-color)'
+              }}>
                 {settings.welcomeEnabled ? (lang === 'ar' ? '✓ نشط' : '✓ Active') : (lang === 'ar' ? '✗ معطل' : '✗ Disabled')}
               </div>
               <div className="sch-stat-label">{t.statWelcomeSent}</div>
             </div>
           </div>
+
 
           {/* ─── Premium Showcase Row (Tips & Giveaways Styles) ─── */}
           <div className="sch-showcase-row" style={{ direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
