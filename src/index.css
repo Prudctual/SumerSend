@@ -6823,16 +6823,16 @@ textarea.auth-input {
 .mock-phone-container {
   width: 100%;
   height: 100%;
-  min-height: 380px;
+  min-height: unset;
   background: linear-gradient(180deg, rgba(8, 14, 28, 0.9) 0%, rgba(2, 4, 8, 0.98) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 20px 10px;
+  padding: 12px 10px;
   position: relative;
-  border-radius: 24px;
+  border-radius: inherit;
 }
 
 /* Elegant radial mesh-like accent overlay behind phone */
@@ -6851,7 +6851,7 @@ textarea.auth-input {
 .mock-phone-shell {
   width: 100%;
   max-width: 195px;
-  height: 340px;
+  height: 310px;
   border: 7px solid #27272a;
   border-radius: 32px;
   background: radial-gradient(circle at top, #18181b, #09090b);
