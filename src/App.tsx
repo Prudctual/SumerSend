@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { 
   Mail, MessageSquare, Phone, Check, X, Search as SearchIcon, ChevronDown,
   LayoutDashboard, BarChart3, Activity, Wallet, Server, Globe, Key, 
@@ -6,29 +6,28 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Sidebar } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
+import { LogsView } from './components/LogsView';
+import { ReportsView } from './components/ReportsView';
+import { PlaygroundView } from './components/PlaygroundView';
+import { CampaignsView } from './components/CampaignsView';
+import { BillingView } from './components/BillingView';
+import { SettingsIntegrationsView } from './components/SettingsIntegrationsView';
 import { LandingView } from './components/LandingView';
+import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
+import { SubscribersView } from './components/SubscribersView';
+import { SendConsoleView } from './components/SendConsoleView';
+import { ChannelsView } from './components/ChannelsView';
+import { AnalyticsLogsView } from './components/AnalyticsLogsView';
+import { PlatformSettingsView } from './components/PlatformSettingsView';
 import { SkeletonView } from './components/SkeletonView';
 import { getTabFromPath, getPathFromTab, updateSEOMetadata } from './utils/seo';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
-
-// Lazy-loaded views (code-split into separate chunks)
-const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
-const LogsView = lazy(() => import('./components/LogsView').then(m => ({ default: m.LogsView })));
-const ReportsView = lazy(() => import('./components/ReportsView').then(m => ({ default: m.ReportsView })));
-const PlaygroundView = lazy(() => import('./components/PlaygroundView').then(m => ({ default: m.PlaygroundView })));
-const CampaignsView = lazy(() => import('./components/CampaignsView').then(m => ({ default: m.CampaignsView })));
-const BillingView = lazy(() => import('./components/BillingView').then(m => ({ default: m.BillingView })));
-const SettingsIntegrationsView = lazy(() => import('./components/SettingsIntegrationsView').then(m => ({ default: m.SettingsIntegrationsView })));
-const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
-const SubscribersView = lazy(() => import('./components/SubscribersView').then(m => ({ default: m.SubscribersView })));
-const SendConsoleView = lazy(() => import('./components/SendConsoleView').then(m => ({ default: m.SendConsoleView })));
-const ChannelsView = lazy(() => import('./components/ChannelsView').then(m => ({ default: m.ChannelsView })));
-const AnalyticsLogsView = lazy(() => import('./components/AnalyticsLogsView').then(m => ({ default: m.AnalyticsLogsView })));
-const PlatformSettingsView = lazy(() => import('./components/PlatformSettingsView').then(m => ({ default: m.PlatformSettingsView })));
-const AdminPortalView = lazy(() => import('./components/AdminPortalView').then(m => ({ default: m.AdminPortalView })));
+import { AdminPortalView } from './components/AdminPortalView';
 
 import { useSumer } from './context/SumerContext';
+
 
 
 export default function App() {
@@ -464,13 +463,11 @@ export default function App() {
         </div>
 
         <div className="content-container tab-transition-wrapper">
-          <Suspense fallback={<SkeletonView tab={currentTab} lang={lang} />}>
-            {viewLoading ? (
-              <SkeletonView tab={currentTab} lang={lang} />
-            ) : (
-              renderContent()
-            )}
-          </Suspense>
+          {viewLoading ? (
+            <SkeletonView tab={currentTab} lang={lang} />
+          ) : (
+            renderContent()
+          )}
         </div>
       </main>
       <ToastContainer lang={lang} />
