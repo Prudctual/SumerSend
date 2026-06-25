@@ -1959,6 +1959,263 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           border-color: var(--accent-text);
           box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.08);
         }
+
+        /* ─── Premium Showcase Row & Cards ─── */
+        .sch-showcase-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 28px;
+        }
+
+        @media (max-width: 768px) {
+          .sch-showcase-row {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .sch-showcase-card {
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 20px;
+          padding: 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: relative;
+          overflow: hidden;
+          box-shadow: var(--card-shadow);
+          min-height: 190px;
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+          gap: 16px;
+        }
+
+        .sch-showcase-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--card-shadow-hover);
+          border-color: rgba(16, 185, 129, 0.15);
+        }
+
+        .sch-showcase-card::before {
+          content: "";
+          position: absolute;
+          width: 140px;
+          height: 140px;
+          border-radius: 50%;
+          filter: blur(40px);
+          opacity: 0.12;
+          z-index: 0;
+          top: -20px;
+          right: -20px;
+        }
+
+        .sch-showcase-card.tips::before {
+          background: #6366f1;
+        }
+
+        .sch-showcase-card.giveaway::before {
+          background: #10b981;
+        }
+
+        .sch-showcase-content {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+          flex: 1;
+          z-index: 2;
+          text-align: start;
+        }
+
+        .sch-showcase-badge {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(99, 102, 241, 0.08);
+          color: #6366f1;
+        }
+
+        .sch-showcase-card.giveaway .sch-showcase-badge {
+          background: rgba(16, 185, 129, 0.08);
+          color: #10b981;
+        }
+
+        .sch-showcase-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sch-showcase-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        .sch-showcase-icon.orange {
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .sch-showcase-icon.blue {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .sch-showcase-title {
+          font-size: 16px;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .sch-showcase-desc {
+          font-size: 12.5px;
+          color: var(--text-secondary);
+          line-height: 1.4;
+          margin: 0;
+          max-width: 280px;
+        }
+
+        .sch-showcase-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 6px;
+        }
+
+        .sch-showcase-visual {
+          position: relative;
+          width: 140px;
+          height: 110px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          z-index: 1;
+        }
+
+        .sch-avatar-group {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .sch-visual-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 3px solid var(--panel-bg);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+        }
+
+        .sch-visual-avatar.av1 {
+          background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%);
+          left: 10px;
+          top: 35px;
+          z-index: 3;
+        }
+
+        .sch-visual-avatar.av2 {
+          background: linear-gradient(135deg, #86efac 0%, #10b981 100%);
+          left: 45px;
+          top: 25px;
+          z-index: 2;
+        }
+
+        .sch-visual-avatar.av3 {
+          background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
+          left: 80px;
+          top: 35px;
+          z-index: 1;
+        }
+
+        .sch-visual-bubble {
+          position: absolute;
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+          border-radius: 12px;
+          padding: 4px 10px;
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+          animation: sch-float 4s ease-in-out infinite;
+        }
+
+        .sch-visual-bubble.b1 {
+          left: -10px;
+          top: 5px;
+          animation-delay: 0s;
+        }
+
+        .sch-visual-bubble.b2 {
+          right: -10px;
+          top: 10px;
+          animation-delay: 2s;
+        }
+
+        .sch-visual-widget {
+          width: 90px;
+          height: 70px;
+          background: var(--panel-bg);
+          border: 1.5px solid var(--border-color);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+          border-radius: 10px;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          transform: rotate(-8deg) translateY(5px);
+          transition: transform 0.3s ease;
+        }
+
+        .sch-showcase-card:hover .sch-visual-widget {
+          transform: rotate(-4deg) translateY(0);
+        }
+
+        .sch-visual-widget-line {
+          height: 5px;
+          border-radius: 3px;
+          background: var(--panel-muted);
+          width: 100%;
+        }
+
+        .sch-visual-widget-line.short {
+          width: 60%;
+        }
+
+        .sch-visual-widget-btn {
+          height: 12px;
+          background: #6366f1;
+          border-radius: 4px;
+          width: 100%;
+          margin-top: auto;
+        }
+
+        .sch-confetti-particle {
+          position: absolute;
+          width: 5px;
+          height: 5px;
+          border-radius: 2px;
+          opacity: 0.6;
+        }
+
+        .sch-confetti-particle.p1 { background: #3b82f6; left: 10px; top: 15px; transform: rotate(15deg); }
+        .sch-confetti-particle.p2 { background: #ec4899; right: 20px; top: 20px; transform: rotate(45deg); }
+        .sch-confetti-particle.p3 { background: #10b981; left: 15px; bottom: 15px; transform: rotate(-30deg); }
+        .sch-confetti-particle.p4 { background: #f59e0b; right: 20px; bottom: 25px; transform: rotate(60deg); }
       `}</style>
 
       {/* ═══════════ Page Header & Tab Navigation Combined Row ═══════════ */}
@@ -2069,6 +2326,111 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                 {settings.welcomeEnabled ? (lang === 'ar' ? '✓ نشط' : '✓ Active') : (lang === 'ar' ? '✗ معطل' : '✗ Disabled')}
               </div>
               <div className="sch-stat-label">{t.statWelcomeSent}</div>
+            </div>
+          </div>
+
+          {/* ─── Premium Showcase Row (Tips & Giveaways Styles) ─── */}
+          <div className="sch-showcase-row" style={{ direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+            {/* Card 1: Subscribers Console (Tips Style) */}
+            <div className="sch-showcase-card tips">
+              <div className="sch-showcase-content">
+                <span className="sch-showcase-badge" style={{ 
+                  background: 'rgba(245, 158, 11, 0.08)', 
+                  color: '#d97706' 
+                }}>
+                  {lang === 'ar' ? 'إجراءات سريعة' : 'QUICK ACTIONS'}
+                </span>
+                <div className="sch-showcase-header">
+                  <div className="sch-showcase-icon orange">
+                    <UserPlus size={16} />
+                  </div>
+                  <h3 className="sch-showcase-title">
+                    {lang === 'ar' ? 'لوحة تحكم المشتركين' : 'Subscribers Database'}
+                  </h3>
+                </div>
+                <p className="sch-showcase-desc">
+                  {lang === 'ar' 
+                    ? 'أضف جهات اتصال يدوياً أو استورد جهات الاتصال من ملفات Excel و CSV لإطلاق حملاتك.' 
+                    : 'Manage subscriber lists, add records manually, or upload spreadsheets to grow your audience.'}
+                </p>
+                <div className="sch-showcase-actions">
+                  <button onClick={() => setIsAddModalOpen(true)} className="sch-btn sch-btn-primary" style={{ borderRadius: '10px', height: '32px', fontSize: '12px', padding: '0 12px' }}>
+                    <Plus size={12} />
+                    <span>{lang === 'ar' ? 'إضافة مشترك' : 'Add Subscriber'}</span>
+                  </button>
+                  <button onClick={() => setIsImportModalOpen(true)} className="sch-btn" style={{ borderRadius: '10px', height: '32px', fontSize: '12px', padding: '0 12px' }}>
+                    <Upload size={12} />
+                    <span>{lang === 'ar' ? 'استيراد ملف' : 'Import CSV'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="sch-showcase-visual">
+                <div className="sch-avatar-group">
+                  <div className="sch-visual-avatar av1">👩‍💻</div>
+                  <div className="sch-visual-avatar av2">👨‍💻</div>
+                  <div className="sch-visual-avatar av3">🧑‍💻</div>
+                  <div className="sch-visual-bubble b1">
+                    {lang === 'ar' ? 'شكراً!' : 'Thanks!'}
+                  </div>
+                  <div className="sch-visual-bubble b2">
+                    {lang === 'ar' ? 'تم الاشتراك!' : 'Subscribed!'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Web Opt-in Widgets (Giveaways Style) */}
+            <div className="sch-showcase-card giveaway">
+              <div className="sch-showcase-content">
+                <span className="sch-showcase-badge">
+                  {lang === 'ar' ? 'تكامل وتضمين' : 'INTEGRATIONS'}
+                </span>
+                <div className="sch-showcase-header">
+                  <div className="sch-showcase-icon blue">
+                    <Code size={16} />
+                  </div>
+                  <h3 className="sch-showcase-title">
+                    {lang === 'ar' ? 'أكواد ونماذج التضمين' : 'Embeddable Forms'}
+                  </h3>
+                </div>
+                <p className="sch-showcase-desc">
+                  {lang === 'ar' 
+                    ? 'صمم نموذج اشتراك مخصص وضعه في موقعك الإلكتروني لتسجيل الزوار تلقائياً.' 
+                    : 'Embed custom newsletter opt-in forms on your website or Substack to automate signup.'}
+                </p>
+                <div className="sch-showcase-actions">
+                  <button onClick={() => setActiveSubTab('settings')} className="sch-btn" style={{ 
+                    borderRadius: '10px', 
+                    height: '32px', 
+                    fontSize: '12px', 
+                    padding: '0 12px',
+                    background: '#6366f1',
+                    color: '#ffffff',
+                    borderColor: '#6366f1'
+                  }}>
+                    <Settings size={12} style={{ color: '#ffffff' }} />
+                    <span>{lang === 'ar' ? 'إعداد الكود التفاعلي' : 'Setup Widget'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="sch-showcase-visual">
+                <div className="sch-confetti-particle p1" />
+                <div className="sch-confetti-particle p2" />
+                <div className="sch-confetti-particle p3" />
+                <div className="sch-confetti-particle p4" />
+                
+                <div className="sch-visual-widget">
+                  <div className="sch-visual-widget-line" />
+                  <div className="sch-visual-widget-line short" />
+                  <div className="sch-visual-widget-btn" />
+                </div>
+                
+                <div className="sch-visual-bubble b2" style={{ right: '5px', bottom: '10px', top: 'auto', background: '#ecfdf5', borderColor: '#a7f3d0', color: '#065f46' }}>
+                  {lang === 'ar' ? 'تم التفعيل!' : 'Done!'}
+                </div>
+              </div>
             </div>
           </div>
 
