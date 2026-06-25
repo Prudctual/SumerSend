@@ -22,27 +22,50 @@ import { ChannelsView } from './components/ChannelsView';
 import { AnalyticsLogsView } from './components/AnalyticsLogsView';
 import { PlatformSettingsView } from './components/PlatformSettingsView';
 import { SkeletonView } from './components/SkeletonView';
+import { getTabFromPath, getPathFromTab, updateSEOMetadata } from './utils/seo';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { AdminPortalView } from './components/AdminPortalView';
 
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<string>('landing');
-  const [activeDashboardSubTab, setActiveDashboardSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet'>('channels');
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const { tab } = getTabFromPath(window.location.pathname);
+    return tab;
+  });
+  const [activeDashboardSubTab, setActiveDashboardSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates'>(() => {
+    const { subTab } = getTabFromPath(window.location.pathname);
+    return subTab || 'channels';
+  });
   const [viewLoading, setViewLoading] = useState<boolean>(false);
   const loadingTimerRef = React.useRef<any>(null);
 
-  const handleTabChange = (newTab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => {
+  const handleTabChange = (newTab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => {
     let targetTab = newTab;
-    if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing'].includes(newTab)) {
+    let targetSubTab: any = undefined;
+    if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing', 'templates'].includes(newTab)) {
       targetTab = 'dashboard';
       if (newTab === 'domains') {
         setActiveDashboardSubTab('domains');
+        targetSubTab = 'domains';
       } else if (newTab === 'apikeys' || newTab === 'api') {
         setActiveDashboardSubTab('apikeys');
+        targetSubTab = 'apikeys';
       } else if (newTab === 'wallet' || newTab === 'billing') {
         setActiveDashboardSubTab('wallet');
+        targetSubTab = 'wallet';
+      } else if (newTab === 'templates') {
+        setActiveDashboardSubTab('templates');
+        targetSubTab = 'templates';
       } else if (newTab === 'dashboard') {
         setActiveDashboardSubTab(subTab || 'channels');
+        targetSubTab = subTab || 'channels';
       }
+    }
+
+    // Sync with browser history
+    const newPath = getPathFromTab(targetTab, targetSubTab);
+    if (window.location.pathname !== newPath) {
+      window.history.pushState(null, '', newPath);
     }
 
     if (targetTab !== currentTab) {
@@ -50,7 +73,7 @@ export default function App() {
         clearTimeout(loadingTimerRef.current);
       }
       
-      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup'].includes(targetTab);
+      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'admin-portal'].includes(targetTab);
       
       if (isConsoleTab) {
         setViewLoading(true);
@@ -328,11 +351,154 @@ export default function App() {
 
   // Guard routing and redirect guest users to signin screen
   useEffect(() => {
-    if (!authLoading && !token && currentTab !== 'landing' && !currentTab.startsWith('auth')) {
+    if (!authLoading && !token && currentTab !== 'landing' && !currentTab.startsWith('auth') && currentTab !== 'admin-portal') {
       handleTabChange('auth-signin');
     }
   }, [currentTab, token, authLoading]);
 
+  // Sync state from popstate (back/forward navigation)
+  useEffect(() => {
+    const handlePopState = () => {
+      const { tab, subTab } = getTabFromPath(window.location.pathname);
+      setCurrentTab(tab);
+      if (subTab) {
+        setActiveDashboardSubTab(subTab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const [adminSettingsTrigger, setAdminSettingsTrigger] = useState(0);
+  
+  // Sync custom event from Admin portal
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAdminSettingsTrigger(prev => prev + 1);
+    };
+    window.addEventListener('sumer-admin-settings-updated', handleUpdate);
+    return () => window.removeEventListener('sumer-admin-settings-updated', handleUpdate);
+  }, []);
+
+  // Dynamic SEO metadata updates
+  useEffect(() => {
+    updateSEOMetadata(currentTab, lang);
+  }, [currentTab, lang, adminSettingsTrigger]);
+
+  // Dynamic Analytics Script Injection
+  useEffect(() => {
+    const savedAnalytics = localStorage.getItem('sumer_admin_analytics');
+    if (!savedAnalytics) return;
+    try {
+      const analytics = JSON.parse(savedAnalytics);
+      
+      // Handle Google Analytics (Gtag)
+      const gaId = analytics.googleAnalyticsId;
+      if (gaId) {
+        const scriptExists = document.querySelector(`script[src*="googletagmanager.com/gtag"]`);
+        if (!scriptExists) {
+          const newScript = document.createElement('script');
+          newScript.async = true;
+          newScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+          document.head.appendChild(newScript);
+
+          const inlineScript = document.createElement('script');
+          inlineScript.innerHTML = `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${gaId}');
+          `;
+          document.head.appendChild(inlineScript);
+          console.log(`%c[SumerSend Integration] Loaded Google Analytics ID: ${gaId}`, 'color: #10b981; font-weight: bold;');
+        }
+      }
+
+      // Handle GTM
+      const gtmId = analytics.gtmContainerId;
+      if (gtmId) {
+        let gtmScript = document.querySelector(`script[src*="gtm.js?id="]`);
+        if (!gtmScript) {
+          const scriptEl = document.createElement('script');
+          scriptEl.innerHTML = `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${gtmId}');
+          `;
+          document.head.appendChild(scriptEl);
+          console.log(`%c[SumerSend Integration] Loaded Google Tag Manager: ${gtmId}`, 'color: #8b5cf6; font-weight: bold;');
+        }
+      }
+
+      // Handle Meta Pixel
+      const pixelId = analytics.metaPixelId;
+      if (pixelId) {
+        let pixelScript = document.querySelector(`script[src*="connect.facebook.net"]`);
+        if (!pixelScript) {
+          const scriptEl = document.createElement('script');
+          scriptEl.innerHTML = `
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '${pixelId}');
+            fbq('track', 'PageView');
+          `;
+          document.head.appendChild(scriptEl);
+          console.log(`%c[SumerSend Integration] Loaded Meta Pixel: ${pixelId}`, 'color: #3b82f6; font-weight: bold;');
+        }
+      }
+
+      // Handle Custom Header scripts
+      if (analytics.customHeadScript) {
+        const id = 'sumer-custom-head-scripts';
+        let wrapper = document.getElementById(id);
+        if (wrapper) wrapper.remove();
+        
+        wrapper = document.createElement('div');
+        wrapper.id = id;
+        wrapper.style.display = 'none';
+        wrapper.innerHTML = analytics.customHeadScript;
+        document.head.appendChild(wrapper);
+        const scripts = wrapper.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+          const s = document.createElement('script');
+          if (scripts[i].src) s.src = scripts[i].src;
+          s.innerHTML = scripts[i].innerHTML;
+          document.head.appendChild(s);
+        }
+      }
+
+      // Handle Custom Body scripts
+      if (analytics.customBodyScript) {
+        const id = 'sumer-custom-body-scripts';
+        let wrapper = document.getElementById(id);
+        if (wrapper) wrapper.remove();
+        
+        wrapper = document.createElement('div');
+        wrapper.id = id;
+        wrapper.style.display = 'none';
+        wrapper.innerHTML = analytics.customBodyScript;
+        document.body.appendChild(wrapper);
+        const scripts = wrapper.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+          const s = document.createElement('script');
+          if (scripts[i].src) s.src = scripts[i].src;
+          s.innerHTML = scripts[i].innerHTML;
+          document.body.appendChild(s);
+        }
+      }
+
+    } catch (e) {
+      console.error('Failed to inject analytics scripts', e);
+    }
+  }, [adminSettingsTrigger]);
 
   // Handle HTML document adjustments (RTL and Theme toggles)
   useEffect(() => {
@@ -358,7 +524,9 @@ export default function App() {
       return (
         <DashboardView 
           lang={lang} 
+          theme={theme}
           logs={logs} 
+          setLogs={setLogs}
           setCurrentTab={handleTabChange} 
           domains={domains}
           setDomains={setDomains}
@@ -368,8 +536,14 @@ export default function App() {
           setWalletBalance={setWalletBalance}
           transactions={transactions}
           setTransactions={setTransactions}
+          phoneNotifications={phoneNotifications}
+          setPhoneNotifications={setPhoneNotifications}
           activeSubTab={activeDashboardSubTab}
           setActiveSubTab={setActiveDashboardSubTab}
+          setEmailBody={setEmailBody}
+          setEmailSubject={setEmailSubject}
+          setMsgBody={setMsgBody}
+          setPlaygroundChannel={handlePlaygroundChannelChange}
         />
       );
     }
@@ -507,10 +681,21 @@ export default function App() {
       );
     }
 
+    if (currentTab === 'admin-portal') {
+      return (
+        <AdminPortalView 
+          lang={lang}
+          setLang={setLang}
+          setCurrentTab={handleTabChange}
+        />
+      );
+    }
+
     // Default Fallback (Dashboard)
     return (
       <DashboardView 
         lang={lang} 
+        theme={theme}
         logs={logs} 
         setLogs={setLogs}
         setCurrentTab={handleTabChange} 
@@ -526,6 +711,10 @@ export default function App() {
         setPhoneNotifications={setPhoneNotifications}
         activeSubTab={activeDashboardSubTab}
         setActiveSubTab={setActiveDashboardSubTab}
+        setEmailBody={setEmailBody}
+        setEmailSubject={setEmailSubject}
+        setMsgBody={setMsgBody}
+        setPlaygroundChannel={handlePlaygroundChannelChange}
       />
     );
   };
@@ -634,6 +823,7 @@ export default function App() {
                 activeDashboardSubTab === 'channels' ? (lang === 'ar' ? 'لوحة التحكم > نظرة عامة' : 'Dashboard > Overview') :
                 activeDashboardSubTab === 'domains' ? (lang === 'ar' ? 'لوحة التحكم > النطاقات' : 'Dashboard > Domains') :
                 activeDashboardSubTab === 'apikeys' ? (lang === 'ar' ? 'لوحة التحكم > مفاتيح الـ API' : 'Dashboard > API Keys') :
+                activeDashboardSubTab === 'templates' ? (lang === 'ar' ? 'لوحة التحكم > تصميم وإدارة القوالب' : 'Dashboard > Template Management') :
                 (lang === 'ar' ? 'لوحة التحكم > المحفظة والشحن' : 'Dashboard > Wallet & Billing')
                ) : 
                ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns') :
@@ -672,6 +862,7 @@ export default function App() {
         </div>
       </main>
       <ToastContainer lang={lang} />
+      <CookieConsentBanner lang={lang} />
       <CommandPalette 
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 

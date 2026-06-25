@@ -729,33 +729,81 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const getPreviewText = (text: string, recipient: any) => {
     if (!text) return '';
     let result = text;
-    if (recipient) {
-      result = result.replaceAll('{{name}}', recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader'));
-      result = result.replaceAll('{{email}}', recipient.email || recipient.to || '');
-      result = result.replaceAll('{{phone}}', recipient.to || '');
-      
-      // Support dynamic replacements of all keys inside the recipient object (like variables)
-      if (recipient.variables) {
-        Object.keys(recipient.variables).forEach(key => {
-          result = result.replaceAll(`{{${key}}}`, recipient.variables[key] || '');
-        });
+
+    // Find all placeholders matching {{variable}} or {{ variable }}
+    const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+    const tags: string[] = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const tag = match[1];
+      if (!tags.includes(tag)) {
+        tags.push(tag);
       }
-      Object.keys(recipient).forEach(key => {
-        if (key !== 'variables') {
-          result = result.replaceAll(`{{${key}}}`, recipient[key] || '');
+    }
+
+    const template = getMergedTemplates(campChannel).find(t => t.id === campTemplateId);
+
+    tags.forEach(tag => {
+      let val: any = undefined;
+      const tagLower = tag.toLowerCase();
+
+      if (recipient) {
+        // 1. Direct field match or case variations in variables
+        val = recipient[tag] || recipient.variables?.[tag] || recipient.variables?.[tagLower];
+        
+        // 2. Smart mapping for common names/emails/phones
+        if (val === undefined) {
+          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
+            val = recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader');
+          } else if (tagLower === 'email') {
+            val = recipient.email || recipient.to || '';
+          } else if (tagLower === 'phone') {
+            val = recipient.phone || recipient.to || '';
+          }
         }
-      });
-    }
-    
-    // Fallbacks from template variables
-    const templates = getMergedTemplates(campChannel);
-    const template = templates.find(t => t.id === campTemplateId);
-    if (template && template.variables) {
-      template.variables.forEach((v: any) => {
-        const val = lang === 'ar' ? (v.defaultValAr || v.defaultValEn) : (v.defaultValEn || v.defaultValAr);
-        result = result.replaceAll(`{{${v.key}}}`, val);
-      });
-    }
+
+        // 3. Fallback to template variable default if val is still undefined
+        if (val === undefined && template) {
+          const tmplVar = template.variables?.find((v: any) => v.key === tag);
+          if (tmplVar) {
+            val = lang === 'ar' ? (tmplVar.defaultValAr || tmplVar.defaultValEn) : (tmplVar.defaultValEn || tmplVar.defaultValAr);
+          }
+        }
+
+        // 4. Default fallback if still undefined for a specific recipient (replace with empty to avoid code tags in preview)
+        if (val === undefined) {
+          val = '';
+        }
+      } else {
+        // If no recipient is provided (general preview mode)
+        // 1. Try template variable defaults
+        if (template) {
+          const tmplVar = template.variables?.find((v: any) => v.key === tag);
+          if (tmplVar) {
+            val = lang === 'ar' ? (tmplVar.defaultValAr || tmplVar.defaultValEn) : (tmplVar.defaultValEn || tmplVar.defaultValAr);
+          }
+        }
+
+        // 2. Try generic placeholder fallback
+        if (val === undefined) {
+          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
+            val = lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader';
+          } else if (tagLower === 'email') {
+            val = lang === 'ar' ? 'البريد الإلكتروني' : 'Email';
+          } else if (tagLower === 'phone') {
+            val = lang === 'ar' ? 'رقم الهاتف' : 'Phone Number';
+          }
+        }
+      }
+
+      // Perform replacement if we resolved a value
+      if (val !== undefined) {
+        const escapeTag = tag.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const tagRegex = new RegExp(`\\{\\{\\s*${escapeTag}\\s*\\}\\}`, 'g');
+        result = result.replace(tagRegex, val);
+      }
+    });
+
     return result;
   };
 
@@ -1000,46 +1048,14 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         continue;
       }
       
-      // Compute personalized message
-      let personalizedBody = campBody.replaceAll('{{name}}', rc.name);
-      
-      // Look up template for variable fallback default values
-      const template = getMergedTemplates(campChannel).find(t => t.id === campTemplateId);
-
-      const regex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
-      const bodyTags: string[] = [];
-      let match;
-      while ((match = regex.exec(campBody)) !== null) {
-        const tag = match[1];
-        if (!bodyTags.includes(tag) && tag !== 'name') {
-          bodyTags.push(tag);
-        }
-      }
-
-      bodyTags.forEach(tag => {
-        // Find in recipient variables (case-insensitive or matching case) or direct fields
-        let val = (rc as any)[tag] || rc.variables?.[tag] || rc.variables?.[tag.toLowerCase()];
-        
-        // If not found, use template fallback
-        if (val === undefined && template) {
-          const tmplVar = template.variables?.find((v: any) => v.key === tag);
-          if (tmplVar) {
-            val = lang === 'ar' ? (tmplVar.defaultValAr || tmplVar.defaultValEn) : (tmplVar.defaultValEn || tmplVar.defaultValAr);
-          }
-        }
-        
-        // Final fallback
-        if (val === undefined) {
-          val = '';
-        }
-        
-        personalizedBody = personalizedBody.replaceAll(`{{${tag}}}`, val);
-      });
+      // Compute personalized message and subject
+      const personalizedBody = getPreviewText(campBody, rc);
+      const personalizedSubject = campChannel === 'email' ? getPreviewText(campSubject, rc) : '';
       
       const payload = campChannel === 'email' ? {
         from: smtpConfig?.from || undefined,
         to: rc.to,
-        subject: campSubject || 'Campaign Alert!',
+        subject: personalizedSubject || 'Campaign Alert!',
         html: `<p>${personalizedBody}</p>`
       } : {
         to: rc.to,
@@ -1378,21 +1394,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             </BentoCard>
           </div>
 
-          {/* Sub-tabs pills */}
-          <div className="capsule-tab-container" style={{ marginBottom: '20px' }}>
-            <button
-              onClick={() => { setCampaignSubTab('campaigns'); setIsCreatingTemplate(false); }}
-              className={`capsule-tab-btn ${campaignSubTab === 'campaigns' ? 'active' : ''}`}
-            >
-              {lang === 'ar' ? 'سجل وأرشيف الحملات' : 'Campaign History'}
-            </button>
-            <button
-              onClick={() => setCampaignSubTab('templates')}
-              className={`capsule-tab-btn ${campaignSubTab === 'templates' ? 'active' : ''}`}
-            >
-              {lang === 'ar' ? 'تصميم وإدارة القوالب' : 'Template Management'}
-            </button>
-          </div>
+          {/* Templates tab navigation is removed here since it is now a dedicated standalone page in Sidebar and Dashboard */}
 
           {campaignSubTab === 'campaigns' ? (
             /* Campaigns History */

@@ -120,7 +120,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
         body: JSON.stringify(payload)
       });
       
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text.slice(0, 100) || (lang === 'ar' ? 'فشل الاتصال بالخادم. تأكد من تشغيل السيرفر.' : 'Server connection failed. Ensure server is running.'));
+      }
       
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ar' ? 'فشلت العملية. يرجى المحاولة مرة أخرى.' : 'Operation failed. Please try again.'));

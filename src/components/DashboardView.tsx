@@ -29,12 +29,13 @@ import {
   DollarSign
 } from 'lucide-react';
 import { ScrollReveal } from './LandingView';
+import { TemplatesView } from './TemplatesView';
 
 interface DashboardViewProps {
   lang: 'en' | 'ar';
   logs: any[];
   setLogs?: React.Dispatch<React.SetStateAction<any[]>>;
-  setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => void;
+  setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => void;
   domains?: any[];
   setDomains?: React.Dispatch<React.SetStateAction<any[]>>;
   apiKeys?: any[];
@@ -45,8 +46,13 @@ interface DashboardViewProps {
   setTransactions?: React.Dispatch<React.SetStateAction<any[]>>;
   phoneNotifications?: any[];
   setPhoneNotifications?: React.Dispatch<React.SetStateAction<any[]>>;
-  activeSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet';
-  setActiveSubTab?: React.Dispatch<React.SetStateAction<'channels' | 'domains' | 'apikeys' | 'wallet'>> | ((tab: 'channels' | 'domains' | 'apikeys' | 'wallet') => void);
+  activeSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates';
+  setActiveSubTab?: React.Dispatch<React.SetStateAction<'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates'>> | ((tab: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => void);
+  theme?: 'light' | 'dark';
+  setEmailBody?: (body: string) => void;
+  setEmailSubject?: (subject: string) => void;
+  setMsgBody?: (body: string) => void;
+  setPlaygroundChannel?: (channel: 'email' | 'sms' | 'whatsapp') => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
@@ -65,7 +71,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   phoneNotifications = [],
   setPhoneNotifications,
   activeSubTab: propActiveSubTab,
-  setActiveSubTab: propSetActiveSubTab
+  setActiveSubTab: propSetActiveSubTab,
+  theme,
+  setEmailBody,
+  setEmailSubject,
+  setMsgBody,
+  setPlaygroundChannel
 }) => {
   const [showStepsAnyway, setShowStepsAnyway] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
@@ -76,7 +87,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [promoCopied, setPromoCopied] = useState(false);
 
   // Active sub-view tab inside dashboard overview
-  const [localActiveSubTab, setLocalActiveSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet'>('channels');
+  const [localActiveSubTab, setLocalActiveSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates'>('channels');
   const activeSubTab = propActiveSubTab !== undefined ? propActiveSubTab : localActiveSubTab;
   const setActiveSubTab = propSetActiveSubTab !== undefined ? propSetActiveSubTab : setLocalActiveSubTab;
 
@@ -352,7 +363,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [step1Done, step2Done, step3Done, step4Done]);
 
   // Handler for custom tab switches
-  const handleTabClick = (tabKey: 'channels' | 'domains' | 'apikeys' | 'wallet') => {
+  const handleTabClick = (tabKey: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => {
     setActiveSubTab(tabKey);
   };
 
@@ -444,6 +455,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         tabDomains: 'Domains',
         tabApiKeys: 'API Keys',
         tabWallet: 'Wallet & Billing',
+        tabTemplates: 'Template Management',
         todaySends: "Today's Sends",
         activeKeys: 'Active Keys',
         availableBalance: 'Available Balance',
@@ -517,6 +529,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         tabDomains: 'النطاقات',
         tabApiKeys: 'مفاتيح الـ API',
         tabWallet: 'المحفظة والشحن',
+        tabTemplates: 'تصميم وإدارة القوالب',
         todaySends: 'إرسال اليوم',
         activeKeys: 'المفاتيح النشطة',
         availableBalance: 'الرصيد المتاح',
@@ -852,6 +865,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   className={`dashboard-tab-btn ${activeSubTab === 'wallet' ? 'active' : ''}`}
                 >
                   {t.tabWallet}
+                </button>
+                <button 
+                  onClick={() => handleTabClick('templates')} 
+                  className={`dashboard-tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
+                >
+                  {t.tabTemplates}
                 </button>
               </div>
             </div>
@@ -1522,6 +1541,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           )}
 
+          {activeSubTab === 'templates' && (
+            <TemplatesView
+              lang={lang}
+              theme={theme || 'dark'}
+              setEmailBody={setEmailBody || (() => {})}
+              setEmailSubject={setEmailSubject || (() => {})}
+              setMsgBody={setMsgBody || (() => {})}
+              setPlaygroundChannel={setPlaygroundChannel || (() => {})}
+              setCurrentTab={setCurrentTab}
+              setLogs={setLogs || (() => {})}
+              walletBalance={walletBalance}
+              setWalletBalance={setWalletBalance || (() => {})}
+              setPhoneNotifications={setPhoneNotifications || (() => {})}
+              domains={domains}
+            />
+          )}
+
         </div>
 
         {/* Right Sidebar (1/3 width) */}
@@ -1620,203 +1656,232 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* C. Hourly Schedule Timeline */}
-          <div className="sidebar-timeline-section">
-            <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'start' }}>
-              {t.calendarTitle}
-            </h3>
-            
-            <div className="timeline-schedule-container">
-              <div className="timeline-vertical-line" />
-
-              {selectedDayNumber === 21 ? (
-                <>
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">08:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-empty-slot" />
-                    </div>
+          {/* --- Timeline Row Renderers to support infinite seamless looping --- */}
+          {(() => {
+            const renderDay21Rows = () => (
+              <>
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">08:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
                   </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">08:30</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-empty-slot" />
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">09:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node green" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new green">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.otpVerify}</span>
-                          <span className="timeline-card-time">09:00 AM - 10:00 AM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <MessageSquare size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">09:30</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-empty-slot" />
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">10:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node yellow" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new yellow">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.dnsSync}</span>
-                          <span className="timeline-card-time">10:00 AM - 11:30 AM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <RefreshCw size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">10:30</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-empty-slot" />
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">11:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node red" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new red">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.sandboxUpdate}</span>
-                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <Zap size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (selectedDayNumber === 10 || selectedDayNumber === 12) ? (
-                <>
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">09:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node green" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new green">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.zainCashWebhookAudit}</span>
-                          <span className="timeline-card-time">09:00 AM - 10:30 AM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <Settings size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">11:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node yellow" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new yellow">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.waTemplateSync}</span>
-                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <MessageSquare size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : selectedDayNumber === 20 ? (
-                <>
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">10:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node red" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new red">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.smtpTuning}</span>
-                          <span className="timeline-card-time">10:00 AM - 11:30 AM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <Mail size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="timeline-row-new">
-                    <div className="timeline-time-col">11:00</div>
-                    <div className="timeline-line-col">
-                      <div className="timeline-line-segment" />
-                      <div className="timeline-pin-node green" />
-                    </div>
-                    <div className="timeline-card-col">
-                      <div className="timeline-event-card-new green">
-                        <div className="timeline-card-info">
-                          <span className="timeline-card-title">{t.billingCycleCheck}</span>
-                          <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
-                        </div>
-                        <div className="timeline-card-icon">
-                          <Zap size={13} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '32px 16px', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                    <AlertCircle size={20} style={{ opacity: 0.5 }} />
-                    <span>{t.noEvents}</span>
+                  <div className="timeline-card-col">
+                    <div className="timeline-empty-slot" />
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">08:30</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-empty-slot" />
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">09:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node green" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new green">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.otpVerify}</span>
+                        <span className="timeline-card-time">09:00 AM - 10:00 AM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <MessageSquare size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">09:30</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-empty-slot" />
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">10:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node yellow" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new yellow">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.dnsSync}</span>
+                        <span className="timeline-card-time">10:00 AM - 11:30 AM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <RefreshCw size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">10:30</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-empty-slot" />
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">11:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node red" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new red">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.sandboxUpdate}</span>
+                        <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <Zap size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+
+            const renderDay10Rows = () => (
+              <>
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">09:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node green" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new green">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.zainCashWebhookAudit}</span>
+                        <span className="timeline-card-time">09:00 AM - 10:30 AM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <Settings size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">11:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node yellow" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new yellow">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.waTemplateSync}</span>
+                        <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <MessageSquare size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+
+            const renderDay20Rows = () => (
+              <>
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">10:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node red" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new red">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.smtpTuning}</span>
+                        <span className="timeline-card-time">10:00 AM - 11:30 AM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <Mail size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-row-new">
+                  <div className="timeline-time-col">11:00</div>
+                  <div className="timeline-line-col">
+                    <div className="timeline-line-segment" />
+                    <div className="timeline-pin-node green" />
+                  </div>
+                  <div className="timeline-card-col">
+                    <div className="timeline-event-card-new green">
+                      <div className="timeline-card-info">
+                        <span className="timeline-card-title">{t.billingCycleCheck}</span>
+                        <span className="timeline-card-time">11:00 AM - 12:30 PM</span>
+                      </div>
+                      <div className="timeline-card-icon">
+                        <Zap size={13} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+
+            return (
+              <div className="sidebar-timeline-section">
+                <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'start' }}>
+                  {t.calendarTitle}
+                </h3>
+                
+                <div className="timeline-schedule-container">
+                  {/* Subtle creative top & bottom fog layers */}
+                  <div className="timeline-fog-overlay top" />
+                  <div className="timeline-fog-overlay bottom" />
+                  <div className="timeline-vertical-line" />
+
+                  {selectedDayNumber === 21 ? (
+                    <div className="timeline-scroll-wrapper">
+                      {renderDay21Rows()}
+                      {renderDay21Rows()}
+                    </div>
+                  ) : (selectedDayNumber === 10 || selectedDayNumber === 12) ? (
+                    <div className="timeline-scroll-wrapper">
+                      {renderDay10Rows()}
+                      {renderDay10Rows()}
+                    </div>
+                  ) : selectedDayNumber === 20 ? (
+                    <div className="timeline-scroll-wrapper">
+                      {renderDay20Rows()}
+                      {renderDay20Rows()}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '32px 16px', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <AlertCircle size={20} style={{ opacity: 0.5 }} />
+                        <span>{t.noEvents}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
 

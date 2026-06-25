@@ -1524,6 +1524,7 @@ body {
 :root {
   --bg-color: #e8efeb;        /* Soft sage-tinted background inspired by premium dashboards */
   --panel-bg: #ffffff;        /* Pure white floating card surfaces */
+  --panel-bg-rgb: 255, 255, 255;
   --panel-elevated: #ffffff;  
   --panel-muted: #eef3f0;     /* Soft sage-muted sidebar background */
   --border-color: rgba(0, 0, 0, 0.04); /* Nearly invisible border — shadow does the work */
@@ -1559,6 +1560,7 @@ body {
 [data-theme="dark"] {
   --bg-color: #0b100e;        /* Deep forest-dark background */
   --panel-bg: #141a17;        /* Elevated dark sage card surfaces */
+  --panel-bg-rgb: 20, 26, 23;
   --panel-elevated: #1c2420;  /* Hovered or elevated menu layers */
   --panel-muted: #111714;     /* Structured secondary sidebar background */
   --border-color: rgba(255, 255, 255, 0.06); /* Whisper-thin luminous border */
@@ -6595,9 +6597,53 @@ textarea.auth-input {
   padding-top: 20px;
 }
 
+/* Infinite Scrolling Timeline with top & bottom fog overlays */
 .timeline-schedule-container {
+  position: relative;
+  height: 250px; /* fixed height to show ~3 rows cleanly */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.timeline-scroll-wrapper {
+  display: flex;
+  flex-direction: column;
+  animation: infiniteScrollUp 22s linear infinite;
+  will-change: transform;
+}
+
+.timeline-scroll-wrapper:hover {
+  animation-play-state: paused;
+}
+
+@keyframes infiniteScrollUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.timeline-fog-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px; /* increased height for a gentler, more gradual fade */
+  z-index: 10;
+  pointer-events: none; /* ensures clicks pass through to event cards */
+  transition: background 0.3s;
+}
+
+.timeline-fog-overlay.top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--panel-bg) 15%, rgba(var(--panel-bg-rgb), 0) 100%);
+}
+
+.timeline-fog-overlay.bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--panel-bg) 15%, rgba(var(--panel-bg-rgb), 0) 100%);
 }
 
 .timeline-row-new {

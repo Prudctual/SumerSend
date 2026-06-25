@@ -154,22 +154,76 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleInsertTag = (field: string) => {
-    if (!textareaRef.current) {
-      setTextBody(prev => prev + ` {{${field}}}`);
+    const activeEl = document.activeElement as HTMLInputElement | HTMLTextAreaElement | null;
+    
+    if (category !== 'email') {
+      const textarea = textareaRef.current || activeEl;
+      if (textarea && (textarea.tagName === 'TEXTAREA' || textarea.tagName === 'INPUT')) {
+        const startPos = textarea.selectionStart || 0;
+        const endPos = textarea.selectionEnd || 0;
+        const currentText = textarea.value || '';
+        const tagToInsert = `{{${field}}}`;
+        const newText = currentText.substring(0, startPos) + tagToInsert + currentText.substring(endPos);
+        setTextBody(newText);
+        setTimeout(() => {
+          textarea.focus();
+          const newCursorPos = startPos + tagToInsert.length;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
+      } else {
+        setTextBody(prev => prev + ` {{${field}}}`);
+      }
       return;
     }
-    const textarea = textareaRef.current;
-    const startPos = textarea.selectionStart;
-    const endPos = textarea.selectionEnd;
-    const currentText = textarea.value;
-    const tagToInsert = `{{${field}}}`;
-    const newText = currentText.substring(0, startPos) + tagToInsert + currentText.substring(endPos);
-    setTextBody(newText);
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = startPos + tagToInsert.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
+
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+      const startPos = activeEl.selectionStart || 0;
+      const endPos = activeEl.selectionEnd || 0;
+      const currentText = activeEl.value || '';
+      const tagToInsert = `{{${field}}}`;
+      const newText = currentText.substring(0, startPos) + tagToInsert + currentText.substring(endPos);
+
+      if (activeEl.id === 'email-subject') {
+        if (isAr) setSubjectAr(newText);
+        else setSubjectEn(newText);
+      } else if (activeEl.dataset.blockId && activeEl.dataset.fieldName) {
+        const bId = activeEl.dataset.blockId;
+        const fName = activeEl.dataset.fieldName;
+        setBlocks(prev => prev.map(b => b.id === bId ? { ...b, [fName]: newText } : b));
+      } else if (activeEl.id === 'template-name-ar') {
+        setNameAr(newText);
+      } else if (activeEl.id === 'template-name-en') {
+        setNameEn(newText);
+      } else if (activeEl.id === 'template-desc-ar') {
+        setDescAr(newText);
+      } else if (activeEl.id === 'template-desc-en') {
+        setDescEn(newText);
+      } else {
+        activeEl.value = newText;
+        const event = new Event('input', { bubbles: true });
+        activeEl.dispatchEvent(event);
+      }
+
+      setTimeout(() => {
+        activeEl.focus();
+        const newCursorPos = startPos + tagToInsert.length;
+        activeEl.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    } else {
+      if (selectedBlockId) {
+        setBlocks(prev => prev.map(b => {
+          if (b.id === selectedBlockId) {
+            const targetField = b.type === 'header' ? 'title' : 'content';
+            const currentVal = (b as any)[targetField] || '';
+            return { ...b, [targetField]: currentVal + ` {{${field}}}` };
+          }
+          return b;
+        }));
+      } else {
+        if (isAr) setSubjectAr(prev => prev + ` {{${field}}}`);
+        else setSubjectEn(prev => prev + ` {{${field}}}`);
+      }
+    }
   };
 
   // Editor configuration states
@@ -479,15 +533,15 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       result = textBody;
     }
 
-    // Replace dynamic variables with user-input preview values or fallback to default value / placeholder
     variables.forEach(v => {
-      const placeholder = `{{${v.key}}}`;
       const val = variablePreviewValues[v.key];
       const defaultVal = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
       const finalVal = (val !== undefined && val !== '') 
         ? val 
         : ((defaultVal !== undefined && defaultVal !== '') ? defaultVal : `{{${v.key}}}`);
-      result = result.replaceAll(placeholder, finalVal);
+      const escapeKey = v.key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+      result = result.replace(tagRegex, finalVal);
     });
 
     return result;
@@ -1481,6 +1535,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               }}>
                 <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{isAr ? 'عنوان البريد:' : 'Subject:'}</span>
                 <input 
+                  id="email-subject"
                   type="text" 
                   value={isAr ? subjectAr : subjectEn}
                   onChange={(e) => {
@@ -1522,7 +1577,9 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 
                     let parsedContent = block.content;
                     Object.entries(variablePreviewValues).forEach(([key, val]) => {
-                      parsedContent = parsedContent.replaceAll(`{{${key}}}`, val || `{{${key}}}`);
+                      const escapeKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                      const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+                      parsedContent = parsedContent.replace(tagRegex, val || `{{${key}}}`);
                     });
 
                      return (
@@ -1862,6 +1919,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'اللقب الأعلى' : 'Upper Title / Writer'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="content"
                                 value={block.content} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
                               />
@@ -1870,6 +1929,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'العنوان الأساسي' : 'Primary Title'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="title"
                                 value={block.title || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                               />
@@ -1878,6 +1939,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'العنوان الفرعي' : 'Sub-header'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="subtitle"
                                 value={block.subtitle || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, subtitle: e.target.value } : b))}
                               />
@@ -1889,6 +1952,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                           <div className="form-group">
                             <label>{isAr ? 'نص الفقرة' : 'Paragraph Body'}</label>
                             <textarea 
+                              data-block-id={block.id}
+                              data-field-name="content"
                               rows={4}
                               value={block.content} 
                               onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
@@ -1903,6 +1968,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'نص الزر' : 'Button Label'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="content"
                                 value={block.content} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
                               />
@@ -1911,6 +1978,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'رابط الزر (URL)' : 'Destination URL'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="url"
                                 value={block.url || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, url: e.target.value } : b))}
                               />
@@ -1950,6 +2019,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'رابط الصورة (URL)' : 'Image Source URL'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="src"
                                 value={block.src || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, src: e.target.value } : b))}
                               />
@@ -1958,6 +2029,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'النص البديل (Alt)' : 'Alternate Description'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="alt"
                                 value={block.alt || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, alt: e.target.value } : b))}
                               />
@@ -1970,6 +2043,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                             <div className="form-group">
                               <label>{isAr ? 'نص الاقتباس' : 'Quotation content'}</label>
                               <textarea 
+                                data-block-id={block.id}
+                                data-field-name="content"
                                 rows={3}
                                 value={block.content} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
@@ -1980,6 +2055,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                               <label>{isAr ? 'القائل (الكاتب)' : 'Author Signature'}</label>
                               <input 
                                 type="text" 
+                                data-block-id={block.id}
+                                data-field-name="quoteAuthor"
                                 value={block.quoteAuthor || ''} 
                                 onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, quoteAuthor: e.target.value } : b))}
                               />
@@ -2020,6 +2097,8 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                           <div className="form-group">
                             <label>{isAr ? 'نص التذييل الإضافي' : 'Footer Content text'}</label>
                             <textarea 
+                              data-block-id={block.id}
+                              data-field-name="content"
                               rows={2}
                               value={block.content} 
                               onChange={(e) => setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, content: e.target.value } : b))}
@@ -2112,6 +2191,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       <div className="form-group">
                         <label>{isAr ? 'الاسم (بالعربية)' : 'Name (Arabic)'}</label>
                         <input 
+                          id="template-name-ar"
                           type="text" 
                           value={nameAr} 
                           onChange={(e) => setNameAr(e.target.value)}
@@ -2121,6 +2201,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       <div className="form-group">
                         <label>{isAr ? 'الاسم (بالإنجليزية)' : 'Name (English)'}</label>
                         <input 
+                          id="template-name-en"
                           type="text" 
                           value={nameEn} 
                           onChange={(e) => setNameEn(e.target.value)}
@@ -2130,6 +2211,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       <div className="form-group">
                         <label>{isAr ? 'الوصف (بالعربية)' : 'Description (Arabic)'}</label>
                         <textarea 
+                          id="template-desc-ar"
                           rows={2}
                           value={descAr} 
                           onChange={(e) => setDescAr(e.target.value)}
@@ -2140,6 +2222,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       <div className="form-group">
                         <label>{isAr ? 'الوصف (بالإنجليزية)' : 'Description (English)'}</label>
                         <textarea 
+                          id="template-desc-en"
                           rows={2}
                           value={descEn} 
                           onChange={(e) => setDescEn(e.target.value)}
@@ -2220,6 +2303,74 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Quick Insert Fields (Variables Injection Panel) */}
+              <div className="card" style={{ padding: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                  <Sparkles size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
+                  <strong style={{ fontSize: '13px' }}>
+                    {isAr ? 'حقول الإدراج السريع' : 'Quick Insert Fields'}
+                  </strong>
+                </div>
+
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '10px', marginTop: 0, lineHeight: 1.4 }}>
+                  {isAr 
+                    ? 'انقر على أي حقل نصي في القالب أو المحرر ثم اختر الحقل أدناه لإدراجه تلقائياً:'
+                    : 'Click any text input on the canvas/sidebar, then click a token below to inject it:'}
+                </p>
+
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '6px', 
+                  flexWrap: 'wrap', 
+                  direction: isAr ? 'rtl' : 'ltr'
+                }}>
+                  {[
+                    { key: 'reader_name', labelAr: 'اسم المستلم (القارئ)', labelEn: 'Recipient Name', icon: '👤', color: '#3b82f6' },
+                    { key: 'writer_name', labelAr: 'اسم المرسل (الكاتب)', labelEn: 'Sender Name', icon: '✍️', color: '#10b981' },
+                    { key: 'email', labelAr: 'البريد الإلكتروني', labelEn: 'Email Address', icon: '✉️', color: '#f59e0b' },
+                    { key: 'phone', labelAr: 'رقم الهاتف', labelEn: 'Phone Number', icon: '📞', color: '#8b5cf6' },
+                    { key: 'otp_code', labelAr: 'رمز التحقق (OTP)', labelEn: 'OTP Code', icon: '🔒', color: '#ef4444' },
+                    { key: 'blog_name', labelAr: 'اسم الموقع / المدونة', labelEn: 'Site/Blog Name', icon: '🌐', color: '#06b6d4' },
+                    { key: 'amount', labelAr: 'المبلغ / الفاتورة', labelEn: 'Amount', icon: '💰', color: '#10b981' },
+                    { key: 'date', labelAr: 'التاريخ', labelEn: 'Date', icon: '📅', color: '#6b7280' }
+                  ].map(s => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => handleInsertTag(s.key)}
+                      title={isAr ? `إدراج {{${s.key}}}` : `Insert {{${s.key}}}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '5px 10px',
+                        fontSize: '11px',
+                        fontWeight: 650,
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--panel-bg)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                        e.currentTarget.style.borderColor = s.color;
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--panel-bg)';
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <span>{s.icon}</span>
+                      <span>{isAr ? s.labelAr.split(' ')[0] : s.labelEn.split(' ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Smart AI copywriting tool */}

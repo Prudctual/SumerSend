@@ -22,12 +22,14 @@ import {
   Smartphone,
   ChevronLeft,
   ChevronRight,
-  Key
+  Key,
+  FileText
 } from 'lucide-react';
+import { getPathFromTab } from '../utils/seo';
 
 interface SidebarProps {
   currentTab: string;
-  setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => void;
+  setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => void;
   lang: 'en' | 'ar';
   setLang: (lang: 'en' | 'ar') => void;
   walletBalance: number;
@@ -40,7 +42,7 @@ interface SidebarProps {
   onSearchClick: () => void;
   domains?: any[];
   apiKeys?: any[];
-  activeDashboardSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet';
+  activeDashboardSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates';
 }
 
 interface SidebarItem {
@@ -128,40 +130,170 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const t = translations[lang];
 
-  const isTabActive = (itemId: string) => {
-    if (itemId === 'dashboard') {
-      return currentTab === 'dashboard' && activeDashboardSubTab === 'channels';
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
+
+  const sidebarGroups = [
+    {
+      id: 'control-panel',
+      labelAr: 'لوحة التحكم',
+      labelEn: 'Control Panel',
+      icon: LayoutDashboard,
+      subItems: [
+        { id: 'dashboard', subTab: 'channels', labelAr: 'نظرة عامة', labelEn: 'Overview' },
+        { id: 'wallet', subTab: 'wallet', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing' },
+      ]
+    },
+    {
+      id: 'send-console',
+      labelAr: 'منصة الإرسال',
+      labelEn: 'Send Console',
+      icon: MessageSquare,
+      subItems: [
+        { id: 'send', labelAr: 'الإرسال السريع', labelEn: 'Quick Send' },
+        { id: 'campaigns', labelAr: 'حملات الإرسال', labelEn: 'Campaigns Manager' },
+        { id: 'playground', labelAr: 'حقل التجربة', labelEn: 'API Playground' },
+      ]
+    },
+    {
+      id: 'contacts-group',
+      labelAr: 'المشتركون والجهات',
+      labelEn: 'Audience & Lists',
+      icon: User,
+      subItems: [
+        { id: 'subscribers', labelAr: 'إدارة المشتركين', labelEn: 'Subscriber Lists' },
+        { id: 'subscribers-settings', labelAr: 'إعدادات الحقول', labelEn: 'Custom Fields' },
+      ]
+    },
+    {
+      id: 'templates-group',
+      labelAr: 'إدارة القوالب',
+      labelEn: 'Template Hub',
+      icon: FileText,
+      subItems: [
+        { id: 'templates', subTab: 'templates', labelAr: 'تصميم القوالب', labelEn: 'Template Manager' },
+      ]
+    },
+    {
+      id: 'analytics-group',
+      labelAr: 'السجلات والتحليلات',
+      labelEn: 'Reports & Logs',
+      icon: History,
+      subItems: [
+        { id: 'logs', labelAr: 'سجلات الإرسال', labelEn: 'Delivery Logs' },
+        { id: 'reports', labelAr: 'تحليلات تفصيلية', labelEn: 'Detailed Analytics' },
+      ]
+    },
+    {
+      id: 'channels-group',
+      labelAr: 'قنوات التوصيل',
+      labelEn: 'Delivery Channels',
+      icon: Globe,
+      subItems: [
+        { id: 'domains', subTab: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Domains & DNS' },
+        { id: 'whatsapp', labelAr: 'ربط واتساب', labelEn: 'WhatsApp Connection' },
+        { id: 'smtp', labelAr: 'خادم SMTP', labelEn: 'SMTP Server Config' },
+      ]
+    },
+    {
+      id: 'dev-center',
+      labelAr: 'مركز المطورين',
+      labelEn: 'Developer Center',
+      icon: Key,
+      subItems: [
+        { id: 'apikeys', subTab: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Keys' },
+        { id: 'webhooks', labelAr: 'الويب هوكس Webhooks', labelEn: 'Webhooks Setup' },
+      ]
+    },
+    {
+      id: 'platform-group',
+      labelAr: 'إعدادات المنصة',
+      labelEn: 'System Settings',
+      icon: Settings,
+      subItems: [
+        { id: 'security', labelAr: 'الأمان والتحقق 2FA', labelEn: 'Security & 2FA' },
+        { id: 'system', labelAr: 'حالة النظام والتعرفة', labelEn: 'System Status & Rates' },
+      ]
     }
-    if (itemId === 'domains') {
-      return currentTab === 'dashboard' && activeDashboardSubTab === 'domains';
+  ];
+
+  const isSubItemActive = (subId: string) => {
+    switch (subId) {
+      case 'dashboard':
+        return currentTab === 'dashboard' && activeDashboardSubTab === 'channels';
+      case 'wallet':
+        return currentTab === 'dashboard' && activeDashboardSubTab === 'wallet';
+      case 'domains':
+        return currentTab === 'dashboard' && activeDashboardSubTab === 'domains';
+      case 'whatsapp':
+        return currentTab === 'whatsapp';
+      case 'smtp':
+        return currentTab === 'smtp';
+      case 'send':
+        return currentTab === 'send';
+      case 'campaigns':
+        return currentTab === 'campaigns';
+      case 'playground':
+        return currentTab === 'playground';
+      case 'subscribers':
+        return currentTab === 'subscribers' || currentTab === 'subscribers-list';
+      case 'subscribers-settings':
+        return currentTab === 'subscribers-settings';
+      case 'templates':
+        return currentTab === 'dashboard' && activeDashboardSubTab === 'templates';
+      case 'apikeys':
+        return currentTab === 'dashboard' && activeDashboardSubTab === 'apikeys';
+      case 'webhooks':
+        return currentTab === 'webhooks';
+      case 'logs':
+        return currentTab === 'logs' || currentTab === 'logs-list';
+      case 'reports':
+        return currentTab === 'reports';
+      case 'security':
+        return currentTab === 'security';
+      case 'system':
+        return currentTab === 'system';
+      default:
+        return false;
     }
-    if (itemId === 'apikeys') {
-      return currentTab === 'dashboard' && activeDashboardSubTab === 'apikeys';
-    }
-    if (itemId === 'wallet') {
-      return currentTab === 'dashboard' && activeDashboardSubTab === 'wallet';
-    }
-    if (itemId === 'send') {
-      return ['send', 'playground', 'campaigns'].includes(currentTab);
-    }
-    if (itemId === 'subscribers') {
-      return ['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab);
-    }
-    if (itemId === 'reports' || itemId === 'logs') {
-      return ['logs', 'reports', 'logs-list'].includes(currentTab);
-    }
-    return currentTab === itemId;
   };
 
-  const sidebarItems = [
-    { id: 'dashboard', subTab: 'channels', labelAr: 'نظرة عامة', labelEn: 'Overview', icon: LayoutDashboard },
-    { id: 'domains', subTab: 'domains', labelAr: 'النطاقات', labelEn: 'Domains', icon: Globe },
-    { id: 'apikeys', subTab: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Keys', icon: Key },
-    { id: 'wallet', subTab: 'wallet', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing', icon: WalletIcon },
-    { id: 'send', labelAr: 'منصة الإرسال', labelEn: 'Send Console', icon: MessageSquare },
-    { id: 'subscribers', labelAr: 'الجهات والمشتركين', labelEn: 'Contacts & List', icon: User },
-    { id: 'reports', labelAr: 'السجلات والتحليلات', labelEn: 'Analytics & Logs', icon: History },
-  ];
+  const isGroupActive = (group: typeof sidebarGroups[0]) => {
+    return group.subItems.some(subItem => isSubItemActive(subItem.id));
+  };
+
+  // Auto-expand group of active tab when it changes
+  React.useEffect(() => {
+    sidebarGroups.forEach(group => {
+      if (isGroupActive(group)) {
+        setExpandedGroups(prev => ({ ...prev, [group.id]: true }));
+      }
+    });
+  }, [currentTab, activeDashboardSubTab]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
+
+  const handleGroupClick = (group: typeof sidebarGroups[0]) => {
+    if (group.subItems.length === 1) {
+      const firstSub = group.subItems[0];
+      setCurrentTab(firstSub.id, firstSub.subTab as any);
+      return;
+    }
+
+    const isExpanded = expandedGroups[group.id];
+    const isAnyActive = isGroupActive(group);
+    
+    toggleGroup(group.id);
+    
+    if (!isExpanded && !isAnyActive && group.subItems.length > 0) {
+      const firstSub = group.subItems[0];
+      setCurrentTab(firstSub.id, firstSub.subTab as any);
+    }
+  };
 
   return (
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ 
@@ -210,12 +342,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </>
         ) : (
           <button 
-            onClick={() => setIsCollapsed(false)} 
-            className="sidebar-panel-toggle"
-            title={lang === 'en' ? 'Expand Sidebar' : 'توسيع القائمة'}
-          >
-            {lang === 'ar' ? <PanelRight size={15} /> : <PanelLeft size={15} />}
-          </button>
+              onClick={() => setIsCollapsed(false)} 
+              className="sidebar-panel-toggle"
+              title={lang === 'en' ? 'Expand Sidebar' : 'توسيع القائمة'}
+            >
+              {lang === 'ar' ? <PanelRight size={15} /> : <PanelLeft size={15} />}
+            </button>
         )}
       </div>
 
@@ -250,48 +382,99 @@ export const Sidebar: React.FC<SidebarProps> = ({
         gap: '4px'
       }}>
         
-        {/* Flat list of items */}
+        {/* Hierarchical Group Menu */}
         {!isCollapsed ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {sidebarItems.map((item, index) => {
-              const Icon = item.icon;
-              const isActive = isTabActive(item.id);
+            {sidebarGroups.map((group, index) => {
+              const Icon = group.icon;
+              const isGroupAct = isGroupActive(group);
+              const isExpanded = expandedGroups[group.id];
               
               return (
-                <div key={item.id} className="sidebar-item-container">
-                  <div
-                    className={`sidebar-link ${isActive ? 'active' : ''} sidebar-item-animated`}
+                <div key={group.id} className="sidebar-item-container">
+                  <a
+                    href={group.subItems.length === 1 ? getPathFromTab(group.subItems[0].id, group.subItems[0].subTab) : undefined}
+                    className={`sidebar-link ${isGroupAct ? 'active' : ''} sidebar-item-animated`}
                     style={{
-                      transitionDelay: `${index * 30}ms`
+                      transitionDelay: `${index * 30}ms`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
                     }}
-                    onClick={() => setCurrentTab(item.id, item.subTab as any)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleGroupClick(group);
+                    }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                      <Icon size={16} />
-                      <span>
-                        {lang === 'ar' ? item.labelAr : item.labelEn}
+                      <Icon size={16} style={{ color: isGroupAct ? 'var(--accent-text)' : 'inherit' }} />
+                      <span style={{ fontWeight: isGroupAct ? 700 : 500 }}>
+                        {lang === 'ar' ? group.labelAr : group.labelEn}
                       </span>
                     </div>
-                    {item.id === 'domains' && domains.filter(d => d.status === 'verified').length > 0 && (
-                      <span className="sidebar-badge status-active">
-                        {domains.filter(d => d.status === 'verified').length}
-                      </span>
+                    {group.subItems.length > 1 && (
+                      <ChevronDown 
+                        size={13} 
+                        className="chevron-icon" 
+                        style={{ 
+                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          opacity: 0.7
+                        }} 
+                      />
                     )}
-                  </div>
+                  </a>
+                  
+                  {isExpanded && group.subItems.length > 1 && (
+                    <div className="sidebar-nested-list">
+                      {group.subItems.map(subItem => {
+                        const isSubActive = isSubItemActive(subItem.id);
+                        return (
+                          <a
+                            key={subItem.id}
+                            href={getPathFromTab(subItem.id, subItem.subTab)}
+                            className={`sidebar-nested-link ${isSubActive ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentTab(subItem.id, subItem.subTab as any);
+                            }}
+                            style={{ textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
+                          >
+                            <span>{lang === 'ar' ? subItem.labelAr : subItem.labelEn}</span>
+                            {subItem.id === 'domains' && domains.filter(d => d.status === 'verified').length > 0 && (
+                              <span className="sidebar-badge status-active">
+                                {domains.filter(d => d.status === 'verified').length}
+                              </span>
+                            )}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-            {sidebarItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = isTabActive(item.id);
+            {sidebarGroups.map((group) => {
+              const Icon = group.icon;
+              const isActive = isGroupActive(group);
+              const firstSub = group.subItems.length > 0 ? group.subItems[0] : null;
+              
               return (
-                <div key={item.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                  <button
+                <div key={group.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <a
+                    href={firstSub ? getPathFromTab(firstSub.id, firstSub.subTab) : undefined}
                     className={`sidebar-link ${isActive ? 'active' : ''}`}
-                    onClick={() => setCurrentTab(item.id, item.subTab as any)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (group.subItems.length > 0) {
+                        setCurrentTab(group.subItems[0].id, group.subItems[0].subTab as any);
+                      }
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -302,17 +485,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       borderRadius: '6px',
                       cursor: 'pointer',
                       width: '36px',
-                      height: '36px'
+                      height: '36px',
+                      textDecoration: 'none'
                     }}
                   >
                     <Icon size={16} />
-                  </button>
+                  </a>
                   
                   {/* Collapsed Hover Popover Menu */}
-                  <div className="sidebar-popover">
+                  <div className="sidebar-popover" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    padding: '6px'
+                  }}>
                     <div className="sidebar-popover-header">
-                      {lang === 'ar' ? item.labelAr : item.labelEn}
+                      {lang === 'ar' ? group.labelAr : group.labelEn}
                     </div>
+                    {group.subItems.map(subItem => {
+                      const isSubActive = isSubItemActive(subItem.id);
+                      return (
+                        <a
+                          key={subItem.id}
+                          href={getPathFromTab(subItem.id, subItem.subTab)}
+                          className={`sidebar-popover-link ${isSubActive ? 'active' : ''}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCurrentTab(subItem.id, subItem.subTab as any);
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            color: isSubActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            backgroundColor: isSubActive ? 'var(--panel-muted)' : 'transparent',
+                            textAlign: 'start',
+                            fontWeight: isSubActive ? 600 : 500,
+                            transition: 'all 0.2s',
+                            textDecoration: 'none',
+                            display: 'block'
+                          }}
+                        >
+                          {lang === 'ar' ? subItem.labelAr : subItem.labelEn}
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               );

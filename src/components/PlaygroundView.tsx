@@ -107,9 +107,10 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     let compiledSubject = lang === 'ar' ? (template.subjectAr || '') : (template.subjectEn || '');
     
     Object.entries(vars).forEach(([key, val]) => {
-      const placeholder = `{{${key}}}`;
-      compiledBody = compiledBody.replaceAll(placeholder, val);
-      compiledSubject = compiledSubject.replaceAll(placeholder, val);
+      const escapeKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+      compiledBody = compiledBody.replace(tagRegex, val);
+      compiledSubject = compiledSubject.replace(tagRegex, val);
     });
     
     if (activeTab === 'email') {

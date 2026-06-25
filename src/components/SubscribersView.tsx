@@ -171,10 +171,22 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
   // Composer
   const [campTemplateId, setCampTemplateId] = useState('');
+  const [customTemplates, setCustomTemplates] = useState<any[]>([]);
   const [campSubject, setCampSubject] = useState('');
   const [campBody, setCampBody] = useState('');
   const [saveTemplateForFuture, setSaveTemplateForFuture] = useState(false);
   const [newCustomTemplateName, setNewCustomTemplateName] = useState('');
+
+  useEffect(() => {
+    if (isCampaignWizardOpen) {
+      fetch('http://127.0.0.1:3000/api/templates/custom')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setCustomTemplates(data);
+        })
+        .catch(err => console.warn('Could not load custom templates in SubscribersView:', err));
+    }
+  }, [isCampaignWizardOpen]);
 
   // Preview
   const [previewSubIndex, setPreviewSubIndex] = useState(0);
@@ -1080,8 +1092,10 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       setCampBody('');
       return;
     }
-    const templates = templatesDb[campChannel] || [];
-    const template = templates.find(t => t.id === tempId);
+    const staticTemplates = templatesDb[campChannel] || [];
+    const customList = customTemplates.filter((t: any) => t.type === campChannel) || [];
+    const allTemplates = [...staticTemplates, ...customList];
+    const template = allTemplates.find(t => t.id === tempId);
     if (template) {
       setCampSubject(lang === 'ar' ? (template.subjectAr || '') : (template.subjectEn || ''));
       setCampBody(template.body || '');
@@ -1091,25 +1105,84 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const getPreviewText = (text: string, recipient: any) => {
     if (!text) return '';
     let result = text;
-    if (recipient) {
-      result = result.replaceAll('{{name}}', recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader'));
-      result = result.replaceAll('{{email}}', recipient.email || '');
-      result = result.replaceAll('{{phone}}', recipient.to || '');
-      
-      // Support dynamic replacements of all keys inside the recipient object (like invoice_no, discount, etc.)
-      Object.keys(recipient).forEach(key => {
-        result = result.replaceAll(`{{${key}}}`, recipient[key] || '');
-      });
+
+    // Find all placeholders matching {{variable}} or {{ variable }}
+    const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+    const tags: string[] = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const tag = match[1];
+      if (!tags.includes(tag)) {
+        tags.push(tag);
+      }
     }
-    
-    const templates = templatesDb[campChannel] || [];
-    const template = templates.find(t => t.id === campTemplateId);
-    if (template && template.variables) {
-      template.variables.forEach((v: any) => {
-        const val = lang === 'ar' ? (v.defaultValAr || v.defaultValEn) : (v.defaultValEn || v.defaultValAr);
-        result = result.replaceAll(`{{${v.key}}}`, val);
-      });
-    }
+
+    const staticTemplates = templatesDb[campChannel] || [];
+    const customList = customTemplates.filter((t: any) => t.type === campChannel) || [];
+    const allTemplates = [...staticTemplates, ...customList];
+    const template = allTemplates.find(t => t.id === campTemplateId);
+
+    tags.forEach(tag => {
+      let val: any = undefined;
+      const tagLower = tag.toLowerCase();
+
+      if (recipient) {
+        // 1. Direct field match or case variations in variables
+        val = recipient[tag] || recipient.variables?.[tag] || recipient.variables?.[tagLower];
+        
+        // 2. Smart mapping for common names/emails/phones
+        if (val === undefined) {
+          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
+            val = recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader');
+          } else if (tagLower === 'email') {
+            val = recipient.email || recipient.to || '';
+          } else if (tagLower === 'phone') {
+            val = recipient.phone || recipient.to || '';
+          }
+        }
+
+        // 3. Fallback to template variable default if val is still undefined
+        if (val === undefined && template) {
+          const tmplVar = template.variables?.find((v: any) => v.key === tag);
+          if (tmplVar) {
+            val = lang === 'ar' ? (tmplVar.defaultValAr || tmplVar.defaultValEn) : (tmplVar.defaultValEn || tmplVar.defaultValAr);
+          }
+        }
+
+        // 4. Default fallback if still undefined for a specific recipient (replace with empty to avoid code tags in preview)
+        if (val === undefined) {
+          val = '';
+        }
+      } else {
+        // If no recipient is provided (general preview mode)
+        // 1. Try template variable defaults
+        if (template) {
+          const tmplVar = template.variables?.find((v: any) => v.key === tag);
+          if (tmplVar) {
+            val = lang === 'ar' ? (tmplVar.defaultValAr || tmplVar.defaultValEn) : (tmplVar.defaultValEn || tmplVar.defaultValAr);
+          }
+        }
+
+        // 2. Try generic placeholder fallback
+        if (val === undefined) {
+          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
+            val = lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader';
+          } else if (tagLower === 'email') {
+            val = lang === 'ar' ? 'البريد الإلكتروني' : 'Email';
+          } else if (tagLower === 'phone') {
+            val = lang === 'ar' ? 'رقم الهاتف' : 'Phone Number';
+          }
+        }
+      }
+
+      // Perform replacement if we resolved a value
+      if (val !== undefined) {
+        const escapeTag = tag.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const tagRegex = new RegExp(`\\{\\{\\s*${escapeTag}\\s*\\}\\}`, 'g');
+        result = result.replace(tagRegex, val);
+      }
+    });
+
     return result;
   };
 
@@ -1210,11 +1283,15 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         };
 
         try {
-          await fetch('http://127.0.0.1:3000/api/templates/custom', {
+          const resSave = await fetch('http://127.0.0.1:3000/api/templates/custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(templatePayload)
           });
+          if (resSave.ok) {
+            const saved = await resSave.json();
+            setCustomTemplates(prev => [...prev, saved]);
+          }
         } catch (err) {
           console.warn('Failed to save template to backend:', err);
         }
@@ -4141,7 +4218,10 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                         style={{ height: '38px', fontSize: '13px' }}
                       >
                         <option value="">{lang === 'ar' ? '-- كتابة رسالة مخصصة فارغة --' : '-- Blank Custom Message --'}</option>
-                        {(templatesDb[campChannel] || []).map((t: any) => (
+                        {[
+                          ...(templatesDb[campChannel] || []),
+                          ...customTemplates.filter((t: any) => t.type === campChannel)
+                        ].map((t: any) => (
                           <option key={t.id} value={t.id}>
                             {lang === 'ar' ? t.nameAr : t.nameEn}
                           </option>

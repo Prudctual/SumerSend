@@ -179,9 +179,10 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
           ? variables[v.key]
           : defaultVal;
         
-        // Match both {{variable}} and case variants
-        body = body.replaceAll(`{{${v.key}}}`, val);
-        subject = subject.replaceAll(`{{${v.key}}}`, val);
+        const escapeKey = v.key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+        body = body.replace(tagRegex, val);
+        subject = subject.replace(tagRegex, val);
       });
     }
     return { subject, body };
@@ -524,7 +525,8 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
               transform: 'translateY(-50%)',
               right: isRtl ? '12px' : 'auto',
               left: isRtl ? 'auto' : '12px',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted)',
+              zIndex: 5
             }} />
             <input
               type="text"
@@ -533,9 +535,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
               placeholder={lang === 'ar' ? 'ابحث عن اسم القالب أو محتواه...' : 'Search template name or content...'}
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                paddingRight: isRtl ? '38px' : '14px',
-                paddingLeft: isRtl ? '14px' : '38px',
+                padding: isRtl ? '10px 38px 10px 14px' : '10px 14px 10px 38px',
                 fontSize: '13.5px',
                 borderRadius: '6px',
                 border: '1px solid var(--border-color)',
@@ -581,6 +581,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
                     onClick={() => setSelectedTemplateId(temp.id)}
                     style={{
                       display: 'flex',
+                      minHeight: '92px',
                       borderRadius: '6px', // Reduced radius (sharper Vercel style)
                       border: `1px solid ${isSelected ? 'var(--text-primary)' : 'var(--border-color)'}`,
                       // Solid/transparent safe theme-dependent background to prevent transparency bugs
@@ -609,16 +610,17 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
                       color: '#ffffff',
                       flexShrink: 0
                     }}>
-                      {temp.type === 'email' && <Mail size={14} />}
-                      {temp.type === 'sms' && <Phone size={14} />}
-                      {temp.type === 'whatsapp' && <MessageSquare size={14} />}
+                      {temp.type === 'email' && <Mail size={14} style={{ flexShrink: 0 }} />}
+                      {temp.type === 'sms' && <Phone size={14} style={{ flexShrink: 0 }} />}
+                      {temp.type === 'whatsapp' && <MessageSquare size={14} style={{ flexShrink: 0 }} />}
                       <span style={{
-                        fontSize: '9.5px',
+                        fontSize: '9px',
                         fontWeight: 800,
-                        writingMode: 'vertical-rl',
-                        textOrientation: 'mixed',
-                        letterSpacing: '1.5px',
-                        transform: isRtl ? 'rotate(180deg)' : 'none'
+                        letterSpacing: '1px',
+                        display: 'inline-block',
+                        transform: 'rotate(-90deg)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}>
                         {getChannelLabel(temp.type)}
                       </span>

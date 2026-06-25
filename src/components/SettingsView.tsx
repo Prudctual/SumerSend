@@ -607,8 +607,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const val = previewVars[v.key] !== undefined && previewVars[v.key] !== ''
           ? previewVars[v.key] 
           : (defaultVal !== '' ? defaultVal : `{{${v.key}}}`);
-        compiledBody = compiledBody.replaceAll(`{{${v.key}}}`, val);
-        compiledSubject = compiledSubject.replaceAll(`{{${v.key}}}`, val);
+        const escapeKey = v.key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+        compiledBody = compiledBody.replace(tagRegex, val);
+        compiledSubject = compiledSubject.replace(tagRegex, val);
       });
     }
 
@@ -692,8 +694,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const val = previewVars[v.key] !== undefined && previewVars[v.key] !== ''
           ? previewVars[v.key] 
           : (defaultVal !== '' ? defaultVal : `{{${v.key}}}`);
-        body = body.replaceAll(`{{${v.key}}}`, val);
-        subject = subject.replaceAll(`{{${v.key}}}`, val);
+        const escapeKey = v.key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+        body = body.replace(tagRegex, val);
+        subject = subject.replace(tagRegex, val);
       });
     }
     return { ...template, body, subjectAr: subject, subjectEn: subject };
