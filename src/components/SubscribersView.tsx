@@ -21,7 +21,14 @@ import {
   FileSpreadsheet,
   AlertCircle,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  UserPlus,
+  Download,
+  MoreHorizontal,
+  TrendingUp,
+  ArrowUpRight,
+  Sparkles,
+  Eye
 } from 'lucide-react';
 import { ScrollReveal } from './LandingView';
 import * as XLSX from 'xlsx';
@@ -30,6 +37,7 @@ interface SubscribersViewProps {
   lang: 'en' | 'ar';
   apiKeys: any[];
   initialSubTab?: 'list' | 'settings';
+  hideHeader?: boolean;
 }
 
 interface Subscriber {
@@ -50,7 +58,8 @@ interface SubscriberSettings {
 export const SubscribersView: React.FC<SubscribersViewProps> = ({ 
   lang, 
   apiKeys = [], 
-  initialSubTab = 'list' 
+  initialSubTab = 'list',
+  hideHeader = false,
 }) => {
   // Tabs: 'list' (Subscribers List) or 'settings' (Welcome Email & Embed Form)
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'settings'>(initialSubTab);
@@ -565,7 +574,6 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to array of arrays (raw format) to detect headers
         const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         
         if (rawJson.length === 0) {
@@ -575,11 +583,9 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         const headers = rawJson[0].map((h: any) => h ? String(h).trim() : '');
         setParsedHeaders(headers);
 
-        // Convert worksheet rows to array of objects
         const objectsJson = XLSX.utils.sheet_to_json(worksheet);
         setParsedRows(objectsJson);
 
-        // Attempt automatic header mapping matches
         const emailIdx = headers.findIndex((h: string) => 
           /email|mail|البريد|الايميل/i.test(h)
         );
@@ -590,7 +596,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         if (emailIdx !== -1) setEmailColumn(headers[emailIdx]);
         if (nameIdx !== -1) setNameColumn(headers[nameIdx]);
 
-        setImportStep(2); // move to mapping step
+        setImportStep(2);
       } catch (err: any) {
         setImportError(lang === 'ar' ? `فشل تحليل الملف: ${err.message}` : `File parsing failed: ${err.message}`);
       }
@@ -650,7 +656,6 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     setImportProgress(true);
     setImportStep(3);
 
-    // Map rows according to selections
     const mappedSubscribers = parsedRows.map(row => {
       return {
         email: row[emailColumn],
@@ -686,7 +691,6 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         walletShortage: resData.walletShortage
       });
 
-      // Reload lists
       fetchData();
 
       window.dispatchEvent(new CustomEvent('sumer-toast', {
@@ -848,6 +852,40 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     setTimeout(() => setSettingsCopied(null), 3000);
   };
 
+  // Avatar initials helper
+  const getInitials = (name?: string, email?: string) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+    }
+    if (email) return email.substring(0, 2).toUpperCase();
+    return '??';
+  };
+
+  // Avatar color palette (warm, pastel)
+  const avatarColors = [
+    { bg: '#E8F5E9', text: '#2E7D32' },
+    { bg: '#FFF3E0', text: '#E65100' },
+    { bg: '#F3E5F5', text: '#7B1FA2' },
+    { bg: '#E3F2FD', text: '#1565C0' },
+    { bg: '#FFF8E1', text: '#F57F17' },
+    { bg: '#FCE4EC', text: '#C62828' },
+    { bg: '#E0F7FA', text: '#00838F' },
+    { bg: '#FBE9E7', text: '#BF360C' },
+  ];
+
+  const getAvatarColor = (id: string) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+  };
+
+  // Donut chart for stats sidebar
+  const activePercent = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+  const unsubPercent = totalCount > 0 ? 100 - activePercent : 0;
+
   // Generated snippets
   const formHtmlCode = `<!-- SumerSend subscription widget -->
 <div class="sumersend-optin-card">
@@ -964,453 +1002,1327 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
   return (
     <ScrollReveal>
-      {/* Tab Header */}
-      <div style={{ marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-        <h1 style={{ 
-          fontSize: '26px', 
-          fontWeight: 800, 
-          marginBottom: '6px', 
-          color: 'var(--text-primary)', 
-          letterSpacing: lang === 'ar' ? '0' : '-0.5px' 
-        }}>
-          {t.title}
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, margin: 0 }}>
-          {t.subtitle}
-        </p>
-      </div>
+      {/* === Scholarly Dashboard Scoped Styles === */}
+      <style>{`
+        /* ─── Stat Cards: Pastel colored top cards ─── */
+        .sch-stats-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 18px;
+          margin-bottom: 28px;
+        }
 
-      {/* Vercel Segmented Navigation */}
-      <div className="vercel-tabs-container" style={{ overflowX: 'auto', marginBottom: '24px' }}>
-        <button
-          onClick={() => setActiveSubTab('list')}
-          className={`vercel-tab-btn ${activeSubTab === 'list' ? 'active' : ''}`}
-        >
-          <Users size={15} />
-          <span>{t.tabList}</span>
-        </button>
-        <button
-          onClick={() => setActiveSubTab('settings')}
-          className={`vercel-tab-btn ${activeSubTab === 'settings' ? 'active' : ''}`}
-        >
-          <Settings size={15} />
-          <span>{t.tabSettings}</span>
-        </button>
+        .sch-stat-card {
+          border-radius: 18px;
+          padding: 22px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+          cursor: default;
+        }
+
+        .sch-stat-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .sch-stat-card.mint {
+          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+          color: #064e3b;
+        }
+
+        .sch-stat-card.amber {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          color: #78350f;
+        }
+
+        .sch-stat-card.rose {
+          background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+          color: #831843;
+        }
+
+        .sch-stat-card.sky {
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          color: #1e3a5f;
+        }
+
+        [data-theme="dark"] .sch-stat-card.mint {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+          color: #6ee7b7;
+        }
+        [data-theme="dark"] .sch-stat-card.amber {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
+          color: #fcd34d;
+        }
+        [data-theme="dark"] .sch-stat-card.rose {
+          background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.08) 100%);
+          color: #f9a8d4;
+        }
+        [data-theme="dark"] .sch-stat-card.sky {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
+          color: #93c5fd;
+        }
+
+        .sch-stat-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .sch-stat-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .sch-stat-card.mint .sch-stat-icon { background: rgba(6, 78, 59, 0.12); }
+        .sch-stat-card.amber .sch-stat-icon { background: rgba(120, 53, 15, 0.12); }
+        .sch-stat-card.rose .sch-stat-icon { background: rgba(131, 24, 67, 0.12); }
+        .sch-stat-card.sky .sch-stat-icon { background: rgba(30, 58, 95, 0.12); }
+
+        [data-theme="dark"] .sch-stat-card .sch-stat-icon { background: rgba(255,255,255,0.08); }
+
+        .sch-stat-value {
+          font-size: 32px;
+          font-weight: 800;
+          letter-spacing: -1px;
+          line-height: 1;
+        }
+
+        .sch-stat-label {
+          font-size: 13px;
+          font-weight: 600;
+          opacity: 0.75;
+        }
+
+        .sch-stat-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 99px;
+          background: rgba(0,0,0,0.06);
+        }
+
+        [data-theme="dark"] .sch-stat-badge {
+          background: rgba(255,255,255,0.08);
+        }
+
+        /* ─── Main Content Layout ─── */
+        .sch-content-grid {
+          display: grid;
+          grid-template-columns: 1fr 320px;
+          gap: 24px;
+          align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+          .sch-content-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* ─── Panel Cards ─── */
+        .sch-panel {
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 18px;
+          padding: 24px;
+          box-shadow: var(--card-shadow);
+        }
+
+        .sch-panel-title {
+          font-size: 16px;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 4px 0;
+        }
+
+        .sch-panel-desc {
+          font-size: 13px;
+          color: var(--text-secondary);
+          margin: 0 0 20px 0;
+          line-height: 1.4;
+        }
+
+        /* ─── Unified Toolbar ─── */
+        .sch-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+
+        .sch-toolbar-start {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          flex: 1;
+          min-width: 280px;
+        }
+
+        /* ─── Search Bar ─── */
+        .sch-search-wrap {
+          position: relative;
+          flex: 1;
+          max-width: 320px;
+          min-width: 200px;
+        }
+
+        .sch-search-icon {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-muted);
+          pointer-events: none;
+          z-index: 2;
+          inset-inline-start: 12px;
+        }
+
+        .sch-search-input {
+          width: 100%;
+          height: 38px;
+          background: var(--panel-muted);
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          font-size: 13px;
+          color: var(--text-primary);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+          font-family: var(--font-family);
+          padding-inline-start: 34px;
+          padding-inline-end: 12px;
+          direction: inherit;
+          text-align: start;
+        }
+
+        .sch-search-input:focus {
+          outline: none;
+          border-color: var(--accent-text);
+          box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.08);
+          background: var(--panel-bg);
+        }
+
+        .sch-search-input::placeholder {
+          color: var(--text-muted);
+        }
+
+        /* ─── Filter Pills ─── */
+        .sch-pills {
+          display: flex;
+          gap: 4px;
+          background: var(--panel-muted);
+          padding: 3px;
+          border-radius: 10px;
+          border: 1px solid var(--border-color);
+          height: 38px;
+          align-items: center;
+        }
+
+        .sch-pill {
+          border: none;
+          background: transparent;
+          color: var(--text-secondary);
+          padding: 0 12px;
+          border-radius: 8px;
+          font-size: 12.5px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: var(--font-family);
+          white-space: nowrap;
+          height: 32px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sch-pill:hover {
+          color: var(--text-primary);
+          background: rgba(0,0,0,0.03);
+        }
+
+        [data-theme="dark"] .sch-pill:hover {
+          background: rgba(255,255,255,0.05);
+        }
+
+        .sch-pill.active {
+          background: var(--panel-bg);
+          color: var(--text-primary);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] .sch-pill.active {
+          background: var(--panel-elevated);
+        }
+
+        /* ─── Action Buttons Row ─── */
+        .sch-actions-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .sch-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0 14px;
+          height: 38px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          border: 1px solid var(--border-color);
+          background: var(--panel-bg);
+          color: var(--text-primary);
+          font-family: var(--font-family);
+          white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+          .sch-toolbar-start {
+            width: 100%;
+          }
+          .sch-search-wrap {
+            max-width: 100%;
+            width: 100%;
+          }
+          .sch-pills {
+            width: 100%;
+            justify-content: space-around;
+          }
+          .sch-pill {
+            flex: 1;
+          }
+          .sch-actions-row {
+            width: 100%;
+            justify-content: stretch;
+          }
+          .sch-actions-row .sch-btn {
+            flex: 1;
+            justify-content: center;
+          }
+        }
+
+
+        .sch-btn:hover {
+          border-color: var(--text-secondary);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          transform: translateY(-1px);
+        }
+
+        .sch-btn:active {
+          transform: translateY(0);
+        }
+
+        .sch-btn-primary {
+          background: var(--text-primary);
+          color: var(--panel-bg);
+          border-color: var(--text-primary);
+        }
+
+        .sch-btn-primary:hover {
+          opacity: 0.9;
+          border-color: var(--text-primary);
+        }
+
+        .sch-btn-danger {
+          background: var(--danger-bg);
+          color: var(--danger-text);
+          border-color: rgba(238, 0, 0, 0.15);
+        }
+
+        .sch-btn-danger:hover {
+          background: var(--danger-color);
+          color: #ffffff;
+          border-color: var(--danger-color);
+        }
+
+        /* ─── Subscriber List Rows (Activity Style) ─── */
+        .sch-subscriber-list {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .sch-sub-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          transition: background-color 0.15s ease;
+          cursor: default;
+          position: relative;
+        }
+
+        .sch-sub-row:hover {
+          background: var(--panel-muted);
+        }
+
+        .sch-sub-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 800;
+          flex-shrink: 0;
+          letter-spacing: -0.5px;
+        }
+
+        .sch-sub-info {
+          flex: 1;
+          min-width: 0;
+          padding-inline-end: 24px;
+        }
+
+        .sch-sub-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sch-sub-email {
+          font-size: 12px;
+          color: var(--text-muted);
+          font-family: 'Menlo', 'Monaco', monospace;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sch-sub-meta {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-shrink: 0;
+        }
+
+        .sch-sub-date {
+          font-size: 12px;
+          color: var(--text-muted);
+          white-space: nowrap;
+          min-width: 70px;
+          text-align: start;
+        }
+
+        /* ─── Status Badge ─── */
+        .sch-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 99px;
+          font-size: 11.5px;
+          font-weight: 700;
+          white-space: nowrap;
+          min-width: 96px;
+          justify-content: center;
+        }
+
+        .sch-badge.active {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .sch-badge.unsubscribed {
+          background: var(--panel-muted);
+          color: var(--text-muted);
+          border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .sch-badge.active {
+          background: rgba(16, 185, 129, 0.15);
+          color: #6ee7b7;
+        }
+
+        .sch-badge-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .sch-badge.active .sch-badge-dot {
+          background: #10b981;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+          animation: sch-pulse 2s infinite;
+        }
+
+        .sch-badge.unsubscribed .sch-badge-dot {
+          background: var(--text-muted);
+        }
+
+        @keyframes sch-pulse {
+          0% { box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.4); }
+          70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+          100% { box-shadow: 0 0 0 0px rgba(16, 185, 129, 0); }
+        }
+
+        /* ─── Row Action Icons ─── */
+        .sch-row-actions {
+          display: flex;
+          gap: 4px;
+          opacity: 0.35;
+          transition: opacity 0.2s ease;
+          width: 68px;
+          justify-content: flex-end;
+        }
+
+        .sch-sub-row:hover .sch-row-actions {
+          opacity: 1;
+        }
+
+        .sch-icon-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          border: none;
+          background: transparent;
+          color: var(--text-muted);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s ease;
+        }
+
+        .sch-icon-btn:hover {
+          background: var(--panel-muted);
+          color: var(--text-primary);
+        }
+
+        .sch-icon-btn.danger:hover {
+          background: var(--danger-bg);
+          color: var(--danger-text);
+        }
+
+        .sch-icon-btn.toggle-active {
+          color: var(--success-color);
+        }
+
+        /* ─── Checkbox ─── */
+        .sch-checkbox {
+          position: relative;
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+        }
+
+        .sch-checkbox input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+          position: absolute;
+        }
+
+        .sch-checkmark {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 16px;
+          width: 16px;
+          background: var(--panel-bg);
+          border: 1.5px solid var(--border-color);
+          border-radius: 5px;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          cursor: pointer;
+        }
+
+        .sch-checkbox:hover input ~ .sch-checkmark {
+          border-color: var(--text-secondary);
+        }
+
+        .sch-checkbox input:checked ~ .sch-checkmark {
+          background: var(--text-primary);
+          border-color: var(--text-primary);
+        }
+
+        .sch-checkmark:after {
+          content: "";
+          position: absolute;
+          display: none;
+          left: 5px;
+          top: 1.5px;
+          width: 4px;
+          height: 7px;
+          border: solid var(--panel-bg);
+          border-width: 0 1.5px 1.5px 0;
+          transform: rotate(45deg);
+        }
+
+        .sch-checkbox input:checked ~ .sch-checkmark:after {
+          display: block;
+        }
+
+        /* ─── Sidebar Panel: Distribution + Quick Add ─── */
+        .sch-sidebar-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .sch-donut-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          padding: 8px 0;
+        }
+
+        .sch-donut-svg {
+          width: 140px;
+          height: 140px;
+          transform: rotate(-90deg);
+        }
+
+        .sch-donut-legend {
+          display: flex;
+          gap: 20px;
+        }
+
+        .sch-legend-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .sch-legend-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        /* ─── Quick Add Card ─── */
+        .sch-quick-add-card {
+          background: var(--panel-muted);
+          border: 1px dashed var(--border-color);
+          border-radius: 18px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          text-align: center;
+          transition: border-color 0.2s ease;
+        }
+
+        .sch-quick-add-card:hover {
+          border-color: var(--text-muted);
+        }
+
+        .sch-quick-avatars {
+          display: flex;
+          gap: 0;
+        }
+
+        .sch-quick-avatar-bubble {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 800;
+          margin-inline-start: -8px;
+          border: 2px solid var(--panel-muted);
+        }
+
+        .sch-quick-avatar-bubble:first-child {
+          margin-inline-start: 0;
+        }
+
+        /* ─── Floating Bulk Bar ─── */
+        .sch-floating-bar {
+          position: fixed;
+          bottom: 28px;
+          left: 50%;
+          transform: translate(-50%, 100px);
+          background: rgba(15, 15, 15, 0.96);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          padding: 8px 16px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          z-index: 1000;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+          opacity: 0;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+          pointer-events: none;
+        }
+
+        .sch-floating-bar.visible {
+          transform: translate(-50%, 0);
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        /* ─── Pagination ─── */
+        .sch-pagination {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 4px 4px 4px;
+        }
+
+        .sch-page-info {
+          font-size: 13px;
+          color: var(--text-muted);
+          font-weight: 500;
+        }
+
+        .sch-page-btns {
+          display: flex;
+          gap: 6px;
+        }
+
+        .sch-page-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid var(--border-color);
+          background: var(--panel-bg);
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sch-page-btn:hover:not(:disabled) {
+          border-color: var(--text-secondary);
+          background: var(--panel-muted);
+          transform: translateY(-1px);
+        }
+
+        .sch-page-btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .sch-page-btn:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+        }
+
+        /* ─── Modals ─── */
+        .sch-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          animation: sch-fade-in 0.2s ease-out;
+        }
+
+        @keyframes sch-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .sch-modal-box {
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 22px;
+          padding: 28px;
+          width: 100%;
+          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.15);
+          animation: sch-scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        @keyframes sch-scale-up {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        /* ─── Upload Zone ─── */
+        .sch-upload-zone {
+          border: 2px dashed var(--border-color);
+          border-radius: 16px;
+          padding: 48px 24px;
+          text-align: center;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          transition: all 0.2s ease;
+          background: transparent;
+        }
+
+        .sch-upload-zone:hover {
+          border-color: var(--text-secondary);
+          background: var(--panel-muted);
+        }
+
+        .sch-upload-zone.dragging {
+          border-color: var(--accent-text);
+          background: var(--accent-bg);
+        }
+
+        /* ─── Settings Grid ─── */
+        .sch-settings-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
+          gap: 24px;
+          align-items: start;
+        }
+
+        @media (max-width: 900px) {
+          .sch-settings-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* ─── Code Block ─── */
+        .sch-code-block {
+          background: var(--panel-muted);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 16px;
+          font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+          font-size: 11.5px;
+          color: var(--text-primary);
+          overflow-x: auto;
+          margin: 0;
+          max-height: 200px;
+          line-height: 1.6;
+        }
+
+        /* ─── Browser Mockup ─── */
+        .sch-browser-mockup {
+          border: 1px solid var(--border-color);
+          border-radius: 18px;
+          overflow: hidden;
+          background: var(--panel-bg);
+          box-shadow: var(--card-shadow);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .sch-browser-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+
+        /* ─── Empty State ─── */
+        .sch-empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 20px;
+          gap: 12px;
+          text-align: center;
+        }
+
+        .sch-empty-icon {
+          width: 64px;
+          height: 64px;
+          border-radius: 18px;
+          background: var(--panel-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          margin-bottom: 4px;
+        }
+
+        /* ─── Progress Stepper ─── */
+        .sch-stepper {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 24px;
+        }
+
+        .sch-step-bar {
+          height: 4px;
+          flex: 1;
+          border-radius: 2px;
+          background: var(--border-color);
+          transition: background-color 0.4s ease;
+        }
+
+        .sch-step-bar.done {
+          background: var(--text-primary);
+        }
+
+        /* ─── Skeleton Loader ─── */
+        .sch-skeleton {
+          background: linear-gradient(90deg, var(--panel-muted) 25%, var(--border-color) 50%, var(--panel-muted) 75%);
+          background-size: 200% 100%;
+          animation: sch-shimmer 1.5s infinite;
+          border-radius: 10px;
+        }
+
+        @keyframes sch-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        /* ─── Input Styles ─── */
+        .sch-input {
+          width: 100%;
+          height: 40px;
+          padding: 0 14px;
+          background: var(--panel-bg);
+          border: 1.5px solid var(--border-color);
+          border-radius: 12px;
+          font-size: 13px;
+          color: var(--text-primary);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          font-family: var(--font-family);
+          box-sizing: border-box;
+        }
+
+        .sch-input:focus {
+          outline: none;
+          border-color: var(--accent-text);
+          box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.08);
+        }
+
+        .sch-input::placeholder {
+          color: var(--text-muted);
+        }
+
+        .sch-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--text-secondary);
+          margin-bottom: 6px;
+        }
+
+        .sch-textarea {
+          width: 100%;
+          padding: 12px 14px;
+          background: var(--panel-bg);
+          border: 1.5px solid var(--border-color);
+          border-radius: 12px;
+          font-size: 13px;
+          color: var(--text-primary);
+          font-family: 'Menlo', monospace;
+          resize: vertical;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          box-sizing: border-box;
+        }
+
+        .sch-textarea:focus {
+          outline: none;
+          border-color: var(--accent-text);
+          box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.08);
+        }
+      `}</style>
+
+      {/* ═══════════ Page Header & Tab Navigation Combined Row ═══════════ */}
+      <div style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid var(--border-color)',
+        paddingBottom: '12px',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '16px',
+        direction: lang === 'ar' ? 'rtl' : 'ltr'
+      }}>
+        {!hideHeader && (
+          <h1 style={{ 
+            fontSize: '22px', 
+            fontWeight: 800, 
+            margin: 0,
+            color: 'var(--text-primary)',
+            letterSpacing: lang === 'ar' ? '0' : '-0.7px'
+          }}>
+            {t.title}
+          </h1>
+        )}
+
+        <div className="vercel-tabs-container" style={{ margin: 0, overflowX: 'auto' }}>
+          <button
+            onClick={() => setActiveSubTab('list')}
+            className={`vercel-tab-btn ${activeSubTab === 'list' ? 'active' : ''}`}
+          >
+            <Users size={14} />
+            <span>{t.tabList}</span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('settings')}
+            className={`vercel-tab-btn ${activeSubTab === 'settings' ? 'active' : ''}`}
+          >
+            <Settings size={14} />
+            <span>{t.tabSettings}</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (
+        /* ═══════════ Skeleton Loading State ═══════════ */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Skeleton Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          <div className="sch-stats-row">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="sumer-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '40%', height: '12px' }} />
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '60%', height: '28px', marginTop: '4px' }} />
-              </div>
+              <div key={i} className="sch-skeleton" style={{ height: '110px', borderRadius: '18px' }} />
             ))}
           </div>
-
-          {/* Skeleton Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-            <div className="skeleton-shimmer skeleton-bar" style={{ width: '300px', height: '34px', borderRadius: '8px' }} />
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '120px', height: '32px', borderRadius: '8px' }} />
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '100px', height: '32px', borderRadius: '8px' }} />
+          <div className="sch-content-grid">
+            <div className="sch-skeleton" style={{ height: '400px', borderRadius: '18px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="sch-skeleton" style={{ height: '220px', borderRadius: '18px' }} />
+              <div className="sch-skeleton" style={{ height: '160px', borderRadius: '18px' }} />
             </div>
-          </div>
-
-          {/* Skeleton Table */}
-          <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
-            <div style={{ padding: '16px', display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--panel-muted)' }}>
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '25%' }} />
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '35%' }} />
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '15%' }} />
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '15%' }} />
-              <div className="skeleton-shimmer skeleton-bar" style={{ width: '10%' }} />
-            </div>
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} style={{ padding: '18px 16px', display: 'flex', gap: '24px', borderBottom: i === 5 ? 'none' : '1px solid var(--border-color)', alignItems: 'center' }}>
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '25%', height: '14px' }} />
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '35%', height: '12px' }} />
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '15%', height: '18px', borderRadius: '12px' }} />
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '15%', height: '12px' }} />
-                <div className="skeleton-shimmer skeleton-bar" style={{ width: '10%', height: '14px' }} />
-              </div>
-            ))}
           </div>
         </div>
       ) : activeSubTab === 'list' ? (
-        /* ==================== TAB 1: LIST ==================== */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        /* ═══════════════════════════════════════ */
+        /* ═══════════ TAB 1: LIST ═══════════ */
+        /* ═══════════════════════════════════════ */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
           
-          {/* Quick Metrics Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <div className="sumer-card spring-card dashboard-metric-card" style={{ padding: '20px', cursor: 'default', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="metric-title">{t.statTotal}</span>
-                <Users size={16} style={{ color: 'var(--text-muted)' }} />
+          {/* ─── Pastel Stat Cards ─── */}
+          <div className="sch-stats-row">
+            <div className="sch-stat-card mint">
+              <div className="sch-stat-header">
+                <div className="sch-stat-icon"><Users size={18} /></div>
+                <span className="sch-stat-badge">
+                  <TrendingUp size={10} />
+                  {totalCount > 0 ? '+' + Math.min(totalCount, 12) + '%' : '—'}
+                </span>
               </div>
-              <div className="metric-val" style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: '28px', marginTop: '4px' }}>
-                {totalCount}
-              </div>
+              <div className="sch-stat-value">{totalCount}</div>
+              <div className="sch-stat-label">{t.statTotal}</div>
             </div>
-            <div className="sumer-card spring-card dashboard-metric-card" style={{ padding: '20px', cursor: 'default', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="metric-title">{t.statActive}</span>
-                <CheckCircle2 size={16} style={{ color: '#10b981' }} />
+
+            <div className="sch-stat-card amber">
+              <div className="sch-stat-header">
+                <div className="sch-stat-icon"><CheckCircle2 size={18} /></div>
+                <span className="sch-stat-badge">
+                  {activePercent}%
+                </span>
               </div>
-              <div className="metric-val" style={{ color: '#10b981', fontWeight: 800, fontSize: '28px', marginTop: '4px' }}>
-                {activeCount}
-              </div>
+              <div className="sch-stat-value">{activeCount}</div>
+              <div className="sch-stat-label">{t.statActive}</div>
             </div>
-            <div className="sumer-card spring-card dashboard-metric-card" style={{ padding: '20px', cursor: 'default', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="metric-title">{t.statUnsubscribed}</span>
-                <XCircle size={16} style={{ color: 'var(--text-muted)' }} />
+
+            <div className="sch-stat-card rose">
+              <div className="sch-stat-header">
+                <div className="sch-stat-icon"><XCircle size={18} /></div>
+                <span className="sch-stat-badge">
+                  {unsubPercent}%
+                </span>
               </div>
-              <div className="metric-val" style={{ color: 'var(--text-muted)', fontWeight: 800, fontSize: '28px', marginTop: '4px' }}>
-                {unsubscribedCount}
-              </div>
+              <div className="sch-stat-value">{unsubscribedCount}</div>
+              <div className="sch-stat-label">{t.statUnsubscribed}</div>
             </div>
-            <div className="sumer-card spring-card dashboard-metric-card" style={{ padding: '20px', cursor: 'default', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="metric-title">{t.statWelcomeSent}</span>
-                <Mail size={16} style={{ color: 'var(--text-accent)' }} />
+
+            <div className="sch-stat-card sky">
+              <div className="sch-stat-header">
+                <div className="sch-stat-icon"><Mail size={18} /></div>
               </div>
-              <div className="metric-val" style={{ color: 'var(--text-accent)', fontWeight: 800, fontSize: '28px', marginTop: '4px' }}>
-                {settings.welcomeEnabled ? (lang === 'ar' ? 'نشط' : 'Active') : (lang === 'ar' ? 'معطل' : 'Disabled')}
+              <div className="sch-stat-value" style={{ fontSize: '20px', fontWeight: 700 }}>
+                {settings.welcomeEnabled ? (lang === 'ar' ? '✓ نشط' : '✓ Active') : (lang === 'ar' ? '✗ معطل' : '✗ Disabled')}
               </div>
+              <div className="sch-stat-label">{t.statWelcomeSent}</div>
             </div>
           </div>
 
-          {/* List Controls & Actions */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* ─── Main Content Grid ─── */}
+          <div className="sch-content-grid">
             
-            {/* Search filter row */}
-            <div style={{ display: 'flex', gap: '10px', flex: '1 1 300px', maxWidth: '400px', position: 'relative' }}>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <Search size={14} style={{ position: 'absolute', top: '10px', left: lang === 'ar' ? 'auto' : '12px', right: lang === 'ar' ? '12px' : 'auto', color: 'var(--text-muted)' }} />
-                <input
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="v-input"
-                  style={{
-                    paddingInlineStart: '34px',
-                    width: '100%',
-                    fontSize: '13px'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Filter buttons, manual button, Excel button */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ display: 'flex', backgroundColor: 'var(--panel-muted)', padding: '3px', borderRadius: '8px' }}>
-                {(['all', 'active', 'unsubscribed'] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setStatusFilter(filter)}
-                    className="segmented-btn"
-                    style={{
-                      border: 'none',
-                      backgroundColor: statusFilter === filter ? 'var(--panel-bg)' : 'transparent',
-                      color: statusFilter === filter ? 'var(--text-primary)' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    {filter === 'all' && t.filterAll}
-                    {filter === 'active' && t.filterActive}
-                    {filter === 'unsubscribed' && t.filterUnsubscribed}
-                  </button>
-                ))}
-              </div>
-
-              {/* Export CSV button */}
-              {subscribers.length > 0 && (
-                <button 
-                  onClick={handleExportCSV}
-                  className="v-btn v-btn-secondary spring-btn" 
-                  style={{ fontSize: '12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px' }}
-                >
-                  <Copy size={13} />
-                  <span>{t.exportCSV}</span>
-                </button>
-              )}
-
-              {/* Excel Import button */}
-              <button 
-                onClick={() => setIsImportModalOpen(true)}
-                className="v-btn v-btn-secondary spring-btn" 
-                style={{ fontSize: '12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px' }}
-              >
-                <Upload size={13} />
-                <span>{t.importSubscribersBtn}</span>
-              </button>
-
-              {/* Add Subscriber Button */}
-              <button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="v-btn v-btn-primary spring-btn" 
-                style={{ fontSize: '12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px' }}
-              >
-                <Plus size={14} />
-                <span>{t.addSubscriberBtn}</span>
-              </button>
-            </div>
-
-          </div>
-
-          {/* Subscribers Table Container */}
-          <div className="table-container" style={{ margin: 0, border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
-            <table className="v-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '40px', paddingLeft: '16px', paddingRight: '16px', textAlign: 'center' }}>
+            {/* Left: Subscriber List Panel */}
+            <div className="sch-panel">
+              
+              {/* Toolbar */}
+              <div className="sch-toolbar" style={{ direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+                <div className="sch-toolbar-start">
+                  <div className="sch-search-wrap">
+                    <Search size={16} className="sch-search-icon" />
                     <input
-                      type="checkbox"
-                      checked={paginatedSubscribers.length > 0 && paginatedSubscribers.every(s => selectedSubIds.includes(s.id))}
-                      onChange={() => handleSelectAllOnPage(paginatedSubscribers)}
-                      style={{ accentColor: 'var(--text-accent)', width: '14px', height: '14px', cursor: 'pointer' }}
+                      type="text"
+                      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+                      placeholder={t.searchPlaceholder}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="sch-search-input"
                     />
-                  </th>
-                  <th style={{ width: '25%' }}>{t.colName}</th>
-                  <th style={{ width: '35%' }}>{t.colEmail}</th>
-                  <th style={{ width: '15%' }}>{t.colStatus}</th>
-                  <th style={{ width: '15%' }}>{t.colCreated}</th>
-                  <th style={{ width: '10%', textAlign: 'center' }}>{t.colActions}</th>
-                </tr>
-              </thead>
-              <tbody>
+                  </div>
+
+                  <div className="sch-pills">
+                    {(['all', 'active', 'unsubscribed'] as const).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setStatusFilter(filter)}
+                        className={`sch-pill ${statusFilter === filter ? 'active' : ''}`}
+                      >
+                        {filter === 'all' && t.filterAll}
+                        {filter === 'active' && t.filterActive}
+                        {filter === 'unsubscribed' && t.filterUnsubscribed}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sch-actions-row">
+                  {subscribers.length > 0 && (
+                    <button onClick={handleExportCSV} className="sch-btn">
+                      <Download size={14} />
+                      <span>{t.exportCSV}</span>
+                    </button>
+                  )}
+                  <button onClick={() => setIsImportModalOpen(true)} className="sch-btn">
+                    <Upload size={14} />
+                    <span>{t.importSubscribersBtn}</span>
+                  </button>
+                  <button onClick={() => setIsAddModalOpen(true)} className="sch-btn sch-btn-primary">
+                    <Plus size={15} />
+                    <span>{t.addSubscriberBtn}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Subscriber Rows */}
+              <div className="sch-subscriber-list">
                 {paginatedSubscribers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '50px 0' }}>
+                  <div className="sch-empty-state">
+                    <div className="sch-empty-icon">
+                      <Users size={28} />
+                    </div>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {t.noSubscribers}
-                    </td>
-                  </tr>
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '300px' }}>
+                      {lang === 'ar' ? 'أضف مشتركين يدوياً أو استورد ملف إكسل للبدء.' : 'Add subscribers manually or import a spreadsheet to get started.'}
+                    </span>
+                  </div>
                 ) : (
-                  paginatedSubscribers.map((sub) => (
-                    <tr key={sub.id} style={{ transition: 'background-color 0.15s' }}>
-                      <td style={{ width: '40px', paddingLeft: '16px', paddingRight: '16px', textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedSubIds.includes(sub.id)}
-                          onChange={() => handleSelectSub(sub.id)}
-                          style={{ accentColor: 'var(--text-accent)', width: '14px', height: '14px', cursor: 'pointer' }}
-                        />
-                      </td>
-                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {sub.name || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '11px' }}>{lang === 'ar' ? 'غير محدد' : 'Not Provided'}</span>}
-                      </td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-secondary)' }}>{sub.email}</td>
-                      <td>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          backgroundColor: sub.status === 'active' ? 'rgba(16, 185, 129, 0.1)' : 'var(--panel-muted)',
-                          color: sub.status === 'active' ? '#10b981' : 'var(--text-muted)'
-                        }}>
-                          {sub.status === 'active' ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                          {sub.status === 'active' ? t.statusActive : t.statusUnsubscribed}
-                        </span>
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                        {new Date(sub.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleToggleStatus(sub.id, sub.status)}
-                            title={t.actionToggle}
-                            className="v-action-btn spring-btn"
-                            style={{
-                              border: 'none',
-                              background: 'transparent',
-                              color: 'var(--text-secondary)',
-                              cursor: 'pointer',
-                              padding: '4px',
-                              borderRadius: '4px',
-                              transition: 'transform 0.1s'
-                            }}
-                          >
-                            {sub.status === 'active' ? <ToggleRight size={18} style={{ color: '#10b981' }} /> : <ToggleLeft size={18} />}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSubscriber(sub.id)}
-                            title={t.actionDelete}
-                            className="v-action-btn spring-btn"
-                            style={{
-                              border: 'none',
-                              background: 'transparent',
-                              color: '#ef4444',
-                              cursor: 'pointer',
-                              padding: '4px',
-                              borderRadius: '4px'
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                  paginatedSubscribers.map((sub) => {
+                    const avColor = getAvatarColor(sub.id);
+                    return (
+                      <div key={sub.id} className="sch-sub-row">
+                        <label className="sch-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedSubIds.includes(sub.id)}
+                            onChange={() => handleSelectSub(sub.id)}
+                          />
+                          <span className="sch-checkmark" />
+                        </label>
+
+                        <div className="sch-sub-avatar" style={{ backgroundColor: avColor.bg, color: avColor.text }}>
+                          {getInitials(sub.name, sub.email)}
                         </div>
-                      </td>
-                    </tr>
-                  ))
+
+                        <div className="sch-sub-info">
+                          <div className="sch-sub-name">
+                            {sub.name || <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontStyle: 'italic', fontSize: '13px' }}>{lang === 'ar' ? 'بدون اسم' : 'No Name'}</span>}
+                          </div>
+                          <div className="sch-sub-email">{sub.email}</div>
+                        </div>
+
+                        <div className="sch-sub-meta">
+                          <span className={`sch-badge ${sub.status === 'active' ? 'active' : 'unsubscribed'}`}>
+                            <span className="sch-badge-dot" />
+                            <span>{sub.status === 'active' ? t.statusActive : t.statusUnsubscribed}</span>
+                          </span>
+
+                          <span className="sch-sub-date">
+                            {new Date(sub.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+
+                          <div className="sch-row-actions">
+                            <button
+                              onClick={() => handleToggleStatus(sub.id, sub.status)}
+                              title={t.actionToggle}
+                              className={`sch-icon-btn ${sub.status === 'active' ? 'toggle-active' : ''}`}
+                            >
+                              {sub.status === 'active' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSubscriber(sub.id)}
+                              title={t.actionDelete}
+                              className="sch-icon-btn danger"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="sch-pagination">
+                  <span className="sch-page-info">
+                    {lang === 'ar' 
+                      ? `عرض ${(currentPage-1)*itemsPerPage + 1} - ${Math.min(currentPage*itemsPerPage, filteredSubscribers.length)} من أصل ${filteredSubscribers.length}`
+                      : `Showing ${(currentPage-1)*itemsPerPage + 1} - ${Math.min(currentPage*itemsPerPage, filteredSubscribers.length)} of ${filteredSubscribers.length}`
+                    }
+                  </span>
+                  <div className="sch-page-btns">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="sch-page-btn"
+                    >
+                      {lang === 'ar' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="sch-page-btn"
+                    >
+                      {lang === 'ar' ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Sidebar Panels */}
+            <div className="sch-sidebar-stack">
+              
+
+              {/* Quick Add Subscriber Card */}
+              <div className="sch-quick-add-card">
+                <div className="sch-quick-avatars">
+                  {[{ bg: '#E8F5E9', text: '#2E7D32', l: 'JK' }, { bg: '#FFF3E0', text: '#E65100', l: 'AA' }, { bg: '#F3E5F5', text: '#7B1FA2', l: '+' }].map((av, i) => (
+                    <div key={i} className="sch-quick-avatar-bubble" style={{ background: av.bg, color: av.text }}>
+                      {av.l}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    {lang === 'ar' ? 'إضافة مشتركين جدد' : 'Quick Add New Subscribers'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                    {lang === 'ar' ? 'أضف يدوياً أو استورد من ملف' : 'Add manually or import from file'}
+                  </div>
+                </div>
+                <button onClick={() => setIsAddModalOpen(true)} className="sch-btn sch-btn-primary" style={{ width: '100%', justifyContent: 'center', borderRadius: '14px', height: '40px' }}>
+                  <UserPlus size={15} />
+                  <span>{t.addSubscriberBtn}</span>
+                </button>
+              </div>
+
+              {/* Recent Activity Mini Card */}
+              {subscribers.length > 0 && (
+                <div className="sch-panel">
+                  <h3 className="sch-panel-title" style={{ fontSize: '14px' }}>{lang === 'ar' ? 'آخر المشتركين' : 'Recent Subscribers'}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '14px' }}>
+                    {subscribers.slice(0, 4).map(sub => {
+                      const avColor = getAvatarColor(sub.id);
+                      return (
+                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: avColor.bg, color: avColor.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0 }}>
+                            {getInitials(sub.name, sub.email)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {sub.name || sub.email.split('@')[0]}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              {new Date(sub.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                          </div>
+                          <ArrowUpRight size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Floating Bulk Action Bar */}
-          {selectedSubIds.length > 0 && (
-            <div className="floating-bulk-bar visible">
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                {selectedSubIds.length} {t.selectedCount}
-              </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={handleBulkDelete}
-                  className="v-btn spring-btn"
-                  style={{
-                    height: '32px',
-                    fontSize: '12px',
-                    padding: '0 12px',
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '99px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Trash2 size={13} />
-                  <span>{t.deleteSelected}</span>
-                </button>
-                <button
-                  onClick={() => setSelectedSubIds([])}
-                  className="v-btn v-btn-secondary spring-btn"
-                  style={{
-                    height: '32px',
-                    fontSize: '12px',
-                    padding: '0 12px',
-                    borderRadius: '99px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-                </button>
-              </div>
+          {/* ─── Floating Bulk Action Bar ─── */}
+          <div className={`sch-floating-bar ${selectedSubIds.length > 0 ? 'visible' : ''}`}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+              {selectedSubIds.length} {t.selectedCount}
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={handleBulkDelete} className="sch-btn sch-btn-danger" style={{ borderRadius: '8px', height: '32px', padding: '0 12px', fontSize: '12px' }}>
+                <Trash2 size={13} />
+                <span>{t.deleteSelected}</span>
+              </button>
+              <button onClick={() => setSelectedSubIds([])} className="sch-btn" style={{ borderRadius: '8px', height: '32px', padding: '0 12px', fontSize: '12px', background: '#1c1c1e', color: '#fff', borderColor: '#2c2c2e' }}>
+                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
             </div>
-          )}
+          </div>
 
-          {/* Pagination Footer */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {lang === 'ar' 
-                  ? `عرض ${(currentPage-1)*itemsPerPage + 1} - ${Math.min(currentPage*itemsPerPage, filteredSubscribers.length)} من أصل ${filteredSubscribers.length}`
-                  : `Showing ${(currentPage-1)*itemsPerPage + 1} - ${Math.min(currentPage*itemsPerPage, filteredSubscribers.length)} of ${filteredSubscribers.length}`
-                }
-              </span>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="v-btn v-btn-secondary"
-                  style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', display: 'flex', alignItems: 'center' }}
-                >
-                  {lang === 'ar' ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="v-btn v-btn-secondary"
-                  style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', display: 'flex', alignItems: 'center' }}
-                >
-                  {lang === 'ar' ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Add Subscriber Modal */}
+          {/* ─── Add Subscriber Modal ─── */}
           {isAddModalOpen && (
-            <div className="sumer-modal-overlay" style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <div className="sumer-card" style={{ width: '100%', maxWidth: '400px', padding: '24px', zIndex: 1001, animation: 'scaleUp 0.2s ease' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <div className="sch-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setIsAddModalOpen(false); setAddError(''); } }}>
+              <div className="sch-modal-box" style={{ maxWidth: '420px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
                   {t.modalAddTitle}
                 </h3>
                 
-                <form onSubmit={handleAddSubscriber} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <form onSubmit={handleAddSubscriber} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      {t.labelName}
-                    </label>
-                    <input
-                      type="text"
-                      className="v-input"
-                      placeholder={t.inputNamePlaceholder}
-                      value={newSubName}
-                      onChange={(e) => setNewSubName(e.target.value)}
-                      style={{ width: '100%', fontSize: '13px' }}
-                    />
+                    <label className="sch-label">{t.labelName}</label>
+                    <input type="text" className="sch-input" placeholder={t.inputNamePlaceholder} value={newSubName} onChange={(e) => setNewSubName(e.target.value)} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      {t.labelEmail}
-                    </label>
-                    <input
-                      type="email"
-                      className="v-input"
-                      placeholder={t.inputEmailPlaceholder}
-                      value={newSubEmail}
-                      onChange={(e) => setNewSubEmail(e.target.value)}
-                      required
-                      style={{ width: '100%', fontSize: '13px' }}
-                    />
+                    <label className="sch-label">{t.labelEmail}</label>
+                    <input type="email" className="sch-input" placeholder={t.inputEmailPlaceholder} value={newSubEmail} onChange={(e) => setNewSubEmail(e.target.value)} required />
                   </div>
 
                   {addError && (
-                    <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: 500 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--danger-text)', backgroundColor: 'var(--danger-bg)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(238,0,0,0.1)', fontWeight: 600 }}>
                       {addError}
-                    </span>
+                    </div>
                   )}
 
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
-                    <button
-                      type="button"
-                      onClick={() => { setIsAddModalOpen(false); setAddError(''); }}
-                      className="v-btn v-btn-secondary"
-                      style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
-                    >
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                    <button type="button" onClick={() => { setIsAddModalOpen(false); setAddError(''); }} className="sch-btn" style={{ borderRadius: '12px' }}>
                       {t.cancelBtn}
                     </button>
-                    <button
-                      type="submit"
-                      disabled={addLoading}
-                      className="v-btn v-btn-primary"
-                      style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
-                    >
+                    <button type="submit" disabled={addLoading} className="sch-btn sch-btn-primary" style={{ borderRadius: '12px' }}>
                       {addLoading ? (lang === 'ar' ? 'جاري الإضافة...' : 'Adding...') : t.addBtn}
                     </button>
                   </div>
@@ -1419,215 +2331,146 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
             </div>
           )}
 
-          {/* Import File Modal Wizard */}
+          {/* ─── Import File Modal Wizard ─── */}
           {isImportModalOpen && (
-            <div className="sumer-modal-overlay" style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <div className="sumer-card" style={{ width: '100%', maxWidth: '600px', padding: '24px', zIndex: 1001, animation: 'scaleUp 0.2s ease', maxHeight: '90vh', overflowY: 'auto' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+            <div className="sch-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && importStep !== 3) { setIsImportModalOpen(false); resetImportWizard(); } }}>
+              <div className="sch-modal-box" style={{ maxWidth: '620px' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
                   {t.importWizardTitle}
                 </h3>
 
-                {/* Progress indicators */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                  <div style={{ height: '4px', flex: 1, borderRadius: '2px', backgroundColor: importStep >= 1 ? 'var(--text-accent)' : 'var(--border-color)' }} />
-                  <div style={{ height: '4px', flex: 1, borderRadius: '2px', backgroundColor: importStep >= 2 ? 'var(--text-accent)' : 'var(--border-color)' }} />
-                  <div style={{ height: '4px', flex: 1, borderRadius: '2px', backgroundColor: importStep >= 3 ? 'var(--text-accent)' : 'var(--border-color)' }} />
+                <div className="sch-stepper">
+                  <div className={`sch-step-bar ${importStep >= 1 ? 'done' : ''}`} />
+                  <div className={`sch-step-bar ${importStep >= 2 ? 'done' : ''}`} />
+                  <div className={`sch-step-bar ${importStep >= 3 ? 'done' : ''}`} />
                 </div>
 
-                {/* STEP 1: UPLOAD FILE */}
+                {/* STEP 1 */}
                 {importStep === 1 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      <strong>{t.step1Title}</strong> - {t.step1Desc}
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <strong>{t.step1Title}</strong> — {t.step1Desc}
                     </div>
 
                     <div 
-                      onDragEnter={handleDrag}
-                      onDragOver={handleDrag}
-                      onDragLeave={handleDrag}
-                      onDrop={handleDrop}
+                      onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        border: '2px dashed var(--border-color)',
-                        borderRadius: '12px',
-                        padding: '40px 20px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '12px',
-                        backgroundColor: isDragging ? 'rgba(var(--text-accent-rgb), 0.05)' : 'transparent',
-                        borderColor: isDragging ? 'var(--text-accent)' : 'var(--border-color)',
-                        transition: 'border-color 0.2s, background-color 0.2s'
-                      }}
+                      className={`sch-upload-zone ${isDragging ? 'dragging' : ''}`}
                     >
-                      <Upload size={32} style={{ color: isDragging ? 'var(--text-accent)' : 'var(--text-muted)' }} />
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <Upload size={32} style={{ color: isDragging ? 'var(--accent-text)' : 'var(--text-muted)' }} />
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {t.dragDropLabel}
                       </span>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileSelect} 
-                        accept=".xlsx,.xls,.csv" 
-                        style={{ display: 'none' }} 
-                      />
+                      <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".xlsx,.xls,.csv" style={{ display: 'none' }} />
                     </div>
 
-                    {/* Download Sample Button */}
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={handleDownloadSample}
-                        className="v-btn v-btn-secondary spring-btn"
-                        style={{ fontSize: '11px', height: '28px', padding: '0 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <FileSpreadsheet size={12} />
+                      <button type="button" onClick={handleDownloadSample} className="sch-btn" style={{ borderRadius: '12px' }}>
+                        <FileSpreadsheet size={14} />
                         <span>{t.downloadSample}</span>
                       </button>
                     </div>
 
                     {importError && (
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: '#ef4444', fontSize: '12px', fontWeight: 500 }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: 'var(--danger-text)', backgroundColor: 'var(--danger-bg)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(238,0,0,0.1)', fontSize: '12px', fontWeight: 600 }}>
                         <AlertCircle size={14} />
                         <span>{importError}</span>
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                      <button
-                        onClick={() => { setIsImportModalOpen(false); resetImportWizard(); }}
-                        className="v-btn v-btn-secondary"
-                        style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
-                      >
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                      <button onClick={() => { setIsImportModalOpen(false); resetImportWizard(); }} className="sch-btn" style={{ borderRadius: '12px' }}>
                         {t.cancelBtn}
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 2: FIELD MAPPING */}
+                {/* STEP 2 */}
                 {importStep === 2 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      <strong>{t.step2Title}</strong> - {t.step2Desc}
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <strong>{t.step2Title}</strong> — {t.step2Desc}
                     </div>
 
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {t.selectedFileLabel} <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fileName}</span> ({parsedRows.length} rows)
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      {t.selectedFileLabel} <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fileName}</span> ({parsedRows.length} rows)
                     </div>
 
-                    {/* Mapping Selectors */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                          {t.mapEmailLabel}
-                        </label>
-                        <select 
-                          className="v-input"
-                          value={emailColumn}
-                          onChange={(e) => setEmailColumn(e.target.value)}
-                          style={{ width: '100%', fontSize: '12px', height: '34px', padding: '0 8px' }}
-                        >
+                        <label className="sch-label">{t.mapEmailLabel}</label>
+                        <select className="sch-input" value={emailColumn} onChange={(e) => setEmailColumn(e.target.value)} style={{ height: '40px' }}>
                           <option value="">{t.selectColumnPlaceholder}</option>
-                          {parsedHeaders.map(h => (
-                            <option key={h} value={h}>{h}</option>
-                          ))}
+                          {parsedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
                         </select>
                       </div>
-
                       <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                          {t.mapNameLabel}
-                        </label>
-                        <select 
-                          className="v-input"
-                          value={nameColumn}
-                          onChange={(e) => setNameColumn(e.target.value)}
-                          style={{ width: '100%', fontSize: '12px', height: '34px', padding: '0 8px' }}
-                        >
+                        <label className="sch-label">{t.mapNameLabel}</label>
+                        <select className="sch-input" value={nameColumn} onChange={(e) => setNameColumn(e.target.value)} style={{ height: '40px' }}>
                           <option value="">{t.selectColumnPlaceholder}</option>
-                          {parsedHeaders.map(h => (
-                            <option key={h} value={h}>{h}</option>
-                          ))}
+                          {parsedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
                         </select>
                       </div>
                     </div>
 
-                    {/* Validation Summary Card */}
                     {validationReport && (
-                      <div className="sumer-card" style={{ padding: '16px', backgroundColor: 'var(--panel-muted)', border: '1px solid var(--border-color)' }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: 700, margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
-                          {t.validationReportTitle}
-                        </h4>
+                      <div className="sch-panel" style={{ padding: '16px', background: 'var(--panel-muted)' }}>
+                        <h4 style={{ fontSize: '13px', fontWeight: 800, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>{t.validationReportTitle}</h4>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.validEmails}</span>
-                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#10b981' }}>{validationReport.validCount}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>{t.validEmails}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--success-color)' }}>{validationReport.validCount}</span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.invalidEmails}</span>
-                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#ef4444' }}>{validationReport.invalidCount}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>{t.invalidEmails}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--danger-color)' }}>{validationReport.invalidCount}</span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.duplicatesInSheet}</span>
-                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#eab308' }}>{validationReport.duplicateCount}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>{t.duplicatesInSheet}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--warning-color)' }}>{validationReport.duplicateCount}</span>
                           </div>
                         </div>
                         {(validationReport.invalidCount > 0 || validationReport.duplicateCount > 0) && (
-                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', gap: '4px', alignItems: 'center', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-                            <AlertCircle size={12} style={{ color: '#eab308' }} />
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', gap: '6px', alignItems: 'center', marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                            <AlertCircle size={14} style={{ color: 'var(--warning-color)' }} />
                             <span>{t.validationWarning}</span>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* Checkbox welcome email options */}
                     {settings.welcomeEnabled && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', backgroundColor: 'var(--panel-muted)', borderRadius: '8px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={sendWelcomeToImported} 
-                            onChange={(e) => setSendWelcomeToImported(e.target.checked)} 
-                            style={{ width: '14px', height: '14px', accentColor: 'var(--text-accent)' }}
-                          />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '14px', backgroundColor: 'var(--panel-muted)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={sendWelcomeToImported} onChange={(e) => setSendWelcomeToImported(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: 'var(--text-accent)' }} />
                           <span>{t.sendWelcomeImportCheck}</span>
                         </label>
                         {sendWelcomeToImported && (
-                          <span style={{ fontSize: '10px', color: '#eab308', marginInlineStart: '22px', fontWeight: 500 }}>
+                          <span style={{ fontSize: '11px', color: 'var(--warning-text)', marginInlineStart: '24px', fontWeight: 500 }}>
                             {t.sendWelcomeImportWarn}
                           </span>
                         )}
                       </div>
                     )}
 
-                    {/* Mapping preview table */}
                     {emailColumn && (
                       <div>
-                        <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                          {t.previewHeading}
-                        </span>
-                        <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                          <table className="v-table" style={{ fontSize: '11px', margin: 0 }}>
+                        <span className="sch-label">{t.previewHeading}</span>
+                        <div style={{ border: '1px solid var(--border-color)', borderRadius: '14px', overflow: 'hidden' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                             <thead>
                               <tr>
-                                <th style={{ padding: '6px 10px' }}>{t.colEmail}</th>
-                                <th style={{ padding: '6px 10px' }}>{t.colName}</th>
+                                <th style={{ padding: '10px 14px', background: 'var(--panel-muted)', borderBottom: '1px solid var(--border-color)', textAlign: 'start', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.colEmail}</th>
+                                <th style={{ padding: '10px 14px', background: 'var(--panel-muted)', borderBottom: '1px solid var(--border-color)', textAlign: 'start', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.colName}</th>
                               </tr>
                             </thead>
                             <tbody>
                               {parsedRows.slice(0, 4).map((row, idx) => (
                                 <tr key={idx}>
-                                  <td style={{ fontFamily: 'monospace', padding: '6px 10px' }}>{row[emailColumn] || <span style={{ color: 'red' }}>Null</span>}</td>
-                                  <td style={{ padding: '6px 10px' }}>
-                                    {nameColumn && row[nameColumn] ? row[nameColumn] : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not Mapped</span>}
+                                  <td style={{ fontFamily: 'monospace', padding: '10px 14px', color: 'var(--text-secondary)', borderBottom: idx < 3 ? '1px solid var(--border-color)' : 'none' }}>{row[emailColumn] || <span style={{ color: 'var(--danger-color)' }}>Null</span>}</td>
+                                  <td style={{ padding: '10px 14px', color: 'var(--text-primary)', borderBottom: idx < 3 ? '1px solid var(--border-color)' : 'none' }}>
+                                    {nameColumn && row[nameColumn] ? row[nameColumn] : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '11px' }}>Not Mapped</span>}
                                   </td>
                                 </tr>
                               ))}
@@ -1637,86 +2480,71 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '10px' }}>
-                      <button
-                        onClick={resetImportWizard}
-                        className="v-btn v-btn-secondary spring-btn"
-                        style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
-                      >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '8px' }}>
+                      <button onClick={resetImportWizard} className="sch-btn" style={{ borderRadius: '12px' }}>
                         {lang === 'ar' ? 'رجوع' : 'Back'}
                       </button>
-                      <button
-                        onClick={handleBulkImport}
-                        disabled={!emailColumn}
-                        className="v-btn v-btn-primary spring-btn"
-                        style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
-                      >
+                      <button onClick={handleBulkImport} disabled={!emailColumn} className="sch-btn sch-btn-primary" style={{ borderRadius: '12px' }}>
                         {t.importSubmitBtn}
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 3: RESULT & SUCCESS */}
+                {/* STEP 3 */}
                 {importStep === 3 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '20px 0', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', padding: '24px 0', textAlign: 'center' }}>
                     {importProgress ? (
                       <>
-                        <div className="sumer-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px' }} />
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                        <div className="sumer-spinner" style={{ width: '44px', height: '44px', borderWidth: '3px' }} />
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)' }}>
                           {t.importingProgress}
                         </span>
                       </>
                     ) : importResult && importResult.success ? (
                       <>
-                        <CheckCircle2 size={48} style={{ color: '#10b981' }} />
-                        <h4 style={{ margin: '6px 0', fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                          {t.importSuccessTitle}
-                        </h4>
-                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
-                          {t.importSuccessDesc}
-                        </p>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <CheckCircle2 size={32} style={{ color: '#059669' }} />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>{t.importSuccessTitle}</h4>
+                          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>{t.importSuccessDesc}</p>
+                        </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', maxWidth: '300px', marginTop: '12px' }}>
-                          <div className="sumer-card" style={{ padding: '12px', backgroundColor: 'var(--panel-muted)' }}>
-                            <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)' }}>{t.resultsImported}</span>
-                            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>{importResult.imported}</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%', maxWidth: '360px', marginTop: '8px' }}>
+                          <div className="sch-stat-card mint" style={{ padding: '16px', gap: '4px', alignItems: 'center', textAlign: 'center' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.7 }}>{t.resultsImported}</span>
+                            <span style={{ fontSize: '24px', fontWeight: 800 }}>{importResult.imported}</span>
                           </div>
-                          <div className="sumer-card" style={{ padding: '12px', backgroundColor: 'var(--panel-muted)' }}>
-                            <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)' }}>{t.resultsWelcomed}</span>
-                            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-accent)' }}>{importResult.welcomed}</span>
+                          <div className="sch-stat-card sky" style={{ padding: '16px', gap: '4px', alignItems: 'center', textAlign: 'center' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.7 }}>{t.resultsWelcomed}</span>
+                            <span style={{ fontSize: '24px', fontWeight: 800 }}>{importResult.welcomed}</span>
                           </div>
                         </div>
 
                         {importResult.walletShortage && (
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', color: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234,179,8,0.2)', padding: '10px', borderRadius: '8px', fontSize: '11px', textAlign: 'start', width: '100%' }}>
-                            <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', color: 'var(--warning-text)', backgroundColor: 'var(--warning-bg)', border: '1px solid rgba(245,158,11,0.2)', padding: '12px', borderRadius: '14px', fontSize: '12px', textAlign: 'start', width: '100%', maxWidth: '360px' }}>
+                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                             <span>{t.resultsWalletShort}</span>
                           </div>
                         )}
 
-                        <button
-                          onClick={() => { setIsImportModalOpen(false); resetImportWizard(); }}
-                          className="v-btn v-btn-primary"
-                          style={{ marginTop: '14px', fontSize: '12px', height: '32px', padding: '0 16px' }}
-                        >
+                        <button onClick={() => { setIsImportModalOpen(false); resetImportWizard(); }} className="sch-btn sch-btn-primary" style={{ marginTop: '8px', borderRadius: '14px', height: '40px', padding: '0 24px' }}>
                           {t.closeBtn}
                         </button>
                       </>
                     ) : (
                       <>
-                        <XCircle size={48} style={{ color: '#ef4444' }} />
-                        <h4 style={{ margin: '6px 0', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {lang === 'ar' ? 'فشل عملية الاستيراد' : 'Import Process Failed'}
-                        </h4>
-                        <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: '#ef4444' }}>
-                          {importError}
-                        </p>
-                        <button
-                          onClick={resetImportWizard}
-                          className="v-btn v-btn-secondary"
-                          style={{ fontSize: '12px', height: '32px', padding: '0 16px' }}
-                        >
+                        <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'var(--danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <XCircle size={32} style={{ color: 'var(--danger-color)' }} />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            {lang === 'ar' ? 'فشل عملية الاستيراد' : 'Import Process Failed'}
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '13px', color: 'var(--danger-text)', fontWeight: 500 }}>{importError}</p>
+                        </div>
+                        <button onClick={resetImportWizard} className="sch-btn" style={{ borderRadius: '14px' }}>
                           {lang === 'ar' ? 'المحاولة مجدداً' : 'Try Again'}
                         </button>
                       </>
@@ -1729,40 +2557,30 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         </div>
       ) : (
-        /* ==================== TAB 2: SETTINGS ==================== */
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', gap: '24px', alignItems: 'start' }}>
+        /* ═══════════════════════════════════════════════════ */
+        /* ═══════════ TAB 2: SETTINGS ═══════════ */
+        /* ═══════════════════════════════════════════════════ */
+        <div className="sch-settings-grid">
           
           {/* Settings and Code Form */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* Config Form Card */}
-            <div className="sumer-card" style={{ padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 750, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
-                {t.settingsTitle}
-              </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 20px 0' }}>
-                {t.settingsDesc}
-              </p>
+            <div className="sch-panel">
+              <h2 className="sch-panel-title">{t.settingsTitle}</h2>
+              <p className="sch-panel-desc">{t.settingsDesc}</p>
 
               <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 
                 {/* Welcome Email Enable Toggle */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', backgroundColor: 'var(--panel-muted)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingInlineEnd: '12px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {t.enableWelcome}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      {t.enableWelcomeDesc}
-                    </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: 'var(--panel-muted)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingInlineEnd: '16px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.enableWelcome}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.enableWelcomeDesc}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings(prev => ({ ...prev, welcomeEnabled: !prev.welcomeEnabled }))}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-                  >
+                  <button type="button" onClick={() => setSettings(prev => ({ ...prev, welcomeEnabled: !prev.welcomeEnabled }))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}>
                     {settings.welcomeEnabled ? (
-                      <ToggleRight size={38} style={{ color: 'var(--text-accent)' }} />
+                      <ToggleRight size={38} style={{ color: 'var(--success-color)' }} />
                     ) : (
                       <ToggleLeft size={38} style={{ color: 'var(--text-muted)' }} />
                     )}
@@ -1771,404 +2589,188 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
                 {settings.welcomeEnabled && (
                   <>
-                    {/* Subject Input */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        {t.welcomeSubjectLabel}
-                      </label>
-                      <input
-                        type="text"
-                        className="v-input"
-                        placeholder={t.welcomeSubjectPlaceholder}
-                        value={settings.welcomeSubject}
-                        onChange={(e) => setSettings(prev => ({ ...prev, welcomeSubject: e.target.value }))}
-                        required
-                        style={{ width: '100%', fontSize: '13px' }}
-                      />
+                      <label className="sch-label">{t.welcomeSubjectLabel}</label>
+                      <input type="text" className="sch-input" placeholder={t.welcomeSubjectPlaceholder} value={settings.welcomeSubject} onChange={(e) => setSettings(prev => ({ ...prev, welcomeSubject: e.target.value }))} required />
                     </div>
 
-                    {/* Body TextArea */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                          {t.welcomeBodyLabel}
-                        </label>
+                        <label className="sch-label" style={{ marginBottom: 0 }}>{t.welcomeBodyLabel}</label>
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.insertTokenLabel}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleInsertToken('{name}')}
-                            className="v-btn v-btn-secondary spring-btn"
-                            style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', minWidth: 'auto' }}
-                          >
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.insertTokenLabel}</span>
+                          <button type="button" onClick={() => handleInsertToken('{name}')} className="sch-btn" style={{ height: '24px', fontSize: '10px', padding: '0 8px', borderRadius: '8px' }}>
                             {"{name}"}
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleInsertToken('{email}')}
-                            className="v-btn v-btn-secondary spring-btn"
-                            style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', minWidth: 'auto' }}
-                          >
+                          <button type="button" onClick={() => handleInsertToken('{email}')} className="sch-btn" style={{ height: '24px', fontSize: '10px', padding: '0 8px', borderRadius: '8px' }}>
                             {"{email}"}
                           </button>
                         </div>
                       </div>
-                      <textarea
-                        ref={textareaRef}
-                        className="v-input"
-                        rows={6}
-                        value={settings.welcomeBody}
-                        onChange={(e) => setSettings(prev => ({ ...prev, welcomeBody: e.target.value }))}
-                        required
-                        style={{
-                          width: '100%',
-                          fontSize: '13px',
-                          fontFamily: 'monospace',
-                          resize: 'vertical'
-                        }}
-                      />
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                        {t.welcomeBodyDesc}
-                      </span>
+                      <textarea ref={textareaRef} className="sch-textarea" rows={6} value={settings.welcomeBody} onChange={(e) => setSettings(prev => ({ ...prev, welcomeBody: e.target.value }))} required />
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>{t.welcomeBodyDesc}</span>
                     </div>
                   </>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={saveLoading}
-                  className="v-btn v-btn-primary"
-                  style={{ width: '100%', height: '36px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                >
+                <button type="submit" disabled={saveLoading} className="sch-btn sch-btn-primary" style={{ width: '100%', height: '42px', justifyContent: 'center', borderRadius: '14px', fontSize: '14px' }}>
                   {saveLoading ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : t.saveSettingsBtn}
                 </button>
-
               </form>
             </div>
 
-            {/* Embed instructions and widgets */}
-            <div className="sumer-card" style={{ padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 750, margin: '0 0 6px 0', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Code size={18} />
+            {/* Embed Code Card */}
+            <div className="sch-panel">
+              <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Code size={18} style={{ color: 'var(--accent-text)' }} />
                 <span>{t.integrationTitle}</span>
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 20px 0' }}>
-                {t.integrationDesc}
-              </p>
+              <p className="sch-panel-desc">{t.integrationDesc}</p>
 
-              {/* Widget Customizer Inputs */}
-              <div className="widget-customizer-preview" style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.customizerTitle}</span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+              {/* Widget Customizer */}
+              <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '18px', backgroundColor: 'var(--panel-muted)' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.customizerTitle}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t.widgetThemeLabel}</label>
-                    <select
-                      className="v-input"
-                      value={widgetTheme}
-                      onChange={(e) => setWidgetTheme(e.target.value as any)}
-                      style={{ width: '100%', fontSize: '11px', height: '28px', padding: '0 4px' }}
-                    >
+                    <label className="sch-label">{t.widgetThemeLabel}</label>
+                    <select className="sch-input" value={widgetTheme} onChange={(e) => setWidgetTheme(e.target.value as any)} style={{ height: '36px' }}>
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
                       <option value="glass">Glassmorphism</option>
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t.widgetButtonColorLabel}</label>
+                    <label className="sch-label">{t.widgetButtonColorLabel}</label>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        type="color"
-                        value={widgetButtonColor}
-                        onChange={(e) => setWidgetButtonColor(e.target.value)}
-                        style={{ width: '28px', height: '28px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                      />
-                      <input
-                        type="text"
-                        className="v-input"
-                        value={widgetButtonColor}
-                        onChange={(e) => setWidgetButtonColor(e.target.value)}
-                        style={{ flex: 1, fontSize: '11px', height: '28px', padding: '0 6px' }}
-                      />
+                      <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                        <input type="color" value={widgetButtonColor} onChange={(e) => setWidgetButtonColor(e.target.value)} style={{ position: 'absolute', top: '-6px', left: '-6px', width: '48px', height: '48px', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }} />
+                      </div>
+                      <input type="text" className="sch-input" value={widgetButtonColor} onChange={(e) => setWidgetButtonColor(e.target.value)} style={{ flex: 1, fontSize: '12px', height: '36px', fontFamily: 'monospace' }} />
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t.widgetRadiusLabel} ({widgetBorderRadius}px)</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="24"
-                      value={widgetBorderRadius}
-                      onChange={(e) => setWidgetBorderRadius(parseInt(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--text-accent)' }}
-                    />
+                    <label className="sch-label">{t.widgetRadiusLabel} (<span style={{ fontFamily: 'monospace' }}>{widgetBorderRadius}px</span>)</label>
+                    <input type="range" min="0" max="24" value={widgetBorderRadius} onChange={(e) => setWidgetBorderRadius(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--text-primary)', height: '24px', cursor: 'pointer' }} />
                   </div>
                 </div>
 
                 {/* Live Visual Widget Demo */}
-                <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div style={{ marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', alignSelf: 'flex-start' }}>{t.previewDemoTitle}</span>
-                  
-                  {/* Visual Rendered Form */}
                   <div style={{
-                    maxWidth: '100%',
-                    width: '320px',
-                    padding: '20px',
+                    maxWidth: '100%', width: '320px', padding: '24px',
                     borderRadius: `${widgetBorderRadius}px`,
-                    border: `1px solid ${widgetTheme === 'dark' ? '#27272a' : widgetTheme === 'glass' ? 'rgba(255, 255, 255, 0.15)' : '#eaeaea'}`,
-                    backgroundColor: widgetTheme === 'dark' ? '#09090b' : widgetTheme === 'glass' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                    color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                    border: `1px solid ${widgetTheme === 'dark' ? '#222222' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.15)' : '#eaeaea'}`,
+                    backgroundColor: widgetTheme === 'dark' ? '#09090b' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff',
+                    color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#0a0a0a',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
                     backdropFilter: widgetTheme === 'glass' ? 'blur(8px)' : 'none',
-                    transition: 'all 0.2s',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    fontFamily: 'var(--font-family)', direction: 'ltr'
                   }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700 }}>Subscribe to our newsletter</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="Your Name"
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? '#27272a' : '#d1d1d1'}`,
-                          backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#18181b' : '#ffffff',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                      <input
-                        type="email"
-                        placeholder="email@example.com"
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? '#27272a' : '#d1d1d1'}`,
-                          backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#18181b' : '#ffffff',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="spring-btn"
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          backgroundColor: widgetButtonColor,
-                          color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontWeight: 600,
-                          fontSize: '12px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Subscribe
-                      </button>
+                    <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 800, letterSpacing: '-0.3px', textAlign: 'center' }}>Subscribe to our newsletter</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <input type="text" placeholder="Your Name" disabled style={{ width: '100%', padding: '8px 10px', border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? '#27272a' : '#d1d1d1'}`, backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#18181b' : '#ffffff', borderRadius: '6px', fontSize: '12px', color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', boxSizing: 'border-box' }} />
+                      <input type="email" placeholder="email@example.com" disabled style={{ width: '100%', padding: '8px 10px', border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? '#27272a' : '#d1d1d1'}`, backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#18181b' : '#ffffff', borderRadius: '6px', fontSize: '12px', color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', boxSizing: 'border-box' }} />
+                      <button type="button" style={{ width: '100%', padding: '8px', backgroundColor: widgetButtonColor, color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Subscribe</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* HTML Embed Snippet */}
+              {/* HTML Snippet */}
               <div style={{ marginBottom: '18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    {t.integrationSnippetHtml}
-                  </span>
-                  <button
-                    onClick={() => handleCopyCode('html', formHtmlCode)}
-                    className="v-action-btn spring-btn"
-                    style={{
-                      border: 'none', background: 'var(--panel-muted)', cursor: 'pointer',
-                      padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600,
-                      display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)'
-                    }}
-                  >
-                    {settingsCopied === 'html' ? <Check size={10} style={{ color: '#10b981' }} /> : <Copy size={10} />}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>{t.integrationSnippetHtml}</span>
+                  <button onClick={() => handleCopyCode('html', formHtmlCode)} className="sch-btn" style={{ height: '28px', padding: '0 10px', fontSize: '11px', borderRadius: '8px' }}>
+                    {settingsCopied === 'html' ? <Check size={11} style={{ color: 'var(--success-color)' }} /> : <Copy size={11} />}
                     <span>{settingsCopied === 'html' ? t.copied : t.copyCode}</span>
                   </button>
                 </div>
-                <pre style={{
-                  backgroundColor: 'var(--panel-muted)',
-                  color: 'var(--text-primary)',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
-                  overflowX: 'auto',
-                  maxHeight: '180px',
-                  margin: 0,
-                  border: '1px solid var(--border-color)'
-                }}>
-                  {formHtmlCode}
-                </pre>
+                <pre className="sch-code-block custom-code-scroll">{formHtmlCode}</pre>
               </div>
 
-              {/* JS Fetch Snippet */}
+              {/* JS Snippet */}
               <div style={{ marginBottom: '18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    {t.integrationSnippetJs}
-                  </span>
-                  <button
-                    onClick={() => handleCopyCode('js', formJsCode)}
-                    className="v-action-btn spring-btn"
-                    style={{
-                      border: 'none', background: 'var(--panel-muted)', cursor: 'pointer',
-                      padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600,
-                      display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)'
-                    }}
-                  >
-                    {settingsCopied === 'js' ? <Check size={10} style={{ color: '#10b981' }} /> : <Copy size={10} />}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>{t.integrationSnippetJs}</span>
+                  <button onClick={() => handleCopyCode('js', formJsCode)} className="sch-btn" style={{ height: '28px', padding: '0 10px', fontSize: '11px', borderRadius: '8px' }}>
+                    {settingsCopied === 'js' ? <Check size={11} style={{ color: 'var(--success-color)' }} /> : <Copy size={11} />}
                     <span>{settingsCopied === 'js' ? t.copied : t.copyCode}</span>
                   </button>
                 </div>
-                <pre style={{
-                  backgroundColor: 'var(--panel-muted)',
-                  color: 'var(--text-primary)',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
-                  overflowX: 'auto',
-                  maxHeight: '180px',
-                  margin: 0,
-                  border: '1px solid var(--border-color)'
-                }}>
-                  {formJsCode}
-                </pre>
+                <pre className="sch-code-block custom-code-scroll">{formJsCode}</pre>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', padding: '12px', backgroundColor: 'rgba(235, 237, 240, 0.4)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
-                <div style={{ flexShrink: 0, color: 'var(--text-accent)', marginTop: '2px' }}>
+              <div style={{ display: 'flex', gap: '10px', padding: '14px', backgroundColor: 'var(--panel-muted)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
+                <div style={{ flexShrink: 0, color: 'var(--accent-text)', marginTop: '2px' }}>
                   <ExternalLink size={14} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.embedInstructions}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.embedInstructionsText}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.embedInstructions}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.embedInstructionsText}</span>
                 </div>
               </div>
-
             </div>
-
           </div>
 
-          {/* Welcome Email Mock Live Preview */}
+          {/* Welcome Email Mock Preview */}
           <div style={{ position: 'sticky', top: '20px' }}>
-            <div className="browser-mockup">
+            <div className="sch-browser-mockup">
               
               {/* Mock Window Header */}
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-muted)', justifyContent: 'space-between' }}>
-                <div className="browser-header-dots">
-                  <span className="browser-dot" style={{ backgroundColor: '#ef4444' }} />
-                  <span className="browser-dot" style={{ backgroundColor: '#eab308' }} />
-                  <span className="browser-dot" style={{ backgroundColor: '#22c55e' }} />
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <span className="sch-browser-dot" style={{ backgroundColor: '#ef4444' }} />
+                  <span className="sch-browser-dot" style={{ backgroundColor: '#eab308' }} />
+                  <span className="sch-browser-dot" style={{ backgroundColor: '#22c55e' }} />
                 </div>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginInlineStart: '4px', textAlign: 'center' }}>
-                  {t.previewTitle}
-                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 700, textAlign: 'center' }}>{t.previewTitle}</span>
 
-                {/* Device Switcher */}
-                <div style={{ display: 'flex', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '2px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode('desktop')}
-                    style={{
-                      border: 'none',
-                      backgroundColor: previewMode === 'desktop' ? 'var(--panel-muted)' : 'transparent',
-                      color: previewMode === 'desktop' ? 'var(--text-primary)' : 'var(--text-muted)',
-                      padding: '2px 8px',
-                      fontSize: '9px',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t.desktopPreview}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode('mobile')}
-                    style={{
-                      border: 'none',
-                      backgroundColor: previewMode === 'mobile' ? 'var(--panel-muted)' : 'transparent',
-                      color: previewMode === 'mobile' ? 'var(--text-primary)' : 'var(--text-muted)',
-                      padding: '2px 8px',
-                      fontSize: '9px',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t.mobilePreview}
-                  </button>
+                <div style={{ display: 'flex', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '2px', gap: '2px' }}>
+                  <button type="button" onClick={() => setPreviewMode('desktop')} style={{ border: 'none', backgroundColor: previewMode === 'desktop' ? 'var(--panel-muted)' : 'transparent', color: previewMode === 'desktop' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' }}>{t.desktopPreview}</button>
+                  <button type="button" onClick={() => setPreviewMode('mobile')} style={{ border: 'none', backgroundColor: previewMode === 'mobile' ? 'var(--panel-muted)' : 'transparent', color: previewMode === 'mobile' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' }}>{t.mobilePreview}</button>
                 </div>
               </div>
 
               {previewMode === 'mobile' ? (
-                /* SMARTPHONE MOCKUP FRAME */
-                <div style={{ padding: '24px 16px', backgroundColor: 'var(--panel-muted)', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ padding: '24px 16px', backgroundColor: 'var(--panel-muted)', display: 'flex', justifyContent: 'center', borderBottomLeftRadius: '18px', borderBottomRightRadius: '18px' }}>
                   <div className="smartphone-mockup">
-                    <div className="smartphone-notch">
-                      <div className="smartphone-speaker" />
-                    </div>
+                    <div className="smartphone-notch"><div className="smartphone-speaker" /></div>
                     <div className="smartphone-screen" style={{ backgroundColor: '#ffffff' }}>
                       <div className="smartphone-status-bar">
-                        <span>9:41</span>
-                        <div style={{ display: 'flex', gap: '3px' }}>
-                          <span>5G</span>
-                          <span>100%</span>
+                        <span style={{ fontWeight: 600 }}>9:41</span>
+                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 600 }}>5G</span>
+                          <span style={{ fontSize: '9px', fontWeight: 600 }}>100%</span>
                         </div>
                       </div>
-                      
-                      {/* Email Header Info */}
-                      <div style={{ borderBottom: '1px solid #e4e4e7', paddingBottom: '8px', marginBottom: '12px', fontSize: '10px', color: '#71717a', direction: 'ltr' }}>
+                      <div style={{ borderBottom: '1px solid #e4e4e7', paddingBottom: '8px', marginBottom: '12px', fontSize: '11px', color: '#71717a', direction: 'ltr', textAlign: 'start' }}>
                         <div><strong>Subject:</strong> {settings.welcomeSubject}</div>
                       </div>
-
-                      {/* Content */}
-                      <div style={{ fontSize: '11px', lineHeight: '1.5', color: '#27272a', direction: 'ltr' }}>
+                      <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#27272a', direction: 'ltr', textAlign: 'start', overflowY: 'auto', maxHeight: '280px', paddingInlineEnd: '4px' }} className="custom-code-scroll">
                         {settings.welcomeEnabled ? (
-                          <div 
-                            dangerouslySetInnerHTML={{ 
-                              __html: settings.welcomeBody
-                                .replace(/\n/g, '<br/>')
-                                .replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`)
-                                .replace(/{email}/g, 'client@domain.com') 
-                            }} 
-                          />
+                          <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', gap: '8px', color: '#a1a1aa' }}>
                             <Mail size={24} style={{ color: '#d4d4d8' }} />
-                            <span style={{ fontSize: '10px', fontStyle: 'italic' }}>
-                              {lang === 'ar' ? 'قم بتفعيل رسالة الترحيب لرؤية المعاينة' : 'Enable welcome email to see preview'}
-                            </span>
+                            <span style={{ fontSize: '11px', fontStyle: 'italic' }}>{lang === 'ar' ? 'قم بتفعيل رسالة الترحيب لرؤية المعاينة' : 'Enable welcome email to see preview'}</span>
                           </div>
                         )}
                       </div>
-
                     </div>
                   </div>
                 </div>
               ) : (
-                /* DESKTOP EMAIL PREVIEW CONTENT */
                 <>
-                  {/* Mock Email Metadata */}
-                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)' }}>
                     <div>
                       <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t.previewFrom}: </span>
-                      <span style={{ fontFamily: 'monospace' }}>SMTP Sender &lt;no-reply@sumersend.com&gt;</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>SMTP Sender &lt;no-reply@sumersend.com&gt;</span>
                     </div>
                     <div>
                       <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t.previewTo}: </span>
-                      <span style={{ fontFamily: 'monospace' }}>{t.previewDefaultName} &lt;client@domain.com&gt;</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>{t.previewDefaultName} &lt;client@domain.com&gt;</span>
                     </div>
                     <div>
                       <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t.previewSubject}: </span>
@@ -2176,40 +2778,20 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                     </div>
                   </div>
 
-                  {/* Mock Email Content Box */}
-                  <div style={{ 
-                    padding: '24px 16px', 
-                    backgroundColor: '#ffffff', 
-                    color: '#111111', 
-                    minHeight: '260px', 
-                    maxHeight: '360px', 
-                    overflowY: 'auto',
-                    direction: 'ltr',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                  }}>
-                    <div style={{ maxWidth: '500px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6', color: '#333333' }}>
+                  <div style={{ padding: '24px', backgroundColor: '#ffffff', color: '#111111', minHeight: '260px', maxHeight: '360px', overflowY: 'auto', direction: 'ltr', fontFamily: 'system-ui, -apple-system, sans-serif' }} className="custom-code-scroll">
+                    <div style={{ maxWidth: '500px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6', color: '#333333', textAlign: 'start' }}>
                       {settings.welcomeEnabled ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ 
-                            __html: settings.welcomeBody
-                              .replace(/\n/g, '<br/>')
-                              .replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`)
-                              .replace(/{email}/g, 'client@domain.com') 
-                          }} 
-                        />
+                        <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '10px', color: '#999999' }}>
                           <Mail size={32} style={{ color: '#cccccc' }} />
-                          <span style={{ fontSize: '12px', fontStyle: 'italic' }}>
-                            {lang === 'ar' ? 'قم بتفعيل رسالة الترحيب لرؤية المعاينة' : 'Enable welcome email to see preview'}
-                          </span>
+                          <span style={{ fontSize: '13px', fontStyle: 'italic' }}>{lang === 'ar' ? 'قم بتفعيل رسالة الترحيب لرؤية المعاينة' : 'Enable welcome email to see preview'}</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </>
               )}
-
             </div>
           </div>
 

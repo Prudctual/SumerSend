@@ -21,12 +21,13 @@ import {
   User,
   Smartphone,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Key
 } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
-  setCurrentTab: (tab: string) => void;
+  setCurrentTab: (tab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => void;
   lang: 'en' | 'ar';
   setLang: (lang: 'en' | 'ar') => void;
   walletBalance: number;
@@ -39,6 +40,7 @@ interface SidebarProps {
   onSearchClick: () => void;
   domains?: any[];
   apiKeys?: any[];
+  activeDashboardSubTab?: 'channels' | 'domains' | 'apikeys' | 'wallet';
 }
 
 interface SidebarItem {
@@ -89,7 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
   onSearchClick,
-  domains = []
+  domains = [],
+  activeDashboardSubTab = 'channels'
 }) => {
   const [profileMenuOpen, setProfileMenuOpen] = React.useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
@@ -127,99 +130,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isTabActive = (itemId: string) => {
     if (itemId === 'dashboard') {
-      return currentTab === 'dashboard';
+      return currentTab === 'dashboard' && activeDashboardSubTab === 'channels';
     }
-    if (itemId === 'messaging') {
-      return ['messaging', 'playground', 'campaigns'].includes(currentTab);
+    if (itemId === 'domains') {
+      return currentTab === 'dashboard' && activeDashboardSubTab === 'domains';
     }
-    if (itemId === 'templates') {
-      return currentTab === 'templates';
+    if (itemId === 'apikeys') {
+      return currentTab === 'dashboard' && activeDashboardSubTab === 'apikeys';
+    }
+    if (itemId === 'wallet') {
+      return currentTab === 'dashboard' && activeDashboardSubTab === 'wallet';
+    }
+    if (itemId === 'send') {
+      return ['send', 'playground', 'campaigns', 'templates'].includes(currentTab);
     }
     if (itemId === 'subscribers') {
       return ['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab);
     }
     if (itemId === 'logs') {
-      return ['logs', 'reports'].includes(currentTab);
-    }
-    if (itemId === 'settings') {
-      return ['settings', 'domains', 'apikeys', 'api', 'webhooks', 'quickstart', 'code'].includes(currentTab);
-    }
-    if (itemId === 'billing') {
-      return currentTab === 'billing';
-    }
-    if (itemId === 'security') {
-      return ['security', 'system', 'smtp', 'whatsapp'].includes(currentTab);
+      return ['logs', 'reports', 'logs-list'].includes(currentTab);
     }
     return currentTab === itemId;
   };
 
-  // Structured Core items supporting sub-menu collapse/expansion
-  const workspaceItems: SidebarItem[] = [
-    { id: 'dashboard', labelAr: 'لوحة التحكم', labelEn: 'Overview', icon: LayoutDashboard },
-    { 
-      id: 'messaging', 
-      labelAr: 'المراسلة والحملات', 
-      labelEn: 'Messaging Services', 
-      icon: MessageSquare,
-      subItems: [
-        { id: 'playground', labelAr: 'المختبر', labelEn: 'Composer Playground' },
-        { id: 'campaigns', labelAr: 'حملات البث الجماعي', labelEn: 'Broadcast Campaigns' }
-      ]
-    },
-    { id: 'templates', labelAr: 'معرض القوالب', labelEn: 'Templates Gallery', icon: BookOpen },
-    { 
-      id: 'subscribers', 
-      labelAr: 'المشتركين والزبائن', 
-      labelEn: 'Subscribers & Opt-ins', 
-      icon: User,
-      subItems: [
-        { id: 'subscribers-list', labelAr: 'قائمة المشتركين', labelEn: 'Subscribers List' },
-        { id: 'subscribers-settings', labelAr: 'رسالة الترحيب والنموذج', labelEn: 'Opt-in Form & Settings' }
-      ]
-    },
-    { 
-      id: 'logs', 
-      labelAr: 'السجلات والتقارير', 
-      labelEn: 'Logs & Reports', 
-      icon: History,
-      subItems: [
-        { id: 'logs', labelAr: 'سجلات الإرسال تفصيلاً', labelEn: 'Outbound Logs' },
-        { id: 'reports', labelAr: 'تقارير الأداء والتحليلات', labelEn: 'Performance Reports' }
-      ]
-    },
+  const sidebarItems = [
+    { id: 'dashboard', subTab: 'channels', labelAr: 'نظرة عامة', labelEn: 'Overview', icon: LayoutDashboard },
+    { id: 'domains', subTab: 'domains', labelAr: 'النطاقات', labelEn: 'Domains', icon: Globe },
+    { id: 'apikeys', subTab: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Keys', icon: Key },
+    { id: 'wallet', subTab: 'wallet', labelAr: 'المحفظة والشحن', labelEn: 'Wallet & Billing', icon: WalletIcon },
+    { id: 'send', labelAr: 'منصة الإرسال', labelEn: 'Send Console', icon: MessageSquare },
+    { id: 'subscribers', labelAr: 'الجهات والمشتركين', labelEn: 'Contacts & List', icon: User },
+    { id: 'logs', labelAr: 'السجلات والتحليلات', labelEn: 'Analytics & Logs', icon: History },
   ];
-
-  // Integrations & Configuration items supporting sub-menu collapse/expansion
-  const channelItems: SidebarItem[] = [
-    { 
-      id: 'settings', 
-      labelAr: 'بوابة المطور والـ API', 
-      labelEn: 'Developer Hub', 
-      icon: Globe, 
-      badge: domains.filter(d => d.status === 'verified').length.toString(),
-      subItems: [
-        { id: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Credentials' },
-        { id: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Verified Domains' },
-        { id: 'webhooks', labelAr: 'الويب هوكس (Webhooks)', labelEn: 'Webhooks Setup' },
-        { id: 'code', labelAr: 'منشئ الأكواد التفاعلي', labelEn: 'Interactive Code' }
-      ]
-    },
-    { 
-      id: 'security', 
-      labelAr: 'إعدادات المنصة', 
-      labelEn: 'Platform Config', 
-      icon: Settings,
-      subItems: [
-        { id: 'smtp', labelAr: 'خادم الـ SMTP الخاص', labelEn: 'SMTP Provider' },
-        { id: 'whatsapp', labelAr: 'ربط بوابة WhatsApp', labelEn: 'WhatsApp Gateway' },
-        { id: 'security', labelAr: 'حماية المنصة 2FA', labelEn: 'Security Settings' },
-        { id: 'system', labelAr: 'حالة النظام والصيانة', labelEn: 'System Health' }
-      ]
-    }
-  ];
-
-  const [workspaceExpanded, setWorkspaceExpanded] = React.useState(true);
-  const [channelsExpanded, setChannelsExpanded] = React.useState(true);
 
   return (
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ 
@@ -308,445 +250,79 @@ export const Sidebar: React.FC<SidebarProps> = ({
         gap: '4px'
       }}>
         
-        {/* A. WORKSPACE Section */}
+        {/* Flat list of items */}
         {!isCollapsed ? (
-          <>
-            <div 
-              className="sidebar-section-header"
-              onClick={() => setWorkspaceExpanded(!workspaceExpanded)}
-            >
-              <span>
-                {lang === 'ar' ? 'الخدمات الأساسية' : 'CORE SERVICES'}
-              </span>
-              <ChevronDown 
-                size={12} 
-                className="chevron-icon"
-                style={{ 
-                  transform: workspaceExpanded 
-                    ? 'rotate(0deg)' 
-                    : (lang === 'ar' ? 'rotate(90deg)' : 'rotate(-90deg)')
-                }} 
-              />
-            </div>
-            <div className={`sidebar-accordion ${workspaceExpanded ? 'expanded' : ''}`}>
-              <div className="sidebar-accordion-inner" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {workspaceItems.map((item, index) => {
-                  const Icon = item.icon;
-                  const isActive = isTabActive(item.id);
-                  const hasSubItems = item.subItems && item.subItems.length > 0;
-                  const isMainActive = isActive && !hasSubItems;
-                  const isHighlighted = isActive && hasSubItems;
-                  
-                  return (
-                    <div key={item.id} className="sidebar-item-container">
-                      <div
-                        className={`sidebar-link ${isMainActive ? 'active' : ''} ${isHighlighted ? 'highlighted' : ''} sidebar-item-animated`}
-                        style={{
-                          transitionDelay: `${index * 40}ms`
-                        }}
-                        onClick={() => {
-                          if (item.subItems && item.subItems.length > 0) {
-                            setCurrentTab(item.subItems[0].id);
-                          } else {
-                            setCurrentTab(item.id);
-                          }
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                          <Icon size={16} />
-                          <span>
-                            {lang === 'ar' ? item.labelAr : item.labelEn}
-                          </span>
-                        </div>
-                        
-                        {item.badge && (
-                          <span className="sidebar-badge status-active">{item.badge}</span>
-                        )}
-
-                        {hasSubItems && (
-                          <ChevronDown 
-                            size={12} 
-                            style={{
-                              transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                              opacity: 0.7
-                            }}
-                          />
-                        )}
-                      </div>
-
-                      {/* Expanded Sub-navigation links with smooth auto-height Grid accordion transition */}
-                      {item.subItems && (
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateRows: isActive ? '1fr' : '0fr',
-                            transition: 'grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          <div style={{ minHeight: 0 }}>
-                            <div 
-                              className="sidebar-nested-list"
-                              style={{
-                                animation: 'none',
-                                opacity: isActive ? 1 : 0,
-                                transform: isActive ? 'translateY(0)' : 'translateY(-4px)',
-                                transition: 'opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                marginTop: '6px',
-                                marginBottom: '6px'
-                              }}
-                            >
-                              {item.subItems.map((sub) => {
-                                const isSubActive = currentTab === sub.id;
-                                return (
-                                  <button
-                                    key={sub.id}
-                                    className={`sidebar-nested-link ${isSubActive ? 'active' : ''}`}
-                                    onClick={() => setCurrentTab(sub.id)}
-                                    style={{
-                                      marginInlineStart: '8px',
-                                      marginInlineEnd: '4px',
-                                      width: 'auto'
-                                    }}
-                                  >
-                                    <span>{lang === 'ar' ? sub.labelAr : sub.labelEn}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {sidebarItems.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = isTabActive(item.id);
+              
+              return (
+                <div key={item.id} className="sidebar-item-container">
+                  <div
+                    className={`sidebar-link ${isActive ? 'active' : ''} sidebar-item-animated`}
+                    style={{
+                      transitionDelay: `${index * 30}ms`
+                    }}
+                    onClick={() => setCurrentTab(item.id, item.subTab as any)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                      <Icon size={16} />
+                      <span>
+                        {lang === 'ar' ? item.labelAr : item.labelEn}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
+                    {item.id === 'domains' && domains.filter(d => d.status === 'verified').length > 0 && (
+                      <span className="sidebar-badge status-active">
+                        {domains.filter(d => d.status === 'verified').length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '4px 0' }}>
-              <button
-                onClick={() => setWorkspaceExpanded(!workspaceExpanded)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  color: 'var(--text-muted)',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  transition: 'all 0.2s',
-                  width: '32px',
-                  height: '32px',
-                  justifyContent: 'center'
-                }}
-                title={lang === 'ar' ? 'الخدمات الأساسية' : 'CORE SERVICES'}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                <LayoutDashboard size={14} style={{ opacity: 0.8 }} />
-                <ChevronDown 
-                  size={10} 
-                  style={{ 
-                    transform: workspaceExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
-                    transition: 'transform 0.2s' 
-                  }} 
-                />
-              </button>
-            </div>
-            <div className={`sidebar-accordion ${workspaceExpanded ? 'expanded' : ''}`}>
-              <div className="sidebar-accordion-inner" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                {workspaceItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = isTabActive(item.id);
-                  return (
-                    <div key={item.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                      <button
-                        className={`sidebar-link ${isActive ? 'active' : ''}`}
-                        onClick={() => {
-                          if (item.subItems && item.subItems.length > 0) {
-                            setCurrentTab(item.subItems[0].id);
-                          } else {
-                            setCurrentTab(item.id);
-                          }
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '10px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          width: '36px',
-                          height: '36px'
-                        }}
-                      >
-                        <Icon size={16} />
-                      </button>
-                      
-                      {/* Collapsed Hover Popover Menu */}
-                      <div className="sidebar-popover">
-                        <div className="sidebar-popover-header">
-                          {lang === 'ar' ? item.labelAr : item.labelEn}
-                        </div>
-                        {item.subItems && item.subItems.length > 0 ? (
-                          item.subItems.map((sub) => {
-                            const isSubActive = currentTab === sub.id;
-                            return (
-                              <button
-                                key={sub.id}
-                                className={`sidebar-popover-link ${isSubActive ? 'active' : ''}`}
-                                onClick={() => setCurrentTab(sub.id)}
-                              >
-                                <span>{lang === 'ar' ? sub.labelAr : sub.labelEn}</span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <button
-                            className={`sidebar-popover-link ${isActive ? 'active' : ''}`}
-                            onClick={() => setCurrentTab(item.id)}
-                          >
-                            <span>{lang === 'ar' ? 'فتح' : 'Open'}</span>
-                          </button>
-                        )}
-                      </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = isTabActive(item.id);
+              return (
+                <div key={item.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <button
+                    className={`sidebar-link ${isActive ? 'active' : ''}`}
+                    onClick={() => setCurrentTab(item.id, item.subTab as any)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      width: '36px',
+                      height: '36px'
+                    }}
+                  >
+                    <Icon size={16} />
+                  </button>
+                  
+                  {/* Collapsed Hover Popover Menu */}
+                  <div className="sidebar-popover">
+                    <div className="sidebar-popover-header">
+                      {lang === 'ar' ? item.labelAr : item.labelEn}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
         {/* Divider in Collapsed Mode */}
         {isCollapsed && (
           <div className="sidebar-divider" />
-        )}
-
-        {/* B. CONFIGURATION & INTEGRATIONS Section */}
-        {!isCollapsed ? (
-          <>
-            <div 
-              className="sidebar-section-header"
-              onClick={() => setChannelsExpanded(!channelsExpanded)}
-            >
-              <span>
-                {lang === 'ar' ? 'الإعدادات والربط' : 'CONFIG & INTEGRATIONS'}
-              </span>
-              <ChevronDown 
-                size={12} 
-                className="chevron-icon"
-                style={{ 
-                  transform: channelsExpanded 
-                    ? 'rotate(0deg)' 
-                    : (lang === 'ar' ? 'rotate(90deg)' : 'rotate(-90deg)')
-                  }} 
-              />
-            </div>
-            <div className={`sidebar-accordion ${channelsExpanded ? 'expanded' : ''}`}>
-              <div className="sidebar-accordion-inner" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {channelItems.map((item, index) => {
-                  const Icon = item.icon;
-                  const isActive = isTabActive(item.id);
-                  const hasSubItems = item.subItems && item.subItems.length > 0;
-                  const isMainActive = isActive && !hasSubItems;
-                  const isHighlighted = isActive && hasSubItems;
-                  
-                  return (
-                    <div key={item.id} className="sidebar-item-container">
-                      <div
-                        className={`sidebar-link ${isMainActive ? 'active' : ''} ${isHighlighted ? 'highlighted' : ''} sidebar-item-animated`}
-                        style={{
-                          transitionDelay: `${(index + workspaceItems.length) * 40}ms`
-                        }}
-                        onClick={() => {
-                          if (item.subItems && item.subItems.length > 0) {
-                            setCurrentTab(item.subItems[0].id);
-                          } else {
-                            setCurrentTab(item.id);
-                          }
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                          <Icon size={16} />
-                          <span>
-                            {lang === 'ar' ? item.labelAr : item.labelEn}
-                          </span>
-                        </div>
-                        
-                        {item.badge && (
-                          <span className="sidebar-badge status-active">{item.badge}</span>
-                        )}
-
-                        {hasSubItems && (
-                          <ChevronDown 
-                            size={12} 
-                            style={{
-                              transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                              opacity: 0.7
-                            }}
-                          />
-                        )}
-                      </div>
-
-                      {/* Expanded Sub-navigation links with smooth auto-height Grid accordion transition */}
-                      {item.subItems && (
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateRows: isActive ? '1fr' : '0fr',
-                            transition: 'grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          <div style={{ minHeight: 0 }}>
-                            <div 
-                              className="sidebar-nested-list"
-                              style={{
-                                animation: 'none',
-                                opacity: isActive ? 1 : 0,
-                                transform: isActive ? 'translateY(0)' : 'translateY(-4px)',
-                                transition: 'opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                marginTop: '6px',
-                                marginBottom: '6px'
-                              }}
-                            >
-                              {item.subItems.map((sub) => {
-                                const isSubActive = currentTab === sub.id;
-                                return (
-                                  <button
-                                    key={sub.id}
-                                    className={`sidebar-nested-link ${isSubActive ? 'active' : ''}`}
-                                    onClick={() => setCurrentTab(sub.id)}
-                                    style={{
-                                      marginInlineStart: '8px',
-                                      marginInlineEnd: '4px',
-                                      width: 'auto'
-                                    }}
-                                  >
-                                    <span>{lang === 'ar' ? sub.labelAr : sub.labelEn}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '8px 0 4px 0' }}>
-              <button
-                onClick={() => setChannelsExpanded(!channelsExpanded)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  color: 'var(--text-muted)',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  transition: 'all 0.2s',
-                  width: '32px',
-                  height: '32px',
-                  justifyContent: 'center'
-                }}
-                title={lang === 'ar' ? 'إعدادات المنصة والربط' : 'CONFIGURATION'}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                <Settings size={14} style={{ opacity: 0.8 }} />
-                <ChevronDown 
-                  size={10} 
-                  style={{ 
-                    transform: channelsExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
-                    transition: 'transform 0.2s' 
-                  }} 
-                />
-              </button>
-            </div>
-            <div className={`sidebar-accordion ${channelsExpanded ? 'expanded' : ''}`}>
-              <div className="sidebar-accordion-inner" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                {channelItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = isTabActive(item.id);
-                  return (
-                    <div key={item.id} className="sidebar-item-container" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                      <button
-                        className={`sidebar-link ${isActive ? 'active' : ''}`}
-                        onClick={() => {
-                          if (item.subItems && item.subItems.length > 0) {
-                            setCurrentTab(item.subItems[0].id);
-                          } else {
-                            setCurrentTab(item.id);
-                          }
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '10px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          width: '36px',
-                          height: '36px'
-                        }}
-                      >
-                        <Icon size={16} />
-                      </button>
-                      
-                      {/* Collapsed Hover Popover Menu */}
-                      <div className="sidebar-popover">
-                        <div className="sidebar-popover-header">
-                          {lang === 'ar' ? item.labelAr : item.labelEn}
-                        </div>
-                        {item.subItems && item.subItems.length > 0 ? (
-                          item.subItems.map((sub) => {
-                            const isSubActive = currentTab === sub.id;
-                            return (
-                              <button
-                                key={sub.id}
-                                className={`sidebar-popover-link ${isSubActive ? 'active' : ''}`}
-                                onClick={() => setCurrentTab(sub.id)}
-                              >
-                                <span>{lang === 'ar' ? sub.labelAr : sub.labelEn}</span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <button
-                            className={`sidebar-popover-link ${isActive ? 'active' : ''}`}
-                            onClick={() => setCurrentTab(item.id)}
-                          >
-                            <span>{lang === 'ar' ? 'فتح' : 'Open'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
         )}
 
         {/* 4. Bottom Wallet Info Card (inside scroll) */}
@@ -762,7 +338,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <button 
               className="sidebar-upgrade-btn"
-              onClick={() => setCurrentTab('billing')}
+              onClick={() => setCurrentTab('wallet')}
             >
               <Plus size={11} />
               <span>{lang === 'ar' ? 'شحن الرصيد' : 'Recharge'}</span>
@@ -951,8 +527,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Collapsed Wallet Button */}
           <button
-            onClick={() => setCurrentTab('billing')}
-            className={`sidebar-panel-toggle ${currentTab === 'billing' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('wallet')}
+            className={`sidebar-panel-toggle ${currentTab === 'dashboard' && activeDashboardSubTab === 'wallet' ? 'active' : ''}`}
             style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer' }}
             title={lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing'}
           >

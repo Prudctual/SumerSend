@@ -119,21 +119,14 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
               fontWeight: 800, 
               letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
               lineHeight: 1.15,
-              marginBottom: '8px',
+              marginBottom: '0px',
               color: 'var(--text-primary)'
             }}>{t.title}</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
           </div>
         </div>
       )}
 
-      <GuideBanner
-        lang={lang}
-        show={showGuide}
-        onClose={() => setShowGuide(false)}
-        title={t.guideTitle}
-        description={t.guideText}
-      />
+
 
       <BentoCard className="card" style={{ marginBottom: '24px', padding: '24px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
         <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>

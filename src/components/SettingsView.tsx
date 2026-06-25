@@ -709,60 +709,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {activeSubTab === 'smtp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-          {/* Guide Card */}
-          {showGuide && (
-            <BentoCard style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="service-icon smtp">
-                    <Mail size={18} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 750, margin: 0 }}>{t.guideTitle}</h3>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      {lang === 'ar' ? 'إعداد خادم البريد الإلكتروني' : 'Mail Server Configuration'}
-                    </span>
-                  </div>
-                </div>
-                <button 
-                  type="button"
-                  className="btn" 
-                  style={{ fontSize: '11px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', flexShrink: 0 }} 
-                  onClick={() => setShowGuide(false)}
-                >
-                  <span>✕</span>
-                </button>
-              </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.65, margin: '0 0 18px 0', maxWidth: '720px' }}>
-                {t.guideText}
-              </p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.15)' }}>
-                  {lang === 'ar' ? 'المنفذ: 587 (TLS)' : 'Port: 587 (TLS)'}
-                </span>
-                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                  {lang === 'ar' ? 'التشفير: STARTTLS' : 'Encryption: STARTTLS'}
-                </span>
-                <span style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', backgroundColor: 'rgba(124, 58, 237, 0.08)', color: '#7c3aed', border: '1px solid rgba(124, 58, 237, 0.15)' }}>
-                  {lang === 'ar' ? 'البروتوكول: SMTP' : 'Protocol: SMTP'}
-                </span>
-              </div>
-            </BentoCard>
-          )}
 
-          {!showGuide && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button 
-                type="button"
-                className="btn" 
-                style={{ fontSize: '11px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '8px' }} 
-                onClick={() => setShowGuide(true)}
-              >
-                <Info size={12} />
-                <span>{lang === 'en' ? 'Show Guide' : 'عرض الدليل'}</span>
-              </button>
-            </div>
-          )}
 
           {statusMsg && (
             <div style={{ 

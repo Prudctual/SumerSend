@@ -24,10 +24,12 @@ interface PlaygroundViewProps {
   setMsgBody: (body: string) => void;
   activeTab: 'email' | 'sms' | 'whatsapp';
   setActiveTab: (tab: 'email' | 'sms' | 'whatsapp') => void;
+  hideHeader?: boolean;
 }
 
 export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   lang,
+  hideHeader = false,
   setLogs,
   walletBalance,
   setWalletBalance,
@@ -58,14 +60,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [activeNotificationDetail, setActiveNotificationDetail] = useState<any | null>(null);
 
   const setNotificationDetailWithTransition = (detail: any) => {
-    if (!document.startViewTransition) {
-      setActiveNotificationDetail(detail);
-      return;
-    }
-    
-    document.startViewTransition(() => {
-      setActiveNotificationDetail(detail);
-    });
+    setActiveNotificationDetail(detail);
   };
 
   // Active template states
@@ -504,50 +499,64 @@ rs.whatsapp.send(
 
   return (
     <ScrollReveal>
-      <div style={{ marginBottom: '16px' }} className="flex-between">
-        <div>
-          <h1 style={{ 
-            fontSize: '20px', 
-            fontWeight: 700, 
-            letterSpacing: lang === 'ar' ? '0' : '-0.3px', 
-            lineHeight: 1.15,
-            marginBottom: '4px',
-            color: 'var(--text-primary)'
-          }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{t.subtitle}</p>
+      {!hideHeader && (
+        <div style={{ marginBottom: '16px' }} className="flex-between">
+          <div>
+            <h1 style={{ 
+              fontSize: '20px', 
+              fontWeight: 700, 
+              letterSpacing: lang === 'ar' ? '0' : '-0.3px', 
+              lineHeight: 1.15,
+              marginBottom: '0px',
+              color: 'var(--text-primary)'
+            }}>{t.title}</h1>
+          </div>
         </div>
-      </div>
-
-      <GuideBanner
-        lang={lang}
-        show={showGuide}
-        onClose={() => setShowGuide(false)}
-        title={t.guideTitle}
-        description={t.guideText}
-      />
+      )}
 
       <div className="playground-layout">
         
         {/* API Composer Panel */}
         <div className="playground-editor">
           
-          {/* Sub Navigation */}
-          <div className="vercel-tabs-container">
-            <button className={`vercel-tab-btn ${activeTab === 'email' ? 'active' : ''}`} onClick={() => { setActiveTab('email'); setStatusMsg(null); }}>
-              <Mail size={14} />
-              <span>{t.emailTab}</span>
-            </button>
-            <button className={`vercel-tab-btn ${activeTab === 'sms' ? 'active' : ''}`} onClick={() => { setActiveTab('sms'); setStatusMsg(null); }}>
-              <Phone size={14} />
-              <span>{t.smsTab}</span>
-            </button>
-            <button className={`vercel-tab-btn ${activeTab === 'whatsapp' ? 'active' : ''}`} onClick={() => { setActiveTab('whatsapp'); setStatusMsg(null); }}>
-              <MessageSquare size={14} />
-              <span>{t.waTab}</span>
-            </button>
-          </div>
-
-          <BentoCard className="card playground-composer-container" key={activeTab} glowColor="147, 51, 234" style={{ padding: '24px', borderRadius: '24px', marginBottom: '16px' }}>
+          <BentoCard className="card playground-composer-container" glowColor="147, 51, 234" style={{ padding: '20px', borderRadius: '24px', marginBottom: '16px' }}>
+            {/* Compact Embedded Channel Switcher */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '4px', 
+              backgroundColor: 'var(--panel-muted)', 
+              padding: '3px', 
+              borderRadius: '99px', 
+              width: 'fit-content', 
+              border: '1px solid var(--border-color)', 
+              marginBottom: '20px',
+              direction: lang === 'ar' ? 'rtl' : 'ltr'
+            }}>
+              <button 
+                type="button"
+                className={`compact-channel-btn ${activeTab === 'email' ? 'active' : ''}`} 
+                onClick={() => { setActiveTab('email'); setStatusMsg(null); }}
+              >
+                <Mail size={13} />
+                <span>{t.emailTab}</span>
+              </button>
+              <button 
+                type="button"
+                className={`compact-channel-btn ${activeTab === 'sms' ? 'active' : ''}`} 
+                onClick={() => { setActiveTab('sms'); setStatusMsg(null); }}
+              >
+                <Phone size={13} />
+                <span>{t.smsTab}</span>
+              </button>
+              <button 
+                type="button"
+                className={`compact-channel-btn ${activeTab === 'whatsapp' ? 'active' : ''}`} 
+                onClick={() => { setActiveTab('whatsapp'); setStatusMsg(null); }}
+              >
+                <MessageSquare size={13} />
+                <span>{t.waTab}</span>
+              </button>
+            </div>
             {statusMsg && (
               <div style={{ 
                 padding: '12px 16px', 
@@ -608,8 +617,8 @@ rs.whatsapp.send(
 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: '12px',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '8px',
                   marginBottom: '5px'
                 }}>
                   {getMergedTemplates().map((temp) => {
@@ -619,65 +628,56 @@ rs.whatsapp.send(
                         key={temp.id}
                         onClick={() => handleSelectTemplate(temp)}
                         style={{
-                          padding: '14px',
-                          borderRadius: '16px',
+                          padding: '10px 12px',
+                          borderRadius: '12px',
                           border: isSelected 
-                            ? '1.5px solid var(--accent-color)' 
-                            : '1.5px solid var(--border-color)',
+                            ? '1px solid var(--accent-color)' 
+                            : '1px solid var(--border-color)',
                           backgroundColor: isSelected 
-                            ? 'rgba(var(--accent-rgb), 0.03)' 
+                            ? 'rgba(var(--accent-rgb), 0.04)' 
                             : 'var(--panel-bg)',
                           cursor: 'pointer',
                           position: 'relative',
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: isSelected ? '0 4px 12px rgba(var(--accent-rgb), 0.08)' : 'none',
-                          transform: isSelected ? 'translateY(-2px)' : 'none',
+                          alignItems: 'center',
+                          gap: '10px',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          boxShadow: isSelected ? '0 2px 6px rgba(var(--accent-rgb), 0.04)' : 'none',
+                          transform: isSelected ? 'translateY(-1px)' : 'none',
                           boxSizing: 'border-box'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ 
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '8px',
-                            backgroundColor: isSelected ? 'rgba(var(--accent-rgb), 0.1)' : 'var(--bg-color)',
-                            color: isSelected ? 'var(--accent-color)' : 'var(--text-secondary)'
-                          }}>
-                            {renderTemplateIcon(temp.icon, 16)}
-                          </span>
-                          <span style={{ 
-                            fontSize: '13px', 
-                            fontWeight: 600, 
-                            color: 'var(--text-primary)',
-                            lineHeight: 1.3
-                          }}>
-                            {lang === 'ar' ? temp.nameAr : temp.nameEn}
-                          </span>
-                        </div>
-                        <p style={{ 
-                          fontSize: '11px', 
-                          color: 'var(--text-secondary)', 
-                          lineHeight: 1.4,
-                          margin: 0,
+                        <span style={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          backgroundColor: isSelected ? 'rgba(var(--accent-rgb), 0.1)' : 'var(--bg-color)',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--text-secondary)',
+                          flexShrink: 0
+                        }}>
+                          {renderTemplateIcon(temp.icon, 13)}
+                        </span>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: 600, 
+                          color: 'var(--text-primary)',
+                          lineHeight: 1.2,
                           flex: 1
                         }}>
-                          {lang === 'ar' ? temp.descAr : temp.descEn}
-                        </p>
+                          {lang === 'ar' ? temp.nameAr : temp.nameEn}
+                        </span>
                         
                         {isSelected && (
                           <span style={{
                             position: 'absolute',
-                            top: '12px',
-                            left: lang === 'en' ? 'auto' : '12px',
-                            right: lang === 'en' ? '12px' : 'auto',
-                            width: '8px',
-                            height: '8px',
+                            top: '8px',
+                            left: lang === 'en' ? 'auto' : '8px',
+                            right: lang === 'en' ? '8px' : 'auto',
+                            width: '6px',
+                            height: '6px',
                             borderRadius: '50%',
                             backgroundColor: 'var(--accent-color)'
                           }}></span>
@@ -881,11 +881,9 @@ rs.whatsapp.send(
                       className="form-input"
                       value={phoneTo}
                       onChange={(e) => setPhoneTo(e.target.value)}
+                      placeholder="07801234567"
                       required
                     />
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                      {t.phonePrefixHint}
-                    </span>
                   </div>
 
                   <div className="form-group">
@@ -1001,30 +999,38 @@ rs.whatsapp.send(
 
         </div>
 
-        {/* Live Phone Mockup simulator */}
-        <div style={{ flexShrink: 0, textAlign: 'center' }}>
-          <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 600 }}>{t.mockPhoneTitle}</h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t.mockPhoneDesc}</p>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ 
+            width: '290px',
+            marginBottom: '10px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            direction: lang === 'ar' ? 'rtl' : 'ltr'
+          }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
+              {t.mockPhoneTitle}
+            </h3>
             {phoneNotifications.length > 0 && (
               <button 
                 onClick={() => setPhoneNotifications([])} 
                 style={{ 
-                  fontSize: '11px', 
+                  fontSize: '10px', 
                   color: 'var(--danger-text)', 
                   border: 'none', 
                   background: 'none', 
                   cursor: 'pointer',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  backgroundColor: 'var(--danger-bg)'
+                  padding: '3px 8px',
+                  borderRadius: '99px',
+                  backgroundColor: 'var(--danger-bg)',
+                  transition: 'all 0.2s'
                 }}
               >
-                ✕ {lang === 'en' ? 'Clear Simulator' : 'مسح المحاكي'}
+                ✕ {lang === 'en' ? 'Clear' : 'مسح'}
               </button>
             )}
           </div>

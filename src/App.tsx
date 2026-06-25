@@ -7,44 +7,70 @@ import {
 import confetti from 'canvas-confetti';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
-import { LogsAnalyticsView } from './components/LogsAnalyticsView';
+import { LogsView } from './components/LogsView';
+import { ReportsView } from './components/ReportsView';
+import { PlaygroundView } from './components/PlaygroundView';
+import { CampaignsView } from './components/CampaignsView';
 import { BillingView } from './components/BillingView';
 import { SettingsIntegrationsView } from './components/SettingsIntegrationsView';
-import { MessagingView } from './components/MessagingView';
 import { LandingView } from './components/LandingView';
 import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
 import { SubscribersView } from './components/SubscribersView';
+import { SendConsoleView } from './components/SendConsoleView';
+import { ChannelsView } from './components/ChannelsView';
+import { AnalyticsLogsView } from './components/AnalyticsLogsView';
+import { PlatformSettingsView } from './components/PlatformSettingsView';
+import { SkeletonView } from './components/SkeletonView';
 
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('landing');
+  const [activeDashboardSubTab, setActiveDashboardSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet'>('channels');
+  const [viewLoading, setViewLoading] = useState<boolean>(false);
+  const loadingTimerRef = React.useRef<any>(null);
 
-  const handleTabChange = (newTab: string) => {
-    if (!document.startViewTransition) {
-      setCurrentTab(newTab);
-      return;
+  const handleTabChange = (newTab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet') => {
+    let targetTab = newTab;
+    if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing'].includes(newTab)) {
+      targetTab = 'dashboard';
+      if (newTab === 'domains') {
+        setActiveDashboardSubTab('domains');
+      } else if (newTab === 'apikeys' || newTab === 'api') {
+        setActiveDashboardSubTab('apikeys');
+      } else if (newTab === 'wallet' || newTab === 'billing') {
+        setActiveDashboardSubTab('wallet');
+      } else if (newTab === 'dashboard') {
+        setActiveDashboardSubTab(subTab || 'channels');
+      }
     }
 
-    const tabOrder = [
-      'landing', 'dashboard', 'messaging', 'playground', 'campaigns', 
-      'templates', 'subscribers-list', 'subscribers-settings', 'logs', 'reports', 'settings', 'domains', 'apikeys', 'api', 'webhooks', 'quickstart', 
-      'code', 'smtp', 'whatsapp', 'billing', 'security', 'system', 'auth-signin', 'auth-signup'
-    ];
-    const oldIdx = tabOrder.indexOf(currentTab);
-    const newIdx = tabOrder.indexOf(newTab);
-    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
+    if (targetTab !== currentTab) {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+      
+      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup'].includes(targetTab);
+      
+      if (isConsoleTab) {
+        setViewLoading(true);
+        setCurrentTab(targetTab);
+        loadingTimerRef.current = setTimeout(() => {
+          setViewLoading(false);
+        }, 250);
+      } else {
+        setCurrentTab(targetTab);
+      }
+    }
+  };
 
-    const options: any = {
-      update: () => {
-        setCurrentTab(newTab);
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
       }
     };
-    if (direction) {
-      options.types = [direction];
-    }
-    (document as any).startViewTransition(options);
-  };
+  }, []);
 
   const [lang, setLang] = useState<'en' | 'ar'>('ar'); // Default to Arabic for Iraqi market!
 
@@ -218,25 +244,7 @@ export default function App() {
   const [playgroundChannel, setPlaygroundChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
 
   const handlePlaygroundChannelChange = (channel: 'email' | 'sms' | 'whatsapp') => {
-    if (!document.startViewTransition) {
-      setPlaygroundChannel(channel);
-      return;
-    }
-
-    const channelOrder = ['email', 'sms', 'whatsapp'];
-    const oldIdx = channelOrder.indexOf(playgroundChannel);
-    const newIdx = channelOrder.indexOf(channel);
-    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
-
-    const options: any = {
-      update: () => {
-        setPlaygroundChannel(channel);
-      }
-    };
-    if (direction) {
-      options.types = [direction];
-    }
-    (document as any).startViewTransition(options);
+    setPlaygroundChannel(channel);
   };
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -347,162 +355,173 @@ export default function App() {
   };
 
   const renderContent = () => {
-    // Determine if we need to pass a subtab
-    let baseTab = currentTab;
-    let subTab = '';
+    // Group tabs into our 7 new unified sections
+    if (currentTab === 'dashboard') {
+      return (
+        <DashboardView 
+          lang={lang} 
+          logs={logs} 
+          setCurrentTab={handleTabChange} 
+          domains={domains}
+          setDomains={setDomains}
+          apiKeys={apiKeys}
+          setApiKeys={setApiKeys}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          transactions={transactions}
+          setTransactions={setTransactions}
+          activeSubTab={activeDashboardSubTab}
+          setActiveSubTab={setActiveDashboardSubTab}
+        />
+      );
+    }
     
-    if (['settings', 'apikeys', 'domains', 'webhooks', 'code', 'api'].includes(currentTab)) {
-      baseTab = 'settings';
-      subTab = (currentTab === 'settings' || currentTab === 'api') ? 'apikeys' : currentTab;
-    } else if (['security', 'smtp', 'whatsapp', 'system'].includes(currentTab)) {
-      baseTab = 'security';
-      subTab = currentTab === 'security' ? 'smtp' : currentTab;
-    } else if (['playground', 'campaigns', 'messaging'].includes(currentTab)) {
-      baseTab = 'messaging';
-      subTab = currentTab === 'messaging' ? 'playground' : currentTab;
-    } else if (['logs', 'reports'].includes(currentTab)) {
-      baseTab = 'logs';
-      subTab = currentTab === 'logs' ? 'logs' : 'analytics';
-    } else if (currentTab === 'templates') {
-      baseTab = 'templates';
-      subTab = 'templates';
-    } else if (['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab)) {
-      baseTab = 'subscribers';
-      subTab = (currentTab === 'subscribers' || currentTab === 'subscribers-list') ? 'list' : 'settings';
+    // 1. Send Console: includes 'send', 'playground', 'campaigns', 'templates'
+    if (['send', 'playground', 'campaigns', 'templates'].includes(currentTab)) {
+      const initialSubTab = currentTab === 'send' ? 'playground' : (currentTab as any);
+      return (
+        <SendConsoleView
+          lang={lang}
+          theme={theme}
+          setLogs={setLogs}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          domains={domains}
+          phoneNotifications={phoneNotifications}
+          setPhoneNotifications={setPhoneNotifications}
+          emailBody={emailBody}
+          setEmailBody={setEmailBody}
+          emailSubject={emailSubject}
+          setEmailSubject={setEmailSubject}
+          msgBody={msgBody}
+          setMsgBody={setMsgBody}
+          playgroundChannel={playgroundChannel}
+          setPlaygroundChannel={handlePlaygroundChannelChange}
+          setCurrentTab={handleTabChange}
+          initialTab={initialSubTab}
+        />
+      );
     }
 
-    switch (baseTab) {
-      case 'dashboard':
-        return (
-          <DashboardView 
-            lang={lang} 
-            logs={logs} 
-            setCurrentTab={handleTabChange} 
-            domains={domains}
-            apiKeys={apiKeys}
-            walletBalance={walletBalance}
-            transactions={transactions}
-          />
-        );
-      case 'logs':
-        return (
-          <LogsAnalyticsView
-            lang={lang}
-            logs={logs}
-            setLogs={setLogs}
-            walletBalance={walletBalance}
-            transactions={transactions}
-            domains={domains}
-            setCurrentTab={handleTabChange}
-            initialTab={subTab as any}
-          />
-        );
-      case 'messaging':
-        return (
-          <MessagingView
-            lang={lang}
-            initialTab={subTab as 'playground' | 'campaigns'}
-            setLogs={setLogs}
-            walletBalance={walletBalance}
-            setWalletBalance={setWalletBalance}
-            domains={domains}
-            phoneNotifications={phoneNotifications}
-            setPhoneNotifications={setPhoneNotifications}
-            emailBody={emailBody}
-            setEmailBody={setEmailBody}
-            emailSubject={emailSubject}
-            setEmailSubject={setEmailSubject}
-            msgBody={msgBody}
-            setMsgBody={setMsgBody}
-            playgroundChannel={playgroundChannel}
-            setPlaygroundChannel={handlePlaygroundChannelChange}
-          />
-        );
-      case 'settings':
-        return (
-          <SettingsIntegrationsView
-            lang={lang}
-            theme={theme}
-            initialTab={subTab as any}
-            domains={domains}
-            setDomains={setDomains}
-            apiKeys={apiKeys}
-            setApiKeys={setApiKeys}
-            webhooks={webhooks}
-            setWebhooks={setWebhooks}
-            logs={logs}
-            setLogs={setLogs}
-            walletBalance={walletBalance}
-            setWalletBalance={setWalletBalance}
-            setPhoneNotifications={setPhoneNotifications}
-            setCurrentTab={handleTabChange}
-            setEmailBody={setEmailBody}
-            setEmailSubject={setEmailSubject}
-            setMsgBody={setMsgBody}
-            setPlaygroundChannel={handlePlaygroundChannelChange}
-          />
-        );
-      case 'templates':
-        return (
-          <SettingsView
-            lang={lang}
-            theme={theme}
-            setEmailBody={setEmailBody}
-            setEmailSubject={setEmailSubject}
-            setMsgBody={setMsgBody}
-            setPlaygroundChannel={handlePlaygroundChannelChange}
-            setCurrentTab={handleTabChange}
-            setLogs={setLogs}
-            setPhoneNotifications={setPhoneNotifications}
-            controlledSubTab="templates"
-          />
-        );
-      case 'security':
-        return (
-          <SettingsView
-            lang={lang}
-            theme={theme}
-            setEmailBody={setEmailBody}
-            setEmailSubject={setEmailSubject}
-            setMsgBody={setMsgBody}
-            setPlaygroundChannel={handlePlaygroundChannelChange}
-            setCurrentTab={handleTabChange}
-            setLogs={setLogs}
-            setPhoneNotifications={setPhoneNotifications}
-            controlledSubTab={subTab as any}
-          />
-        );
-      case 'billing':
-        return (
-          <BillingView
-            lang={lang}
-            walletBalance={walletBalance}
-            setWalletBalance={setWalletBalance}
-            transactions={transactions}
-            setTransactions={setTransactions}
-          />
-        );
-      case 'subscribers':
-        return (
-          <SubscribersView 
-            lang={lang} 
-            apiKeys={apiKeys} 
-            initialSubTab={subTab as 'list' | 'settings'}
-          />
-        );
-      default:
-        return (
-          <DashboardView 
-            lang={lang} 
-            logs={logs} 
-            setCurrentTab={handleTabChange} 
-            domains={domains}
-            apiKeys={apiKeys}
-            walletBalance={walletBalance}
-            transactions={transactions}
-          />
-        );
+    // 2. Subscribers & Contacts: includes 'subscribers', 'subscribers-list', 'subscribers-settings'
+    if (['subscribers', 'subscribers-list', 'subscribers-settings'].includes(currentTab)) {
+      const subTab = (currentTab === 'subscribers' || currentTab === 'subscribers-list') ? 'list' : 'settings';
+      return (
+        <SubscribersView 
+          lang={lang} 
+          apiKeys={apiKeys} 
+          initialSubTab={subTab}
+        />
+      );
     }
+
+    // 3. Analytics & Logs: includes 'logs', 'reports', 'logs-list'
+    if (['logs', 'reports', 'logs-list'].includes(currentTab)) {
+      const initialSubTab = currentTab === 'logs' ? 'logs' : (currentTab as any);
+      return (
+        <AnalyticsLogsView
+          lang={lang}
+          logs={logs}
+          setLogs={setLogs}
+          walletBalance={walletBalance}
+          transactions={transactions}
+          domains={domains}
+          setCurrentTab={handleTabChange}
+          initialTab={initialSubTab}
+        />
+      );
+    }
+
+    // 4. Delivery Channels: includes 'channels', 'whatsapp', 'smtp', 'domains'
+    if (['channels', 'whatsapp', 'smtp', 'domains'].includes(currentTab)) {
+      const initialSubTab = currentTab === 'channels' ? 'whatsapp' : (currentTab as any);
+      return (
+        <ChannelsView
+          lang={lang}
+          theme={theme}
+          domains={domains}
+          setDomains={setDomains}
+          setEmailBody={setEmailBody}
+          setEmailSubject={setEmailSubject}
+          setMsgBody={setMsgBody}
+          setPlaygroundChannel={handlePlaygroundChannelChange}
+          setCurrentTab={handleTabChange}
+          setLogs={setLogs}
+          setPhoneNotifications={setPhoneNotifications}
+          initialTab={initialSubTab}
+        />
+      );
+    }
+
+    // 5. Developer Hub: includes 'developer', 'apikeys', 'webhooks', 'code', 'api', 'settings' (legacy)
+    if (['developer', 'apikeys', 'webhooks', 'code', 'api', 'settings'].includes(currentTab)) {
+      const subTab = (currentTab === 'developer' || currentTab === 'api' || currentTab === 'settings') ? 'apikeys' : (currentTab as any);
+      return (
+        <SettingsIntegrationsView
+          lang={lang}
+          theme={theme}
+          initialTab={subTab}
+          domains={domains}
+          setDomains={setDomains}
+          apiKeys={apiKeys}
+          setApiKeys={setApiKeys}
+          webhooks={webhooks}
+          setWebhooks={setWebhooks}
+          logs={logs}
+          setLogs={setLogs}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          setPhoneNotifications={setPhoneNotifications}
+          setCurrentTab={handleTabChange}
+          setEmailBody={setEmailBody}
+          setEmailSubject={setEmailSubject}
+          setMsgBody={setMsgBody}
+          setPlaygroundChannel={handlePlaygroundChannelChange}
+        />
+      );
+    }
+
+    // 6. Platform Settings: includes 'platform-settings', 'billing', 'security', 'system'
+    if (['platform-settings', 'billing', 'security', 'system'].includes(currentTab)) {
+      const initialSubTab = currentTab === 'platform-settings' ? 'billing' : (currentTab as any);
+      return (
+        <PlatformSettingsView
+          lang={lang}
+          theme={theme}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          transactions={transactions}
+          setTransactions={setTransactions}
+          setEmailBody={setEmailBody}
+          setEmailSubject={setEmailSubject}
+          setMsgBody={setMsgBody}
+          setPlaygroundChannel={handlePlaygroundChannelChange}
+          setCurrentTab={handleTabChange}
+          setLogs={setLogs}
+          setPhoneNotifications={setPhoneNotifications}
+          initialTab={initialSubTab}
+        />
+      );
+    }
+
+    // Default Fallback (Dashboard)
+    return (
+      <DashboardView 
+        lang={lang} 
+        logs={logs} 
+        setCurrentTab={handleTabChange} 
+        domains={domains}
+        setDomains={setDomains}
+        apiKeys={apiKeys}
+        setApiKeys={setApiKeys}
+        walletBalance={walletBalance}
+        setWalletBalance={setWalletBalance}
+        transactions={transactions}
+        setTransactions={setTransactions}
+        activeSubTab={activeDashboardSubTab}
+        setActiveSubTab={setActiveDashboardSubTab}
+      />
+    );
   };
 
   // Auth Loading View
@@ -597,28 +616,26 @@ export default function App() {
         domains={domains}
         apiKeys={apiKeys}
         onSearchClick={() => setIsSearchOpen(true)}
+        activeDashboardSubTab={activeDashboardSubTab}
       />
       
       <main id="main-content" className="main-content" style={{ paddingTop: 'var(--header-height)' }}>
         <div className="top-navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Left: Active Tab Title & Subtitle */}
+          {/* Left: Active Tab Title */}
           <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
             <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              {currentTab === 'dashboard' ? (lang === 'ar' ? 'لوحة التحكم' : 'Overview') : 
+              {currentTab === 'dashboard' ? (
+                activeDashboardSubTab === 'channels' ? (lang === 'ar' ? 'لوحة التحكم > نظرة عامة' : 'Dashboard > Overview') :
+                activeDashboardSubTab === 'domains' ? (lang === 'ar' ? 'لوحة التحكم > النطاقات' : 'Dashboard > Domains') :
+                activeDashboardSubTab === 'apikeys' ? (lang === 'ar' ? 'لوحة التحكم > مفاتيح الـ API' : 'Dashboard > API Keys') :
+                (lang === 'ar' ? 'لوحة التحكم > المحفظة والشحن' : 'Dashboard > Wallet & Billing')
+               ) : 
                ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns') :
                currentTab === 'templates' ? (lang === 'ar' ? 'معرض القوالب' : 'Templates Gallery') :
                ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'السجلات والتحليلات' : 'Logs & Analytics') :
                currentTab === 'billing' ? (lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing') :
                (lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub')}
             </h2>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>
-              {currentTab === 'dashboard' ? (lang === 'ar' ? 'إحصائيات فورية ولقطات أداء لبوابتك العريقة' : 'Real-time metrics & performance stats') :
-               ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'إرسال واختبار الرسائل عبر القنوات' : 'Carrier API transmissions') :
-               currentTab === 'templates' ? (lang === 'ar' ? 'إدارة وتخصيص قوالب الإشعارات' : 'Carrier templates catalog') :
-               ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'تحليل حجم الحركة وسجلات النظام' : 'Outbound traces analytics') :
-               currentTab === 'billing' ? (lang === 'ar' ? 'شحن الرصيد والتعرفة المحلية' : 'Recharge gateways & local rates') :
-               (lang === 'ar' ? 'إعدادات المنصة ومفاتيح الربط' : 'API connection keys & DNS')}
-            </span>
           </div>
 
           {/* Center: Search Capsule Shortcut */}
@@ -628,7 +645,7 @@ export default function App() {
             <span className="navbar-search-badge">⌘F</span>
           </div>
 
-          {/* Right: Notifications & Profile Widget */}
+          {/* Right: Notifications Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
             {/* Notification Bell */}
             <button className="navbar-notification-btn" title={lang === 'ar' ? 'الإشعارات' : 'Notifications'}>
@@ -638,133 +655,15 @@ export default function App() {
               </svg>
               <span className="navbar-notification-dot"></span>
             </button>
-
-            {/* Profile Dropdown Trigger */}
-            {user && (
-              <div 
-                className="navbar-profile-widget" 
-                onClick={() => setProfileOpen(!profileOpen)}
-              >
-                <div className="navbar-profile-info">
-                  <span className="navbar-profile-name">{user.name || 'Jasim Kareem'}</span>
-                  <span className="navbar-profile-role">{lang === 'ar' ? 'مطور' : 'Developer'}</span>
-                </div>
-                <div className="navbar-profile-avatar">
-                  {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
-                </div>
-                <ChevronDown size={14} style={{ color: 'var(--text-secondary)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-
-                {/* Profile Dropdown Menu */}
-                {profileOpen && (
-                  <>
-                    {/* Invisible overlay to close on click outside */}
-                    <div 
-                      onClick={(e) => { e.stopPropagation(); setProfileOpen(false); }}
-                      style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 98,
-                        background: 'transparent',
-                        cursor: 'default'
-                      }}
-                    />
-                    <div 
-                      className="profile-dropdown-container"
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        top: '46px',
-                        left: lang === 'ar' ? '0' : 'auto',
-                        right: lang === 'ar' ? 'auto' : '0',
-                        position: 'absolute',
-                        zIndex: 99,
-                        minWidth: '220px',
-                        animation: 'fadeIn 0.15s ease'
-                      }}
-                    >
-                      <div className="profile-dropdown-header" style={{ padding: '12px 16px' }}>
-                        <div className="profile-dropdown-user-name" style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
-                          {user.name || 'Jasim Kareem'}
-                        </div>
-                        <div className="profile-dropdown-user-email" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {user.email || 'mj9034812@gmail.com'}
-                        </div>
-                      </div>
-
-                      <div className="profile-dropdown-divider" />
-
-                      <div className="profile-dropdown-section" style={{ padding: '6px' }}>
-                        <button 
-                          onClick={() => { handleTabChange('security'); setProfileOpen(false); }}
-                          className="profile-dropdown-item"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: '8px' }}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                          <span>{lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}</span>
-                        </button>
-
-                        <div className="profile-dropdown-control-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          <span>{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
-                          <div className="profile-dropdown-segmented" style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--panel-muted)', padding: '2px', borderRadius: '6px' }}>
-                            <button 
-                              onClick={() => setTheme('light')}
-                              className={`profile-dropdown-segmented-btn ${theme === 'light' ? 'active' : ''}`}
-                              style={{ border: 'none', background: theme === 'light' ? 'var(--panel-bg)' : 'transparent', color: theme === 'light' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
-                            >
-                              <SunMoon size={11} />
-                            </button>
-                            <button 
-                              onClick={() => setTheme('dark')}
-                              className={`profile-dropdown-segmented-btn ${theme === 'dark' ? 'active' : ''}`}
-                              style={{ border: 'none', background: theme === 'dark' ? 'var(--panel-bg)' : 'transparent', color: theme === 'dark' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
-                            >
-                              <SunMoon size={11} style={{ transform: 'rotate(180deg)' }} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="profile-dropdown-control-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          <span>{lang === 'ar' ? 'اللغة' : 'Language'}</span>
-                          <div className="profile-dropdown-segmented" style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--panel-muted)', padding: '2px', borderRadius: '6px' }}>
-                            <button 
-                              onClick={() => setLang('ar')}
-                              className={`profile-dropdown-segmented-btn ${lang === 'ar' ? 'active' : ''}`}
-                              style={{ border: 'none', background: lang === 'ar' ? 'var(--panel-bg)' : 'transparent', color: lang === 'ar' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}
-                            >
-                              عربي
-                            </button>
-                            <button 
-                              onClick={() => setLang('en')}
-                              className={`profile-dropdown-segmented-btn ${lang === 'en' ? 'active' : ''}`}
-                              style={{ border: 'none', background: lang === 'en' ? 'var(--panel-bg)' : 'transparent', color: lang === 'en' ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}
-                            >
-                              EN
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="profile-dropdown-divider" />
-
-                      <button 
-                        onClick={() => { setProfileOpen(false); handleLogout(); }}
-                        className="profile-dropdown-item profile-dropdown-logout-item"
-                        style={{ width: '100%', border: 'none', display: 'flex', alignItems: 'center', padding: '8px 12px', fontSize: '12px', cursor: 'pointer', background: 'transparent' }}
-                      >
-                        <LogOut size={14} style={{ marginInlineEnd: '8px' }} />
-                        <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="content-container tab-transition-wrapper" key={currentTab}>
-          {renderContent()}
+        <div className="content-container tab-transition-wrapper">
+          {viewLoading ? (
+            <SkeletonView tab={currentTab} lang={lang} />
+          ) : (
+            renderContent()
+          )}
         </div>
       </main>
       <ToastContainer lang={lang} />

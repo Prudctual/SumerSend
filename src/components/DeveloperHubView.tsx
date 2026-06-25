@@ -17,13 +17,50 @@ import {
   ExternalLink, 
   FileText,
   Layers,
-  CheckCircle2,
   Bell,
   Monitor,
-  Lock
+  Lock,
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
-import { ScrollReveal, BentoCard } from './LandingView';
+import { ScrollReveal } from './LandingView';
 import { renderTemplateIcon } from './IconHelper';
+
+const highlightCode = (code: string) => {
+  if (!code) return null;
+  
+  let escaped = code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  // Comments: // ... or # ...
+  escaped = escaped.replace(/(\/\/.*)/g, '<span style="color: #71717a; font-style: italic;">$1</span>');
+  escaped = escaped.replace(/(^#.*)/gm, '<span style="color: #71717a; font-style: italic;">$1</span>');
+
+  // Strings: "..." or '...'
+  escaped = escaped.replace(/(["'])(.*?)\1/g, '<span style="color: #a3e635;">$1$2$1</span>');
+
+  // Numbers
+  escaped = escaped.replace(/\b(\d+)\b/g, '<span style="color: #fb923c;">$1</span>');
+
+  // Key keywords
+  const keywords = [
+    'const', 'require', 'function', 'return', 'import', 'package', 'func', 'main', 'var', 'let', 'define',
+    'CURLOPT_POSTFIELDS', 'CURLOPT_HTTPHEADER', 'CURLOPT_POST', 'CURLOPT_RETURNTRANSFER', 'curl_setopt_array',
+    'curl_init', 'curl_exec', 'curl_close', 'print_r', 'json_decode', 'json_encode', 'echo', 'file_get_contents',
+    'requests', 'requests.post', 'requests.get',
+    'MAIL_MAILER', 'MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_PASSWORD', 'MAIL_ENCRYPTION', 'MAIL_FROM_ADDRESS', 'MAIL_FROM_NAME',
+    'SUMERSEND_API_KEY'
+  ];
+  
+  keywords.forEach(kw => {
+    const regex = new RegExp(`\\b(${kw})\\b`, 'g');
+    escaped = escaped.replace(regex, '<span style="color: #38bdf8; font-weight: 600;">$1</span>');
+  });
+  
+  return <span dangerouslySetInnerHTML={{ __html: escaped }} />;
+};
 
 interface DeveloperHubViewProps {
   lang: 'en' | 'ar';
@@ -44,7 +81,7 @@ interface DeveloperHubViewProps {
     from: string;
   };
   setCurrentTab: (tab: string) => void;
-  controlledSubTab?: 'quickstart' | 'apikeys' | 'webhooks' | 'code';
+  controlledSubTab?: 'apikeys' | 'webhooks' | 'code';
 }
 
 export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({ 
@@ -65,12 +102,11 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   const getSubTabName = (tab?: string) => {
     if (tab === 'apikeys') return 'apikeys';
     if (tab === 'webhooks') return 'webhooks';
-    if (tab === 'quickstart') return 'quickstart';
     if (tab === 'code') return 'code';
-    return 'quickstart';
+    return 'apikeys';
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'quickstart' | 'apikeys' | 'webhooks' | 'code'>(() => getSubTabName(controlledSubTab));
+  const [activeSubTab, setActiveSubTab] = useState<'apikeys' | 'webhooks' | 'code'>(() => getSubTabName(controlledSubTab));
 
   useEffect(() => {
     if (controlledSubTab) {
@@ -99,6 +135,12 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [visibleKeys, setVisibleKeys] = useState<{ [id: string]: boolean }>({});
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Focus states for input styling
+  const [isWebhookUrlFocused, setIsWebhookUrlFocused] = useState(false);
+  const [isSimRecipientFocused, setIsSimRecipientFocused] = useState(false);
+  const [isSimMessageFocused, setIsSimMessageFocused] = useState(false);
+  const [isConsoleRecipientFocused, setIsConsoleRecipientFocused] = useState(false);
 
   // Webhook States
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -139,17 +181,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   }, [activeSubTab]);
 
 
-  // Quickstart Test Console States
-  const [testChannel, setTestChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
-  const [testRecipient, setTestRecipient] = useState('');
-  const [isTestingApi, setIsTestingApi] = useState(false);
-  const [testLogs, setTestLogs] = useState<string[]>([]);
-  const [testSuccess, setTestSuccess] = useState(false);
-  const [localTestDispatched, setLocalTestDispatched] = useState(() => {
-    return localStorage.getItem('sumer_quickstart_tested') === 'true';
-  });
-
-  // Code Builder States
+    // Code Builder States
   const [selectedChannel, setSelectedChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
   const [selectedLang, setSelectedLang] = useState<'curl' | 'node' | 'php' | 'python' | 'go' | 'wordpress' | 'laravel'>('curl');
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>('');
@@ -335,68 +367,14 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     setSelectedApiKeyId(apiKeys[0].id);
   }
 
-  // Render-time state synchronization for testRecipient when channel changes
-  const [prevTestChannel, setPrevTestChannel] = useState(testChannel);
-  if (testChannel !== prevTestChannel) {
-    setPrevTestChannel(testChannel);
-    setTestRecipient(testChannel === 'email' ? 'developer@gmail.com' : '07801234567');
-  }
-
-  // Checklist Validation
-  const isStep1Done = apiKeys.length > 0;
-  const isStep2Done = !!(localSmtpConfig.host && localSmtpConfig.user);
-  const isStep3Done = localTestDispatched || logs.some(l => l.id.startsWith('msg') || l.id.startsWith('sms') || l.id.startsWith('wa') || l.id.startsWith('test'));
-  const isStep4Done = webhooks.length > 0;
-
-  const completedStepsCount = [isStep1Done, isStep2Done, isStep3Done, isStep4Done].filter(Boolean).length;
-  const progressPercent = (completedStepsCount / 4) * 100;
-
-  const translations = {
+    const translations = {
     en: {
       title: 'Developer Integration Hub',
       subtitle: 'Connect your application to Sumer Send and manage your developer environment.',
-      tabQuickstart: 'Quick Start Checklist',
       tabApiKeys: 'API Keys',
       tabWebhooks: 'Webhooks & Flow',
       tabCode: 'SDK & Code Builder',
       
-      // Onboarding Tracker
-      obProgressTitle: 'Your Onboarding Progress',
-      obProgressDesc: 'Complete these steps to fully connect and automate notifications on your website.',
-      obStepsDone: 'of 4 steps completed',
-      obPending: 'Pending Action',
-      obCompleted: 'Completed',
-      
-      // Quickstart
-      qsTitle: 'Setup Wizard & Live Verification',
-      qsStep1Title: '1. Create API Keys',
-      qsStep1Desc: 'Generate a secure API token with access scopes for your server.',
-      qsStep1Btn: 'Generate API Key',
-      qsStep1Done: 'Active API Key found:',
-      
-      qsStep2Title: '2. Setup Dispatcher Bridge',
-      qsStep2Desc: 'Configure your SMTP settings to allow email deliveries from your domain.',
-      qsStep2Btn: 'Go to SMTP Settings',
-      qsStep2Done: 'SMTP Connection ready:',
-
-      qsStep3Title: '3. Execute Live Test Request',
-      qsStep3Desc: 'Trigger a mock API request directly from this portal to verify endpoint configuration.',
-      qsStep3Btn: 'Open Testing Console',
-      qsStep3Done: 'API Dispatch successfully verified!',
-
-      qsStep4Title: '4. Register Webhook Endpoint',
-      qsStep4Desc: 'Receive HTTP push notifications on your backend whenever message delivery statuses change.',
-      qsStep4Btn: 'Add Webhook Endpoint',
-      qsStep4Done: 'Webhook configured:',
-
-      // API Test Console
-      tcTitle: 'Live API Testing Console',
-      tcChannel: 'Select Channel',
-      tcRecipient: 'Recipient',
-      tcSendBtn: 'Execute API Request',
-      tcLogsLabel: 'Request / Response Raw Logs',
-      tcSuccess: 'Test Request Succeeded! Step 3 completed.',
-
       // API Keys
       apiKeyTitle: 'Manage API Keys',
       apiKeySubtitle: 'Use these tokens to authenticate direct API requests to the dispatch endpoints.',
@@ -472,48 +450,10 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     ar: {
       title: 'بوابة المطورين والربط البرمجي',
       subtitle: 'اربط موقعك أو نظامك ببوابة سومر سيند تلقائياً وقم بإدارة بيئتك البرمجية بالكامل.',
-      tabQuickstart: 'دليل البدء السريع التفاعلي',
       tabApiKeys: 'مفاتيح الـ API',
       tabWebhooks: 'الويب هوكس وتوقيع الأحداث',
       tabCode: 'SDK ومنشئ الأكواد',
       
-      // Onboarding Tracker
-      obProgressTitle: 'مؤشر تقدم تهيئة الاتصال والربط',
-      obProgressDesc: 'أكمل هذه الخطوات لربط موقعك وتفعيل الإرسال التلقائي من نظامك البرمي.',
-      obStepsDone: 'من أصل 4 خطوات مكتملة',
-      obPending: 'مطلوب إجراء',
-      obCompleted: 'مكتمل بنجاح',
-
-      // Quickstart
-      qsTitle: 'معالج الإعداد التفاعلي وفحص الاتصال حياً',
-      qsStep1Title: '1. إنشاء مفاتيح الـ API',
-      qsStep1Desc: 'قم بتوليد مفتاح اتصال برمي آمن بصلاحيات محددة لاستخدامه في تطبيقك.',
-      qsStep1Btn: 'إنشاء مفتاح API الآن',
-      qsStep1Done: 'تم العثور على مفتاح نشط:',
-
-      qsStep2Title: '2. تهيئة جسر إرسال SMTP',
-      qsStep2Desc: 'قم بإعداد خادم SMTP الخاص بك ليقوم النظام الخلفي بالإرسال من نطاقك.',
-      qsStep2Btn: 'الذهاب لإعدادات SMTP',
-      qsStep2Done: 'جسر إرسال SMTP جاهز:',
-
-      qsStep3Title: '3. تجربة طلب فحص حي للـ API',
-      qsStep3Desc: 'نفذ طلب إرسال تجريبي مباشرة من هذا المعالج للتحقق من الاتصال وعمل النظام الخلفي.',
-      qsStep3Btn: 'افتح وحدة الاختبار الفوري',
-      qsStep3Done: 'تم التحقق من نجاح إرسال الـ API بنجاح!',
-
-      qsStep4Title: '4. ربط موقعك بالويب هوك (Webhook)',
-      qsStep4Desc: 'استقبل إشعارات POST حية في خادمك فور تسليم الرسائل أو فشلها لمزامنة العمليات.',
-      qsStep4Btn: 'إضافة رابط ويب هوك',
-      qsStep4Done: 'تم تسجيل الويب هوك بنجاح:',
-
-      // API Test Console
-      tcTitle: 'وحدة اختبار وتجربة الـ API فوراً',
-      tcChannel: 'اختر قناة الإرسال',
-      tcRecipient: 'المستلم (البريد / الهاتف)',
-      tcSendBtn: 'توجيه طلب API حقيقي للخلفية',
-      tcLogsLabel: 'مخرجات الطلب البرمجي والاستجابة',
-      tcSuccess: 'تم الإرسال بنجاح! تم إكمال الخطوة الثالثة.',
-
       // API Keys
       apiKeyTitle: 'إدارة مفاتيح الـ API',
       apiKeySubtitle: 'استخدم هذه المفاتيح لمصادقة طلبات تطبيقاتك وخودامك مع بوابتنا.',
@@ -590,94 +530,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
 
   const t = translations[lang];
 
-  // Quickstart API testing simulation
-  const handleTestApiCall = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!testRecipient.trim()) {
-      alert(lang === 'en' ? 'Recipient is required.' : 'يرجى إدخال المستلم.');
-      return;
-    }
-
-    setIsTestingApi(true);
-    setTestLogs([]);
-    setTestSuccess(false);
-
-    const logsList: string[] = [];
-    const addLog = (msg: string) => {
-      logsList.push(`$ ${msg}`);
-      setTestLogs([...logsList]);
-    };
-
-    const activeKey = getSelectedApiKeyText();
-    const headers = {
-      'Authorization': `Bearer ${activeKey.slice(0, 15)}...`,
-      'Content-Type': 'application/json'
-    };
-
-    addLog(lang === 'en' ? 'Initializing API Request Client...' : 'بدء تشغيل عميل اختبار طلبات الـ API...');
-    
-    setTimeout(() => {
-      if (testChannel === 'email') {
-        addLog(`POST http://127.0.0.1:3000/v1/emails`);
-        addLog(`Headers: ${JSON.stringify(headers, null, 2)}`);
-        addLog(`Body: ${JSON.stringify({
-          from: localSmtpConfig.from || 'support@mystore.iq',
-          to: testRecipient,
-          subject: 'Sumer Send Quickstart Test!',
-          html: '<h3>Test succeeded!</h3>'
-        }, null, 2)}`);
-      } else {
-        const path = testChannel === 'sms' ? 'sms' : 'whatsapp';
-        addLog(`POST http://127.0.0.1:3000/v1/${path}`);
-        addLog(`Headers: ${JSON.stringify(headers, null, 2)}`);
-        addLog(`Body: ${JSON.stringify({
-          to: testRecipient,
-          body: 'Sumer Send Verification OTP: 928371'
-        }, null, 2)}`);
-      }
-    }, 400);
-
-    setTimeout(() => {
-      addLog(lang === 'en' ? 'Sending payload to Baghdad Gateway...' : 'توجيه محتوى الطلب إلى بوابة بغداد الإقليمية...');
-    }, 1200);
-
-    setTimeout(() => {
-      // Execute the real mock call
-      const path = testChannel === 'email' ? 'emails' : testChannel;
-      const url = `http://127.0.0.1:3000/v1/${path}`;
-      const payload = testChannel === 'email' 
-        ? { from: localSmtpConfig.from || 'support@mystore.iq', to: testRecipient, subject: 'Quickstart Test Call', html: '<p>Test</p>' }
-        : { to: testRecipient, body: 'Sumer Send quickstart verification test.' };
-
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKeys[0]?.key || 'sm_live_demo'}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        addLog(`HTTP/1.1 ${res.status} ${res.statusText}`);
-        return res.json();
-      })
-      .then(data => {
-        addLog(`Response Payload: ${JSON.stringify(data, null, 2)}`);
-        setIsTestingApi(false);
-        setTestSuccess(true);
-        setLocalTestDispatched(true);
-        localStorage.setItem('sumer_quickstart_tested', 'true');
-      })
-      .catch(err => {
-        addLog(`HTTP/1.1 500 Connection Failed`);
-        addLog(`Error Message: ${err.message}`);
-        setIsTestingApi(false);
-        setTestSuccess(false);
-      });
-    }, 2000);
-  };
-
-  const getSelectedApiKeyText = () => {
+    const getSelectedApiKeyText = () => {
     if (!selectedApiKeyId) return 'YOUR_API_KEY';
     const keyObj = apiKeys.find(k => k.id === selectedApiKeyId);
     return keyObj ? keyObj.key : 'YOUR_API_KEY';
@@ -1063,822 +916,1196 @@ echo "Webhook Processed";
 
   return (
     <ScrollReveal>
-      {!controlledSubTab && (
-        <>
-          <div style={{ marginBottom: '20px' }} className="flex-between">
-            <div>
-              <h1 style={{ 
-                fontSize: '26px', 
-                fontWeight: 800, 
-                letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-                lineHeight: 1.15,
-                marginBottom: '8px',
-                color: 'var(--text-primary)'
-              }}>{t.title}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>{t.subtitle}</p>
-            </div>
-          </div>
-
-          {/* Sub tabs navigation */}
-          <div className="vercel-tabs-container" style={{ overflowX: 'auto', marginBottom: '16px' }}>
-            <button 
-              onClick={() => setActiveSubTab('quickstart')}
-              className={`vercel-tab-btn ${activeSubTab === 'quickstart' ? 'active' : ''}`}
-            >
-              <span>{t.tabQuickstart}</span>
-            </button>
-            <button 
-              onClick={() => setActiveSubTab('apikeys')}
-              className={`vercel-tab-btn ${activeSubTab === 'apikeys' ? 'active' : ''}`}
-            >
-              <span>{t.tabApiKeys}</span>
-            </button>
-            <button 
-              onClick={() => setActiveSubTab('webhooks')}
-              className={`vercel-tab-btn ${activeSubTab === 'webhooks' ? 'active' : ''}`}
-            >
-              <span>{t.tabWebhooks}</span>
-            </button>
-            <button 
-              onClick={() => setActiveSubTab('code')}
-              className={`vercel-tab-btn ${activeSubTab === 'code' ? 'active' : ''}`}
-            >
-              <span>{t.tabCode}</span>
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* QUICKSTART / SETUP CHECKLIST SUB-TAB */}
-      {activeSubTab === 'quickstart' && (
-        <div>
-          {/* Onboarding Progress Dashboard */}
-          <BentoCard className="card" style={{ padding: '20px 24px', marginBottom: '20px', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
-            <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '120px', height: '120px', background: 'var(--accent-color)', opacity: 0.05, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
-            <div style={{ position: 'absolute', bottom: '-10px', left: '-10px', width: '100px', height: '100px', background: '#0070f3', opacity: 0.03, borderRadius: '50%', filter: 'blur(35px)', pointerEvents: 'none' }}></div>
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                <div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px', color: 'var(--text-primary)' }}>{t.obProgressTitle}</h2>
-                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>{t.obProgressDesc}</p>
-                </div>
-                <div style={{ textAlign: lang === 'en' ? 'right' : 'left' }}>
-                  <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-color)' }}>{progressPercent}%</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>{completedStepsCount} {t.obStepsDone}</span>
-                </div>
-              </div>
-
-              {/* Visual Progress Bar */}
-              <div style={{ width: '100%', height: '10px', backgroundColor: 'var(--border-color)', borderRadius: '10px', marginTop: '18px', overflow: 'hidden' }}>
-                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-color) 0%, #0070f3 100%)', transition: 'width 0.4s ease-in-out', borderRadius: '10px' }}></div>
-              </div>
-            </div>
-          </BentoCard>
-
-          <div className="devhub-layout">
-            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Step 1: Create API Keys */}
-              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep1Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
-                <div className="flex-between">
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep1Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep1Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
-                      {isStep1Done ? '✓' : '1'}
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{t.qsStep1Title}</span>
-                        <span className={`badge badge-${isStep1Done ? 'success' : 'warning'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {isStep1Done ? t.obCompleted : t.obPending}
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                        {isStep1Done ? `${t.qsStep1Done} "${apiKeys[0]?.name}"` : t.qsStep1Desc}
-                      </p>
-                    </div>
-                  </div>
-
-                  {!isStep1Done ? (
-                    <button className="btn btn-primary" style={{ fontSize: '11px', padding: '6px 12px' }} onClick={() => setActiveSubTab('apikeys')}>
-                      {t.qsStep1Btn}
-                    </button>
-                  ) : (
-                    <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                      {apiKeys[0]?.key.slice(0, 15)}...
-                    </code>
-                  )}
-                </div>
-              </div>
-
-              {/* Step 2: Setup Dispatcher Bridge */}
-              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep2Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
-                <div className="flex-between">
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep2Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep2Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
-                      {isStep2Done ? '✓' : '2'}
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{t.qsStep2Title}</span>
-                        <span className={`badge badge-${isStep2Done ? 'success' : 'warning'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {isStep2Done ? t.obCompleted : t.obPending}
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                        {isStep2Done ? `${t.qsStep2Done} ${localSmtpConfig.host}:${localSmtpConfig.port}` : t.qsStep2Desc}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button className="btn" style={{ fontSize: '11px', padding: '6px 12px', background: isStep2Done ? 'none' : '', border: isStep2Done ? '1px solid var(--border-color)' : '' }} onClick={() => setCurrentTab('smtp')}>
-                    {t.qsStep2Btn}
-                  </button>
-                </div>
-              </div>
-
-              {/* Step 3: Execute Live Test Request */}
-              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep3Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep3Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep3Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
-                      {isStep3Done ? '✓' : '3'}
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{t.qsStep3Title}</span>
-                        <span className={`badge badge-${isStep3Done ? 'success' : 'warning'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {isStep3Done ? t.obCompleted : t.obPending}
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                        {t.qsStep3Desc}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Inline API test console expander */}
-                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                  <form onSubmit={handleTestApiCall} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Terminal size={14} color="var(--accent-color)" />
-                      <span>{t.tcTitle}</span>
-                    </h4>
-
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: '160px' }}>
-                        <label className="form-label" style={{ fontSize: '10px', marginBottom: '2px' }}>{t.tcChannel}</label>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          {(['email', 'sms', 'whatsapp'] as const).map(ch => (
-                            <button
-                              key={ch}
-                              type="button"
-                              onClick={() => setTestChannel(ch)}
-                              className={`btn ${testChannel === ch ? 'btn-primary' : ''}`}
-                              style={{ flex: 1, fontSize: '10px', padding: '4px 6px', background: testChannel === ch ? '' : 'none', border: '1px solid var(--border-color)' }}
-                            >
-                              {ch.toUpperCase()}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ flex: 1.5, minWidth: '200px' }}>
-                        <label className="form-label" style={{ fontSize: '10px', marginBottom: '2px' }}>{t.tcRecipient}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={testRecipient}
-                          onChange={(e) => setTestRecipient(e.target.value)}
-                          placeholder={testChannel === 'email' ? 'e.g. name@domain.com' : 'e.g. 07801234567'}
-                          style={{ height: '32px', fontSize: '11px' }}
-                        />
-                      </div>
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary"
-                      disabled={isTestingApi}
-                      style={{ height: '34px', fontSize: '11px', gap: '6px', opacity: isTestingApi ? 0.7 : 1 }}
-                    >
-                      {isTestingApi ? (
-                        <>
-                          <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
-                          <span>{lang === 'en' ? 'Executing API call...' : 'جاري فحص الـ API...'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play size={10} />
-                          <span>{t.tcSendBtn}</span>
-                        </>
-                      )}
-                    </button>
-
-                    {testLogs.length > 0 && (
-                      <div style={{ marginTop: '8px' }}>
-                        <label className="form-label" style={{ fontSize: '10px', marginBottom: '4px' }}>{t.tcLogsLabel}</label>
-                        <div style={{ backgroundColor: '#09090b', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', maxHeight: '150px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '10px', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '4px', direction: 'ltr', textAlign: 'left' }}>
-                          {testLogs.map((log, index) => (
-                            <div key={index} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{log}</div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {testSuccess && (
-                      <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', border: '1px solid var(--success-text)', color: 'var(--success-text)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                        <CheckCircle2 size={12} />
-                        <span>{t.tcSuccess}</span>
-                      </div>
-                    )}
-                  </form>
-                </div>
-              </div>
-
-              {/* Step 4: Register Webhook Endpoint */}
-              <div className="card card-checklist" style={{ padding: '20px', borderRadius: '24px', border: isStep4Done ? '1px solid rgba(16,185,129,0.2)' : '1px solid var(--border-color)' }}>
-                <div className="flex-between">
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isStep4Done ? 'var(--success-bg)' : 'var(--warning-bg)', color: isStep4Done ? 'var(--success-text)' : 'var(--warning-text)', flexShrink: 0, fontWeight: 700, fontSize: '13px' }}>
-                      {isStep4Done ? '✓' : '4'}
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{t.qsStep4Title}</span>
-                        <span className={`badge badge-${isStep4Done ? 'success' : 'warning'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {isStep4Done ? t.obCompleted : t.obPending}
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                        {isStep4Done ? `${t.qsStep4Done} "${webhooks[0]?.url.slice(0, 30)}..."` : t.qsStep4Desc}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button className="btn btn-primary" style={{ fontSize: '11px', padding: '6px 12px', background: isStep4Done ? 'none' : '', border: isStep4Done ? '1px solid var(--border-color)' : '', color: isStep4Done ? 'var(--text-primary)' : '' }} onClick={() => setActiveSubTab('webhooks')}>
-                    {t.qsStep4Btn}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick documentation info sidebar */}
-            <div style={{ flex: 0.8, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: '100px' }}>
-              <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileText size={18} color="var(--accent-color)" />
-                  <span>{lang === 'en' ? 'API Documentation' : 'المواصفات الفنية للـ API'}</span>
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '16px' }}>
-                  {lang === 'en' 
-                    ? 'Access the comprehensive HTTP API details. Learn about auth schemas, request headers, error models, and standard JSON response shapes.' 
-                    : 'تصفح مواصفات المسارات البرمجية المباشرة. تفاصيل الهيدرز، نظام التحقق بالأمان، بنية الطلبات ومعاني أكواد الاستجابة والفشل.'}
-                </p>
-                <button onClick={() => setActiveSubTab('code')} className="btn" style={{ fontSize: '11px', width: '100%', gap: '6px', justifyContent: 'center' }}>
-                  <span>{lang === 'en' ? 'Explore API Endpoints' : 'استكشاف مسارات الـ API'}</span>
-                  <ExternalLink size={12} />
-                </button>
-              </div>
-
-              <BentoCard className="card" style={{ padding: '20px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'var(--success-text)', opacity: 0.05, borderRadius: '50%', filter: 'blur(25px)', pointerEvents: 'none' }}></div>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>
-                    {lang === 'en' ? 'Active Local Bridges' : 'حالة قنوات الاتصال المحلية'}
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '11px' }}>
-                    <div className="flex-between" style={{ paddingBottom: '6px', borderBottom: '1px dashed var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Email (SMTP Bridge)' : 'البريد الإلكتروني (SMTP)'}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--success-text)' }}>{lang === 'en' ? 'CONNECTED' : 'متصل'}</span>
-                    </div>
-                    <div className="flex-between" style={{ paddingBottom: '6px', borderBottom: '1px dashed var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'SMS (Zain/Asiacell)' : 'رسائل الهاتف (زين/آسيا سيل)'}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--success-text)' }}>{lang === 'en' ? 'ACTIVE' : 'فعال'}</span>
-                    </div>
-                    <div className="flex-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'WhatsApp (Meta Cloud API)' : 'الواتساب (بوابة سحابية)'}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--success-text)' }}>{lang === 'en' ? 'ACTIVE' : 'فعال'}</span>
-                    </div>
-                  </div>
-                </div>
-              </BentoCard>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <style>{`
+        @keyframes zentraFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        :root {
+          --zentra-shadow: 0 10px 40px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01), 0 0 0 1px rgba(0,0,0,0.015);
+        }
+        [data-theme="dark"] {
+          --zentra-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px #1a1a1e;
+        }
+        .zentra-card-shadow {
+          box-shadow: var(--zentra-shadow);
+        }
+      `}</style>
+      
       {/* API KEYS SUB-TAB */}
       {activeSubTab === 'apikeys' && (
-        <div>
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t.apiKeySubtitle}</p>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.25s ease-out' }}>
 
-          <BentoCard className="onboarding-split-card" style={{ minHeight: '260px', borderRadius: '24px', marginBottom: '20px', overflow: 'hidden' }}>
-            {/* Left Info Column */}
-            <div className="onboarding-split-info" style={{ padding: '24px' }}>
+          {/* Create API Key Form — Zentra soft card */}
+          <div className="zentra-card-shadow" style={{ 
+            padding: '24px 28px', 
+            borderRadius: '24px', 
+            border: '1px solid var(--border-color)', 
+            backgroundColor: 'var(--panel-bg)', 
+            position: 'relative', 
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            {/* Decorative radial blurs */}
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '140px', height: '140px', background: 'var(--accent-color)', opacity: 0.04, borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-15px', left: '-15px', width: '100px', height: '100px', background: '#0070f3', opacity: 0.025, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 1 }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                width: '44px', 
+                height: '44px', 
+                borderRadius: '14px', 
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(99, 102, 241, 0.06))',
+                color: 'var(--accent-text)',
+                border: '1px solid rgba(37, 99, 235, 0.1)',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.04)'
+              }}>
+                <Key size={20} />
+              </div>
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>{t.guideTitle}</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, fontWeight: 500, margin: '0 0 16px 0', textAlign: 'start' }}>
-                  {t.guideText}
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+                  {lang === 'en' ? 'Create New API Key' : 'إنشاء مفتاح API جديد'}
+                </h3>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '3px 0 0 0', lineHeight: 1.45 }}>
+                  {lang === 'en' ? 'Generate a secure API token with custom permissions to authenticate your app requests.' : 'قم بتوليد مفتاح أمان مخصص لمصادقة طلبات تطبيقاتك مع بوابتنا بأمان.'}
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '3px 8px', fontSize: '11px' }}>
-                  {lang === 'ar' ? 'بيئة الإنتاج: نشطة' : 'Production Env: Active'}
-                </span>
-                <span className="sumer-badge warning" style={{ padding: '3px 8px', fontSize: '11px' }}>
-                  {lang === 'ar' ? 'سري للغاية' : 'Strictly Confidential'}
-                </span>
-              </div>
             </div>
-
-            {/* Right Visual Column */}
-            <div className="onboarding-split-visual" style={{ padding: '20px' }}>
-              <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {lang === 'ar' ? 'حالة مفتاح الوصول' : 'Key Security Check'}
-                  </span>
-                  <span style={{ 
-                    fontSize: '9px', 
-                    fontWeight: 700,
-                    color: 'var(--success-text)',
-                    backgroundColor: 'var(--success-bg)',
-                    padding: '1px 6px',
-                    borderRadius: '4px'
-                  }}>
-                    {lang === 'ar' ? 'آمن' : 'Secure'}
-                  </span>
+            
+            <form onSubmit={handleCreateKey} style={{ display: 'flex', flexDirection: 'column', gap: '18px', position: 'relative', zIndex: 1 }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
+                gap: '16px' 
+              }}>
+                {/* Field 1: Key Name */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {lang === 'en' ? 'Key Name' : 'اسم المفتاح'}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ 
+                      position: 'absolute', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      [lang === 'ar' ? 'right' : 'left']: '14px', 
+                      color: 'var(--text-muted)', 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      pointerEvents: 'none'
+                    }}>
+                      <FileText size={15} />
+                    </span>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={keyName}
+                      onChange={(e) => setKeyName(e.target.value)}
+                      placeholder={t.inputPlaceholder}
+                      style={{ 
+                        height: '44px', 
+                        width: '100%',
+                        paddingLeft: lang === 'ar' ? '12px' : '40px', 
+                        paddingRight: lang === 'ar' ? '40px' : '12px',
+                        borderRadius: '14px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-color)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        outline: 'none',
+                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-color)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.08), inset 0 1px 2px rgba(0,0,0,0.02)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-color)';
+                        e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)';
+                      }}
+                    />
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الاسم:' : 'Name:'}</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Main API Key</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'المفتاح:' : 'Key:'}</span>
-                    <span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>sm_live_8f0a...</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'ar' ? 'تسريب الكود:' : 'Client leak:'}</span>
-                    <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>0 detected</span>
+                
+                {/* Field 2: Scope */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {lang === 'en' ? 'Permissions Scope' : 'صلاحية الاستخدام'}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ 
+                      position: 'absolute', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      [lang === 'ar' ? 'right' : 'left']: '14px', 
+                      color: 'var(--text-muted)', 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      pointerEvents: 'none'
+                    }}>
+                      <Lock size={15} />
+                    </span>
+                    <select
+                      className="form-input"
+                      value={keyScope}
+                      onChange={(e) => setKeyScope(e.target.value)}
+                      style={{ 
+                        height: '44px', 
+                        width: '100%',
+                        paddingLeft: lang === 'ar' ? '32px' : '40px', 
+                        paddingRight: lang === 'ar' ? '40px' : '32px',
+                        borderRadius: '14px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-color)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        appearance: 'none',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
+                        backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")', 
+                        backgroundRepeat: 'no-repeat', 
+                        backgroundPosition: lang === 'en' ? 'right 14px center' : 'left 14px center', 
+                        backgroundSize: '14px'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-color)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.08), inset 0 1px 2px rgba(0,0,0,0.02)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-color)';
+                        e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)';
+                      }}
+                    >
+                      <option value="full">{t.scopeFull}</option>
+                      <option value="send">{t.scopeSending}</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            </div>
-          </BentoCard>
 
-          {/* Create API Key Form */}
-          <div className="card" style={{ marginBottom: '20px', padding: '24px', borderRadius: '24px' }}>
-            <form onSubmit={handleCreateKey} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div style={{ flex: 2, minWidth: '220px' }}>
-                <label className="form-label">{t.keyLabel}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={keyName}
-                  onChange={(e) => setKeyName(e.target.value)}
-                  placeholder={t.inputPlaceholder}
-                  style={{ height: '42px' }}
-                />
-              </div>
-              
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <label className="form-label">{t.scopeLabel}</label>
-                <select
-                  className="form-input"
-                  value={keyScope}
-                  onChange={(e) => setKeyScope(e.target.value)}
-                  style={{ height: '42px', appearance: 'none', backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: lang === 'en' ? 'right 12px center' : 'left 12px center', backgroundSize: '16px' }}
+              {/* Submit Button */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: lang === 'ar' ? 'flex-start' : 'flex-end',
+                marginTop: '2px'
+              }}>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={isGenerating}
+                  style={{ 
+                    height: '44px', 
+                    padding: '0 28px',
+                    borderRadius: '99px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    opacity: isGenerating ? 0.7 : 1, 
+                    cursor: isGenerating ? 'not-allowed' : 'pointer', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.18)',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
                 >
-                  <option value="full">{t.scopeFull}</option>
-                  <option value="send">{t.scopeSending}</option>
-                </select>
+                  {isGenerating ? (
+                    <>
+                      <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
+                      <span>{lang === 'en' ? 'Generating...' : 'جاري الإنشاء...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={15} />
+                      <span>{t.addBtn}</span>
+                    </>
+                  )}
+                </button>
               </div>
-
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                disabled={isGenerating}
-                style={{ height: '42px', minWidth: '150px', opacity: isGenerating ? 0.7 : 1, cursor: isGenerating ? 'not-allowed' : 'pointer' }}
-              >
-                {isGenerating ? (
-                  <>
-                    <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: '4px', marginLeft: '4px' }}></span>
-                    <span>{lang === 'en' ? 'Generating...' : 'جاري الإنشاء...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    <span>{t.addBtn}</span>
-                  </>
-                )}
-              </button>
             </form>
           </div>
 
-          {/* API Keys Table */}
-          <div className="table-container">
+          {/* API Keys List — Zentra Card-Based Layout */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Section Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Key size={15} color="var(--accent-text)" />
+                <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+                  {lang === 'en' ? 'Active Credentials' : 'المفاتيح النشطة'}
+                </h3>
+              </div>
+              {apiKeys.length > 0 && (
+                <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '99px', backgroundColor: 'var(--panel-muted)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                  {apiKeys.length} {lang === 'en' ? 'keys' : 'مفاتيح'}
+                </span>
+              )}
+            </div>
+
             {apiKeys.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-                <Key size={32} style={{ marginBottom: '10px', color: 'var(--text-muted)' }} />
-                <p>{t.emptyKeys}</p>
+              <div className="zentra-card-shadow" style={{ 
+                padding: '56px 40px', 
+                textAlign: 'center', 
+                borderRadius: '24px', 
+                border: '1px dashed var(--border-color)', 
+                backgroundColor: 'var(--panel-bg)' 
+              }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--panel-muted), var(--bg-color))', marginBottom: '16px', color: 'var(--text-muted)', border: '1px dashed var(--border-color)' }}>
+                  <Key size={24} />
+                </div>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>{t.emptyKeys}</h4>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  {lang === 'en' ? 'Generate your first API key to start connecting and sending.' : 'قم بتوليد أول مفتاح API خاص بك للبدء في الربط والتكامل المباشر.'}
+                </p>
               </div>
             ) : (
-              <table className="v-table">
-                <thead>
-                  <tr>
-                    <th>{t.nameCol}</th>
-                    <th style={{ width: '45%' }}>{t.keyCol}</th>
-                    <th>{t.scopeCol}</th>
-                    <th>{t.createdCol}</th>
-                    <th>{t.actionsCol}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiKeys.map((item) => {
-                    const isVisible = visibleKeys[item.id];
-                    const displayKey = isVisible 
-                      ? item.key 
-                      : `${item.key.slice(0, 12)}••••••••••••••••••••••••••••••••`;
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {apiKeys.map((item, idx) => {
+                  const isVisible = visibleKeys[item.id];
+                  const displayKey = isVisible 
+                    ? item.key 
+                    : `${item.key.slice(0, 12)}${'•'.repeat(32)}`;
 
-                    return (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight: 600 }}>{item.name}</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <code style={{ fontFamily: 'monospace', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.03)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-                              {displayKey}
-                            </code>
-                            <button 
-                              className="btn" 
-                              style={{ padding: '4px 8px', border: 'none', background: 'none' }}
-                              onClick={() => toggleVisibility(item.id)}
-                            >
-                              {isVisible ? <EyeOff size={14} color="var(--text-secondary)" /> : <Eye size={14} color="var(--text-secondary)" />}
-                            </button>
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="zentra-card-shadow"
+                      style={{ 
+                        borderRadius: '20px', 
+                        border: '1px solid var(--border-color)', 
+                        backgroundColor: 'var(--panel-bg)',
+                        padding: '20px 24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                        cursor: 'default',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        animation: `zentraFadeIn 0.3s ease-out ${idx * 0.05}s both`
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.15)';
+                        e.currentTarget.style.boxShadow = '0 12px 40px -10px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(37, 99, 235, 0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                        e.currentTarget.style.boxShadow = '';
+                      }}
+                    >
+                      {/* Top row: Name + Scope + Date + Actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '10px',
+                            backgroundColor: item.scope === 'full' ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.06)',
+                            border: `1px solid ${item.scope === 'full' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}`,
+                            color: item.scope === 'full' ? 'var(--success-color)' : 'var(--warning-color)',
+                            flexShrink: 0
+                          }}>
+                            <Key size={16} />
                           </div>
-                        </td>
-                        <td>
-                          <span className={`badge badge-${item.scope === 'full' ? 'success' : 'warning'}`}>
-                            {item.scope === 'full' ? t.scopeFull : t.scopeSending}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                          {new Date(item.createdAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-IQ')}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              className="btn"
-                              style={{ padding: '6px 12px', fontSize: '12px', gap: '4px' }}
-                              onClick={() => handleCopy(item.id, item.key)}
-                            >
-                              {copiedId === item.id ? <Check size={12} color="#50e3c2" /> : <Copy size={12} />}
-                              <span>{copiedId === item.id ? t.copied : (lang === 'en' ? 'Copy' : 'نسخ')}</span>
-                            </button>
-                            <button
-                              className="btn btn-danger"
-                              style={{ padding: '6px 10px' }}
-                              onClick={() => handleDeleteKey(item.id)}
-                              title="Delete API Key"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>{item.name}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                              <span style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 8px',
+                                borderRadius: '99px',
+                                fontSize: '10.5px',
+                                fontWeight: 600,
+                                letterSpacing: '0.02em',
+                                backgroundColor: item.scope === 'full' ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
+                                color: item.scope === 'full' ? 'var(--success-text)' : 'var(--warning-text)',
+                                border: `1px solid ${item.scope === 'full' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}`
+                              }}>
+                                <span style={{ 
+                                  display: 'inline-block', 
+                                  width: '5px', 
+                                  height: '5px', 
+                                  borderRadius: '50%', 
+                                  backgroundColor: item.scope === 'full' ? 'var(--success-color)' : 'var(--warning-color)' 
+                                }} />
+                                {item.scope === 'full' ? t.scopeFull : t.scopeSending}
+                              </span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Calendar size={11} />
+                                {new Date(item.createdAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-IQ')}
+                              </span>
+                            </div>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+
+                        {/* Actions group */}
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleVisibility(item.id)}
+                            style={{ 
+                              border: '1px solid var(--border-color)', 
+                              background: 'var(--bg-color)', 
+                              cursor: 'pointer', 
+                              padding: '7px 8px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              color: 'var(--text-secondary)', 
+                              transition: 'all 0.2s', 
+                              borderRadius: '10px' 
+                            }}
+                            title={isVisible ? (lang === 'en' ? 'Hide key' : 'إخفاء المفتاح') : (lang === 'en' ? 'Show key' : 'إظهار المفتاح')}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-color)'; e.currentTarget.style.color = 'var(--accent-text)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                          >
+                            {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(item.id, item.key)}
+                            style={{ 
+                              border: '1px solid var(--border-color)', 
+                              background: copiedId === item.id ? 'rgba(16,185,129,0.06)' : 'var(--bg-color)', 
+                              cursor: 'pointer', 
+                              padding: '7px 8px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              color: copiedId === item.id ? 'var(--success-color)' : 'var(--text-secondary)', 
+                              transition: 'all 0.2s', 
+                              borderRadius: '10px',
+                              borderColor: copiedId === item.id ? 'rgba(16,185,129,0.2)' : 'var(--border-color)'
+                            }}
+                            title={lang === 'en' ? 'Copy key' : 'نسخ المفتاح'}
+                            onMouseEnter={(e) => { if (copiedId !== item.id) { e.currentTarget.style.borderColor = 'var(--accent-color)'; e.currentTarget.style.color = 'var(--accent-text)'; } }}
+                            onMouseLeave={(e) => { if (copiedId !== item.id) { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
+                          >
+                            {copiedId === item.id ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteKey(item.id)}
+                            style={{ 
+                              border: '1px solid var(--border-color)', 
+                              background: 'var(--bg-color)', 
+                              cursor: 'pointer', 
+                              padding: '7px 8px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              color: 'var(--text-secondary)', 
+                              transition: 'all 0.2s', 
+                              borderRadius: '10px' 
+                            }}
+                            title={lang === 'en' ? 'Revoke Key' : 'إبطال المفتاح'}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.04)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; e.currentTarget.style.color = 'var(--danger-color)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-color)'; e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Key display row — monospace in a distinct code strip */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        background: 'var(--bg-color)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '12px', 
+                        padding: '10px 14px', 
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        fontSize: '12.5px',
+                        color: isVisible ? 'var(--text-primary)' : 'var(--text-muted)',
+                        letterSpacing: '0.03em',
+                        direction: 'ltr',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {displayKey}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
+
+          {/* Security Guide Card — Zentra amber accent */}
+          <div className="zentra-card-shadow" style={{ 
+            padding: '20px 24px', 
+            borderRadius: '20px', 
+            border: '1px solid rgba(245,158,11,0.12)', 
+            backgroundColor: 'var(--panel-bg)',
+            backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,0.02), transparent)', 
+            display: 'flex', 
+            gap: '16px',
+            alignItems: 'flex-start',
+            direction: lang === 'ar' ? 'rtl' : 'ltr'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '12px', 
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
+              color: '#f59e0b',
+              border: '1px solid rgba(245,158,11,0.15)',
+              flexShrink: 0 
+            }}>
+              <ShieldAlert size={18} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: '13.5px', fontWeight: 700, margin: '0 0 5px 0', color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>{t.guideTitle}</h4>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{t.guideText}</p>
+            </div>
+          </div>
+
         </div>
       )}
 
       {/* WEBHOOKS & SECURITY FLOW SUB-TAB */}
       {activeSubTab === 'webhooks' && (
-        <div>
-          {/* Visual Webhook flow diagram */}
-          <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={18} color="var(--accent-color)" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.25s ease-out' }}>
+          
+          {/* Visual Webhook Flow Diagram */}
+          <div className="card" style={{ 
+            padding: '28px', 
+            borderRadius: '24px', 
+            border: '1px solid var(--border-color)', 
+            backgroundColor: 'var(--panel-bg)', 
+            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)' 
+          }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+              <Layers size={18} color="var(--accent-text)" />
               <span>{t.wfTitle}</span>
             </h3>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '150px', padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ color: 'var(--accent-color)', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><Bell size={22} /></div>
-                <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>{t.wfStep1}</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>{t.wfStep1Desc}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+              <div style={{ 
+                flex: 1, 
+                minWidth: '180px', 
+                padding: '20px', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '20px', 
+                backgroundColor: 'var(--bg-color)', 
+                textAlign: 'center', 
+                transition: 'all 0.2s ease', 
+                boxShadow: 'none' 
+              }}>
+                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    width: '44px', 
+                    height: '44px', 
+                    borderRadius: '50%', 
+                    backgroundColor: 'var(--panel-bg)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    color: 'var(--text-primary)'
+                  }}>
+                    <Bell size={20} />
+                  </div>
+                </div>
+                <h4 style={{ fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.wfStep1}</h4>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>{t.wfStep1Desc}</p>
               </div>
 
-              <div className="webhook-flow-arrow">➔</div>
-
-              <div style={{ flex: 1, minWidth: '150px', padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '6px', textAlign: 'center', position: 'relative' }}>
-                <div style={{ color: 'var(--accent-color)', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><Key size={22} /></div>
-                <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>{t.wfStep2}</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>{t.wfStep2Desc}</p>
+              {/* Direction aware custom SVG arrow */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '40px', color: 'var(--text-muted)', transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}>
+                <svg width="32" height="16" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.5, overflow: 'visible' }}>
+                  <path d="M0 8H28" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                  <path d="M24 4L28 8L24 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
 
-              <div className="webhook-flow-arrow">➔</div>
+              <div style={{ 
+                flex: 1, 
+                minWidth: '180px', 
+                padding: '20px', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '20px', 
+                backgroundColor: 'var(--bg-color)', 
+                textAlign: 'center', 
+                transition: 'all 0.2s ease', 
+                boxShadow: 'none' 
+              }}>
+                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    width: '44px', 
+                    height: '44px', 
+                    borderRadius: '50%', 
+                    backgroundColor: 'var(--panel-bg)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    color: 'var(--text-primary)'
+                  }}>
+                    <Lock size={18} />
+                  </div>
+                </div>
+                <h4 style={{ fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.wfStep2}</h4>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>{t.wfStep2Desc}</p>
+              </div>
 
-              <div style={{ flex: 1, minWidth: '150px', padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ color: 'var(--accent-color)', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><Monitor size={22} /></div>
-                <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>{t.wfStep3}</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>{t.wfStep3Desc}</p>
+              {/* Direction aware custom SVG arrow */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '40px', color: 'var(--text-muted)', transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}>
+                <svg width="32" height="16" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.5, overflow: 'visible' }}>
+                  <path d="M0 8H28" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                  <path d="M24 4L28 8L24 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              <div style={{ 
+                flex: 1, 
+                minWidth: '180px', 
+                padding: '20px', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '20px', 
+                backgroundColor: 'var(--bg-color)', 
+                textAlign: 'center', 
+                transition: 'all 0.2s ease', 
+                boxShadow: 'none' 
+              }}>
+                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    width: '44px', 
+                    height: '44px', 
+                    borderRadius: '50%', 
+                    backgroundColor: 'var(--panel-bg)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    color: 'var(--text-primary)'
+                  }}>
+                    <Monitor size={18} />
+                  </div>
+                </div>
+                <h4 style={{ fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>{t.wfStep3}</h4>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>{t.wfStep3Desc}</p>
               </div>
             </div>
           </div>
 
           <div className="devhub-layout">
-            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
               {/* Webhook Configuration form */}
-              <div className="card" style={{ padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
-                <form onSubmit={handleCreateWebhook}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label className="form-label">{t.endpointLabel}</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder={t.endpointPlaceholder}
-                      style={{ height: '42px' }}
-                    />
+              <div className="card" style={{ 
+                padding: '28px', 
+                borderRadius: '24px', 
+                border: '1px solid var(--border-color)', 
+                backgroundColor: 'var(--panel-bg)', 
+                boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)' 
+              }}>
+                <div style={{ marginBottom: '20px', display: 'flex', gap: '14px', alignItems: 'center' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    width: '44px', 
+                    height: '44px', 
+                    borderRadius: '12px', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.06)', 
+                    color: 'var(--channel-sms)',
+                    border: '1px solid rgba(16, 185, 129, 0.08)',
+                    flexShrink: 0
+                  }}>
+                    <Webhook size={20} />
                   </div>
-
-                  <div style={{ marginBottom: '20px' }}>
-                    <label className="form-label">{t.eventsLabel}</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={webhookEvents.includes('email.delivered')}
-                          onChange={() => handleEventToggle('email.delivered')}
-                        />
-                        <span>{lang === 'en' ? 'Email Delivered' : 'تم توصيل البريد (email.delivered)'}</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={webhookEvents.includes('email.failed')}
-                          onChange={() => handleEventToggle('email.failed')}
-                        />
-                        <span>{lang === 'en' ? 'Email Delivery Failed' : 'فشل البريد (email.failed)'}</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={webhookEvents.includes('sms.delivered')}
-                          onChange={() => handleEventToggle('sms.delivered')}
-                        />
-                        <span>{lang === 'en' ? 'SMS Delivered' : 'تم توصيل SMS (sms.delivered)'}</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={webhookEvents.includes('whatsapp.delivered')}
-                          onChange={() => handleEventToggle('whatsapp.delivered')}
-                        />
-                        <span>{lang === 'en' ? 'WhatsApp Read' : 'تم قراءة الواتساب (whatsapp.read)'}</span>
-                      </label>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{lang === 'en' ? 'Register Webhook Endpoint' : 'إضافة عنوان ويب هوك جديد'}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0', lineHeight: 1.4 }}>{lang === 'en' ? 'Configure a target URL to receive secure HTTP POST payloads on transaction events.' : 'قم بتهيئة رابط خادمك لاستقبال طلبات HTTP POST فورية عند تغيير حالات الرسائل.'}</p>
+                  </div>
+                </div>
+                
+                <form onSubmit={handleCreateWebhook} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>{t.endpointLabel}</label>
+                    <div style={{ 
+                      display: 'flex', 
+                      borderRadius: '12px', 
+                      border: isWebhookUrlFocused ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', 
+                      overflow: 'hidden', 
+                      backgroundColor: 'var(--bg-color)',
+                      alignItems: 'stretch',
+                      boxShadow: isWebhookUrlFocused ? '0 0 0 3px rgba(37, 99, 235, 0.08)' : 'none',
+                      transition: 'all 0.2s ease',
+                      direction: 'ltr'
+                    }}>
+                      <span style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '0 14px', 
+                        background: 'var(--panel-muted)', 
+                        borderRight: '1px solid var(--border-color)', 
+                        color: 'var(--text-secondary)', 
+                        fontSize: '13px', 
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace',
+                        userSelect: 'none'
+                      }}>
+                        https://
+                      </span>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={webhookUrl.replace(/^https?:\/\//i, '')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setWebhookUrl(val ? `https://${val}` : '');
+                        }}
+                        onFocus={() => setIsWebhookUrlFocused(true)}
+                        onBlur={() => setIsWebhookUrlFocused(false)}
+                        placeholder={t.endpointPlaceholder.replace(/^https?:\/\//i, '')}
+                        style={{ 
+                          flex: 1, 
+                          border: 'none', 
+                          background: 'none', 
+                          height: '42px', 
+                          padding: '0 14px', 
+                          boxShadow: 'none', 
+                          outline: 'none',
+                          fontSize: '13px',
+                          color: 'var(--text-primary)',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace'
+                        }}
+                      />
                     </div>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" style={{ height: '42px', width: '100%', gap: '6px' }}>
-                    <Webhook size={16} />
-                    <span>{t.createWebhookBtn}</span>
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>{t.eventsLabel}</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      {[
+                        { id: 'email.delivered', labelEn: 'Email Delivered', labelAr: 'تم توصيل البريد (email.delivered)' },
+                        { id: 'email.failed', labelEn: 'Email Delivery Failed', labelAr: 'فشل البريد (email.failed)' },
+                        { id: 'sms.delivered', labelEn: 'SMS Delivered', labelAr: 'تم توصيل SMS (sms.delivered)' },
+                        { id: 'whatsapp.delivered', labelEn: 'WhatsApp Delivered', labelAr: 'تم توصيل الواتساب (whatsapp.delivered)' },
+                      ].map((evt) => {
+                        const isChecked = webhookEvents.includes(evt.id);
+                        return (
+                          <div 
+                            key={evt.id}
+                            onClick={() => handleEventToggle(evt.id)}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              padding: '12px 16px', 
+                              border: `1px solid ${isChecked ? 'var(--text-primary)' : 'var(--border-color)'}`, 
+                              borderRadius: '12px', 
+                              backgroundColor: isChecked ? 'var(--accent-bg)' : 'var(--panel-bg)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                              userSelect: 'none',
+                              boxShadow: isChecked ? '0 0 0 1px var(--text-primary)' : 'none'
+                            }}
+                          >
+                            <span style={{ fontSize: '12px', fontWeight: isChecked ? 600 : 500, color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                              {lang === 'en' ? evt.labelEn : evt.labelAr}
+                            </span>
+                            <div style={{ 
+                              width: '18px', 
+                              height: '18px', 
+                              borderRadius: '50%', 
+                              border: `1px solid ${isChecked ? 'var(--text-primary)' : 'var(--border-color)'}`, 
+                              backgroundColor: isChecked ? 'var(--text-primary)' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                              flexShrink: 0
+                            }}>
+                              {isChecked && <Check size={11} color="var(--panel-bg)" strokeWidth={3} />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: lang === 'ar' ? 'flex-start' : 'flex-end', marginTop: '4px' }}>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary" 
+                      style={{ 
+                        height: '42px', 
+                        padding: '0 26px',
+                        borderRadius: '99px',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.15)',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                      }}
+                    >
+                      <Webhook size={15} />
+                      <span>{t.createWebhookBtn}</span>
+                    </button>
+                  </div>
                 </form>
               </div>
 
               {/* Configured Webhooks List */}
-              <div className="table-container" style={{ marginBottom: '24px' }}>
+              <div className="card" style={{ 
+                padding: '0', 
+                overflow: 'hidden', 
+                borderRadius: '24px', 
+                border: '1px solid var(--border-color)', 
+                backgroundColor: 'var(--panel-bg)', 
+                boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)' 
+              }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--panel-muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Webhook size={16} color="var(--accent-text)" />
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                      {lang === 'en' ? 'Registered Endpoints' : 'عناوين الاستقبال المسجلة'}
+                    </h3>
+                  </div>
+                  {webhooks.length > 0 && (
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '20px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                      {webhooks.length} {lang === 'en' ? 'Endpoints' : 'عناوين'}
+                    </span>
+                  )}
+                </div>
+
                 {webhooks.length === 0 ? (
-                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-                    <Webhook size={32} style={{ marginBottom: '10px', color: 'var(--text-muted)' }} />
-                    <p>{t.emptyWebhooks}</p>
+                  <div style={{ padding: '50px 30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'var(--panel-muted)', marginBottom: '16px', color: 'var(--text-muted)', border: '1px dashed var(--border-color)' }}>
+                      <Webhook size={24} />
+                    </div>
+                    <h4 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>{t.emptyWebhooks}</h4>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {lang === 'en' ? 'Add a webhook URL to subscribe to messaging events.' : 'أضف رابط ويب هوك للبدء في تلقي إشعارات التوصيل التلقائية.'}
+                    </p>
                   </div>
                 ) : (
-                  <table className="v-table">
-                    <thead>
-                      <tr>
-                        <th>{t.whTableUrl}</th>
-                        <th>{t.whTableEvents}</th>
-                        <th>{t.whTableSecret}</th>
-                        <th>{t.whTableStatus}</th>
-                        <th>{t.whTableActions}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {webhooks.map((item) => {
-                        const isSecretVisible = visibleSecrets[item.id];
-                        const displaySecret = isSecretVisible 
-                          ? item.secret 
-                          : `${item.secret.slice(0, 10)}••••••••••••••••`;
+                  <div className="table-container" style={{ overflowX: 'auto', margin: 0 }}>
+                    <table className="v-table" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: lang === 'ar' ? 'right' : 'left' }}>{t.whTableUrl}</th>
+                          <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: lang === 'ar' ? 'right' : 'left' }}>{t.whTableEvents}</th>
+                          <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: lang === 'ar' ? 'right' : 'left', width: '30%' }}>{t.whTableSecret}</th>
+                          <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: lang === 'ar' ? 'right' : 'left' }}>{t.whTableStatus}</th>
+                          <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center', width: '90px' }}>{t.whTableActions}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {webhooks.map((item) => {
+                          const isSecretVisible = visibleSecrets[item.id];
+                          const displaySecret = isSecretVisible 
+                            ? item.secret 
+                            : `${item.secret.slice(0, 10)}••••••••••••••••`;
 
-                        return (
-                          <tr key={item.id}>
-                            <td style={{ fontWeight: 600, fontSize: '13px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.url}>
-                              {item.url}
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                {item.events.map((ev: string) => (
-                                  <span key={ev} style={{ fontSize: '10px', padding: '2px 6px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                                    {ev}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <code style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                  {displaySecret}
-                                </code>
-                                <button 
-                                  className="btn" 
-                                  style={{ padding: '2px 4px', border: 'none', background: 'none' }}
-                                  onClick={() => toggleSecretVisibility(item.id)}
+                          return (
+                            <tr key={item.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
+                              <td style={{ padding: '16px 18px', fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.url}>
+                                {item.url}
+                              </td>
+                              <td style={{ padding: '16px 18px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {item.events.map((ev: string) => (
+                                    <span key={ev} style={{ fontSize: '10.5px', padding: '2px 8px', backgroundColor: 'var(--panel-muted)', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                      {ev}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 18px' }}>
+                                <div style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  background: 'var(--bg-color)', 
+                                  border: '1px solid var(--border-color)', 
+                                  borderRadius: '12px', 
+                                  padding: '6px 12px', 
+                                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                  fontSize: '11.5px',
+                                  color: 'var(--text-primary)',
+                                  gap: '10px',
+                                  direction: 'ltr',
+                                  boxShadow: 'none'
+                                }}>
+                                  <span style={{ letterSpacing: '0.02em', color: isSecretVisible ? 'var(--text-primary)' : 'var(--text-muted)' }}>{displaySecret}</span>
+                                  <div style={{ width: '1px', height: '12px', background: 'var(--border-color)' }} />
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button 
+                                      type="button"
+                                      onClick={() => toggleSecretVisibility(item.id)}
+                                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '3px', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', borderRadius: '4px' }}
+                                      title={isSecretVisible ? (lang === 'en' ? 'Hide secret' : 'إخفاء المفتاح السري') : (lang === 'en' ? 'Show secret' : 'إظهار المفتاح السري')}
+                                    >
+                                      {isSecretVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                                    </button>
+                                    <button 
+                                      type="button"
+                                      onClick={() => handleCopy(item.id + '_sec', item.secret)}
+                                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '3px', display: 'flex', alignItems: 'center', color: copiedId === item.id + '_sec' ? 'var(--success-text)' : 'var(--text-secondary)', transition: 'color 0.2s', borderRadius: '4px' }}
+                                      title={lang === 'en' ? 'Copy secret' : 'نسخ المفتاح السري'}
+                                    >
+                                      {copiedId === item.id + '_sec' ? <Check size={13} color="var(--success-color)" /> : <Copy size={13} />}
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 18px' }}>
+                                <span 
+                                  className="badge badge-success" 
+                                  style={{ 
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    padding: '4px 10px', 
+                                    borderRadius: '99px', 
+                                    fontWeight: 600,
+                                    backgroundColor: 'var(--success-bg)',
+                                    color: 'var(--success-text)',
+                                    border: '1px solid rgba(16,185,129,0.15)'
+                                  }}
                                 >
-                                  {isSecretVisible ? <EyeOff size={12} color="var(--text-secondary)" /> : <Eye size={12} color="var(--text-secondary)" />}
-                                </button>
-                                <button 
-                                  className="btn" 
-                                  style={{ padding: '2px 4px', border: 'none', background: 'none' }}
-                                  onClick={() => handleCopy(item.id + '_sec', item.secret)}
-                                  title="Copy Secret Key"
+                                  <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
+                                  {t.whStatusActive}
+                                </span>
+                              </td>
+                              <td style={{ padding: '16px 18px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger"
+                                  style={{ 
+                                    width: '28px',
+                                    height: '28px',
+                                    borderRadius: '50%', 
+                                    padding: '0',
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    backgroundColor: 'transparent',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--danger-bg)';
+                                    e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)';
+                                    e.currentTarget.style.color = 'var(--danger-color)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                  }}
+                                  onClick={() => handleDeleteWebhook(item.id)}
+                                  title="Delete Webhook"
                                 >
-                                  {copiedId === item.id + '_sec' ? <Check size={12} color="#50e3c2" /> : <Copy size={12} color="var(--text-secondary)" />}
+                                  <Trash2 size={13} />
                                 </button>
-                              </div>
-                            </td>
-                            <td>
-                              <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 6px' }}>
-                                {t.whStatusActive}
-                              </span>
-                            </td>
-                            <td>
-                              <button
-                                className="btn btn-danger"
-                                style={{ padding: '6px 8px' }}
-                                onClick={() => handleDeleteWebhook(item.id)}
-                                title="Delete Webhook"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
 
-              {/* Webhook HMAC calculations signature guides */}
+              {/* Webhook Signature Verification Guide */}
               {webhooks.length > 0 && (
-                <div className="card" style={{ padding: '24px', borderRadius: '24px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Key size={16} color="var(--accent-color)" />
-                    <span>{t.wvcTitle}</span>
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '16px' }}>{t.wvcDesc}</p>
+                <div className="card" style={{ 
+                  padding: '28px', 
+                  borderRadius: '24px', 
+                  border: '1px solid var(--border-color)', 
+                  backgroundColor: 'var(--panel-bg)', 
+                  boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)' 
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '18px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                        <Key size={16} color="var(--accent-text)" />
+                        <span>{t.wvcTitle}</span>
+                      </h3>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>{t.wvcDesc}</p>
+                    </div>
 
-                  <div className="flex-between" style={{ marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      {/* Segmented language controller tab group */}
+                      <div style={{ display: 'flex', backgroundColor: 'var(--panel-muted)', padding: '4px', borderRadius: '99px', border: '1px solid var(--border-color)' }}>
+                        <button 
+                          onClick={() => setSelectedLang('node')} 
+                          style={{ 
+                            fontSize: '11px', 
+                            padding: '6px 14px', 
+                            borderRadius: '99px', 
+                            border: 'none', 
+                            background: selectedLang === 'node' ? 'var(--accent-color)' : 'transparent',
+                            color: selectedLang === 'node' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            boxShadow: selectedLang === 'node' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Node.js
+                        </button>
+                        <button 
+                          onClick={() => setSelectedLang('php')} 
+                          style={{ 
+                            fontSize: '11px', 
+                            padding: '6px 14px', 
+                            borderRadius: '99px', 
+                            border: 'none', 
+                            background: selectedLang === 'php' ? 'var(--accent-color)' : 'transparent',
+                            color: selectedLang === 'php' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            boxShadow: selectedLang === 'php' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          PHP
+                        </button>
+                      </div>
+
                       <button 
-                        onClick={() => setSelectedLang(selectedLang === 'php' ? 'node' : 'php')} 
-                        className="btn" 
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                        onClick={() => handleCopy('webhook_verify', getSignatureVerificationSnippet())}
+                        className="btn btn-primary"
+                        style={{ padding: '0 14px', fontSize: '11.5px', gap: '6px', height: '32px', borderRadius: '99px' }}
                       >
-                        {selectedLang === 'php' ? 'Switch to Node.js' : 'تحويل للغة PHP'}
+                        {copiedId === 'webhook_verify' ? <Check size={12} color="var(--success-color)" /> : <Copy size={12} />}
+                        <span>{copiedId === 'webhook_verify' ? t.copied : t.cbCopyBtn}</span>
                       </button>
                     </div>
-                    <button 
-                      onClick={() => handleCopy('webhook_verify', getSignatureVerificationSnippet())}
-                      className="btn"
-                      style={{ padding: '4px 10px', fontSize: '11px', gap: '4px' }}
-                    >
-                      {copiedId === 'webhook_verify' ? <Check size={10} color="#50e3c2" /> : <Copy size={10} />}
-                      <span>{copiedId === 'webhook_verify' ? t.copied : t.cbCopyBtn}</span>
-                    </button>
                   </div>
 
-                  <div style={{ backgroundColor: '#09090b', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)', overflowX: 'auto', direction: 'ltr', textAlign: 'left' }}>
-                    <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '11px', color: '#eaeaea', lineHeight: 1.4 }}>
-                      <code>{getSignatureVerificationSnippet()}</code>
-                    </pre>
+                  {/* Code Editor Mockup wrapper */}
+                  <div style={{ backgroundColor: '#08080a', borderRadius: '24px', border: '1px solid var(--border-color)', overflow: 'hidden', direction: 'ltr', textAlign: 'left', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
+                    <div style={{ display: 'flex', gap: '6px', backgroundColor: '#101012', borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '12px 18px', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }}></span>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }}></span>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
+                      </div>
+                      <span style={{ color: '#71717a', fontSize: '10px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace' }}>
+                        {selectedLang === 'php' ? 'verify_signature.php' : 'webhook.js'}
+                      </span>
+                    </div>
+                    <div style={{ padding: '16px', overflowX: 'auto' }}>
+                      <pre style={{ margin: 0, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '12px', color: '#e4e4e7', lineHeight: 1.6 }}>
+                        <code>{highlightCode(getSignatureVerificationSnippet())}</code>
+                      </pre>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
             {/* WEBHOOK SIMULATOR / DEBUGGER TOOL */}
-            <div className="card" style={{ flex: 0.8, padding: '24px', borderRadius: '24px', position: 'sticky', top: '100px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Play size={16} color="var(--accent-color)" />
-                <span>{t.simTitle}</span>
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '20px' }}>{t.simSubtitle}</p>
+            <div style={{ flex: 0.8, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="card" style={{ 
+                padding: '28px', 
+                borderRadius: '24px', 
+                border: '1px solid var(--border-color)', 
+                backgroundColor: 'var(--panel-bg)', 
+                boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)', 
+                position: 'sticky', 
+                top: '100px' 
+              }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '20px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Play size={16} color="var(--accent-text)" />
+                  <span>{t.simTitle}</span>
+                </h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                <div>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.simEventLabel}</label>
-                  <select 
-                    className="form-input" 
-                    value={simEvent}
-                    onChange={(e) => {
-                      setSimEvent(e.target.value);
-                      if (e.target.value.startsWith('email')) {
-                        setSimRecipient('customer@gmail.com');
-                        setSimMessage(e.target.value.endsWith('failed') ? 'Message rejected: quota exceeded.' : 'Delivered successfully.');
-                      } else {
-                        setSimRecipient('07801234567');
-                        setSimMessage('OTP successfully delivered to device.');
-                      }
-                    }}
-                    style={{ height: '36px', fontSize: '12px' }}
-                  >
-                    <option value="email.delivered">email.delivered</option>
-                    <option value="email.failed">email.failed</option>
-                    <option value="sms.delivered">sms.delivered</option>
-                    <option value="whatsapp.delivered">whatsapp.delivered</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.simRecipientLabel}</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={simRecipient}
-                    onChange={(e) => setSimRecipient(e.target.value)}
-                    style={{ height: '36px', fontSize: '12px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.simMessageLabel}</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={simMessage}
-                    onChange={(e) => setSimMessage(e.target.value)}
-                    style={{ height: '36px', fontSize: '12px' }}
-                  />
-                </div>
-
-                <button 
-                  onClick={runWebhookSimulation} 
-                  disabled={isSimulating || webhooks.length === 0}
-                  className="btn btn-primary" 
-                  style={{ height: '38px', width: '100%', fontSize: '12px', gap: '6px', opacity: (isSimulating || webhooks.length === 0) ? 0.6 : 1 }}
-                >
-                  {isSimulating ? (
-                    <>
-                      <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
-                      <span>{lang === 'en' ? 'Simulating...' : 'جاري المحاكاة...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play size={12} />
-                      <span>{t.simBtn}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {(simulationLogs.length > 0 || isSimulating) && (
-                <div>
-                  <h4 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>{t.simLogsLabel}</h4>
-                  <div style={{ backgroundColor: '#09090b', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', height: '180px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '11px', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {simulationLogs.map((log, index) => (
-                      <div key={index} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{log}</div>
-                    ))}
-                    {isSimulating && (
-                      <div style={{ animation: 'pulse 1s infinite', color: 'var(--text-muted)' }}>_</div>
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="form-label" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>{t.simEventLabel}</label>
+                    <select 
+                      className="form-input" 
+                      value={simEvent}
+                      onChange={(e) => {
+                        setSimEvent(e.target.value);
+                        if (e.target.value.startsWith('email')) {
+                          setSimRecipient('customer@gmail.com');
+                          setSimMessage(e.target.value.endsWith('failed') ? 'Message rejected: quota exceeded.' : 'Delivered successfully.');
+                        } else {
+                          setSimRecipient('07801234567');
+                          setSimMessage('OTP successfully delivered to device.');
+                        }
+                      }}
+                      style={{ 
+                        height: '42px', 
+                        fontSize: '13px',
+                        width: '100%',
+                        padding: '0 12px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-color)',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        appearance: 'none',
+                        backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")', 
+                        backgroundRepeat: 'no-repeat', 
+                        backgroundPosition: lang === 'en' ? 'right 12px center' : 'left 12px center', 
+                        backgroundSize: '12px',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="email.delivered">email.delivered</option>
+                      <option value="email.failed">email.failed</option>
+                      <option value="sms.delivered">sms.delivered</option>
+                      <option value="whatsapp.delivered">whatsapp.delivered</option>
+                    </select>
                   </div>
 
-                  {simulationResult && (
-                    <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', backgroundColor: simulationResult.success ? 'var(--success-bg)' : 'var(--danger-bg)', border: `1px solid ${simulationResult.success ? 'var(--success-text)' : 'var(--danger-text)'}`, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: simulationResult.success ? 'var(--success-text)' : 'var(--danger-text)' }}></span>
-                      <strong style={{ color: simulationResult.success ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                        {simulationResult.success ? t.simResultSuccess : t.simResultFail}
-                      </strong>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="form-label" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>{t.simRecipientLabel}</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={simRecipient}
+                      onChange={(e) => setSimRecipient(e.target.value)}
+                      onFocus={() => setIsSimRecipientFocused(true)}
+                      onBlur={() => setIsSimRecipientFocused(false)}
+                      style={{ 
+                        height: '42px', 
+                        fontSize: '13px', 
+                        width: '100%', 
+                        padding: '0 12px', 
+                        borderRadius: '12px', 
+                        border: isSimRecipientFocused ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', 
+                        backgroundColor: 'var(--bg-color)', 
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        boxShadow: isSimRecipientFocused ? '0 0 0 3px rgba(37, 99, 235, 0.08)' : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="form-label" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>{t.simMessageLabel}</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={simMessage}
+                      onChange={(e) => setSimMessage(e.target.value)}
+                      onFocus={() => setIsSimMessageFocused(true)}
+                      onBlur={() => setIsSimMessageFocused(false)}
+                      style={{ 
+                        height: '42px', 
+                        fontSize: '13px', 
+                        width: '100%', 
+                        padding: '0 12px', 
+                        borderRadius: '12px', 
+                        border: isSimMessageFocused ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', 
+                        backgroundColor: 'var(--bg-color)', 
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        boxShadow: isSimMessageFocused ? '0 0 0 3px rgba(37, 99, 235, 0.08)' : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    />
+                  </div>
+
+                  <button 
+                    onClick={runWebhookSimulation} 
+                    disabled={isSimulating || webhooks.length === 0}
+                    className="btn btn-primary" 
+                    style={{ 
+                      height: '42px', 
+                      width: '100%', 
+                      fontSize: '13px', 
+                      gap: '8px', 
+                      opacity: (isSimulating || webhooks.length === 0) ? 0.6 : 1, 
+                      borderRadius: '99px', 
+                      fontWeight: 600,
+                      boxShadow: '0 4px 14px rgba(37, 99, 235, 0.15)',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                  >
+                    {isSimulating ? (
+                      <>
+                        <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
+                        <span>{lang === 'en' ? 'Simulating...' : 'جاري المحاكاة...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={13} />
+                        <span>{t.simBtn}</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
+
+                {(simulationLogs.length > 0 || isSimulating) && (
+                  <div style={{ marginTop: '16px' }}>
+                    <h4 style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>{t.simLogsLabel}</h4>
+                    {/* Simulated developer terminal */}
+                    <div style={{ backgroundColor: '#050507', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', height: '220px', overflowY: 'auto', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace', fontSize: '11.5px', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '6px', direction: 'ltr', textAlign: 'left', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.8)' }}>
+                      {/* Terminal window tab bar */}
+                      <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', borderBottom: '1px solid #18181b', paddingBottom: '6px', alignItems: 'center' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }}></span>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }}></span>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
+                        <span style={{ color: '#52525b', fontSize: '9px', marginLeft: '6px' }}>sumer-webhook-simulator</span>
+                      </div>
+                      {simulationLogs.map((log, index) => (
+                        <div key={index} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{log}</div>
+                      ))}
+                      {isSimulating && (
+                        <div style={{ animation: 'pulse 1s infinite', color: '#71717a', fontWeight: 'bold' }}>█</div>
+                      )}
+                    </div>
+
+                    {simulationResult && (
+                      <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', backgroundColor: simulationResult.success ? 'var(--success-bg)' : 'var(--danger-bg)', border: `1px solid ${simulationResult.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
+                        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: simulationResult.success ? 'var(--success-color)' : 'var(--danger-color)' }}></span>
+                        <strong style={{ color: simulationResult.success ? 'var(--success-text)' : 'var(--danger-text)' }}>
+                          {simulationResult.success ? t.simResultSuccess : t.simResultFail}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Webhook Delivery Logs Table */}
-          <div className="card" style={{ marginTop: '24px', padding: '24px', borderRadius: '24px' }}>
+          <div className="card" style={{ 
+            marginTop: '24px', 
+            padding: '28px', 
+            borderRadius: '24px',
+            border: '1px solid var(--border-color)',
+            backgroundColor: 'var(--panel-bg)',
+            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01), 0 0 0 1px var(--border-color)'
+          }}>
             <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Webhook size={16} color="var(--accent-color)" />
               <span>{lang === 'en' ? 'Live Webhook Logs & Delivery Traces' : 'سجل استدعاء الويب هوك المباشر'}</span>
@@ -1910,7 +2137,19 @@ echo "Webhook Processed";
                         <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{log.event}</td>
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.url}>{log.url}</td>
                         <td>
-                          <span className={`badge badge-${log.status === 'success' ? 'success' : 'warning'}`}>
+                          <span className={`badge badge-${log.status === 'success' ? 'success' : 'warning'}`} style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '3px 8px',
+                            borderRadius: '99px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            backgroundColor: log.status === 'success' ? 'var(--success-bg)' : 'var(--warning-bg)',
+                            color: log.status === 'success' ? 'var(--success-text)' : 'var(--warning-text)',
+                            border: log.status === 'success' ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(245,158,11,0.15)'
+                          }}>
+                            <span style={{ display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: log.status === 'success' ? 'var(--success-color)' : 'var(--warning-color)' }} />
                             {log.status}
                           </span>
                         </td>
@@ -1933,34 +2172,67 @@ echo "Webhook Processed";
 
       {/* SDK & CODE BUILDER SUB-TAB */}
       {activeSubTab === 'code' && (
-        <div>
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t.cbSubtitle}</p>
-          </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.25s ease-out' }}>
+          
           <div className="codebuilder-layout">
-            <div className="card" style={{ padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Input Options Panel */}
+            <div className="card" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-bg)', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--zentra-shadow)' }}>
+              
               <div>
-                <label className="form-label">{t.cbChannelLabel}</label>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>{t.cbChannelLabel}</label>
+                {/* Segmented notification channel selector */}
+                <div style={{ display: 'flex', backgroundColor: 'var(--panel-muted)', padding: '4px', borderRadius: '99px', border: '1px solid var(--border-color)' }}>
                   <button 
                     onClick={() => setSelectedChannel('email')}
-                    className={`btn ${selectedChannel === 'email' ? 'btn-primary' : ''}`}
-                    style={{ flex: 1, fontSize: '12px', background: selectedChannel === 'email' ? '' : 'none', border: '1px solid var(--border-color)' }}
+                    style={{ 
+                      flex: 1, 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      padding: '8px 12px', 
+                      borderRadius: '99px', 
+                      border: 'none',
+                      background: selectedChannel === 'email' ? 'var(--accent-color)' : 'transparent',
+                      color: selectedChannel === 'email' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                      boxShadow: selectedChannel === 'email' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
                     {lang === 'en' ? 'Email API' : 'البريد الإلكتروني'}
                   </button>
                   <button 
                     onClick={() => setSelectedChannel('sms')}
-                    className={`btn ${selectedChannel === 'sms' ? 'btn-primary' : ''}`}
-                    style={{ flex: 1, fontSize: '12px', background: selectedChannel === 'sms' ? '' : 'none', border: '1px solid var(--border-color)' }}
+                    style={{ 
+                      flex: 1, 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      padding: '8px 12px', 
+                      borderRadius: '99px', 
+                      border: 'none',
+                      background: selectedChannel === 'sms' ? 'var(--accent-color)' : 'transparent',
+                      color: selectedChannel === 'sms' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                      boxShadow: selectedChannel === 'sms' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
                     {lang === 'en' ? 'SMS API' : 'الرسائل القصيرة'}
                   </button>
                   <button 
                     onClick={() => setSelectedChannel('whatsapp')}
-                    className={`btn ${selectedChannel === 'whatsapp' ? 'btn-primary' : ''}`}
-                    style={{ flex: 1, fontSize: '12px', background: selectedChannel === 'whatsapp' ? '' : 'none', border: '1px solid var(--border-color)' }}
+                    style={{ 
+                      flex: 1, 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      padding: '8px 12px', 
+                      borderRadius: '99px', 
+                      border: 'none',
+                      background: selectedChannel === 'whatsapp' ? 'var(--accent-color)' : 'transparent',
+                      color: selectedChannel === 'whatsapp' ? 'var(--panel-bg)' : 'var(--text-secondary)',
+                      boxShadow: selectedChannel === 'whatsapp' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
                     {lang === 'en' ? 'WhatsApp API' : 'الواتساب'}
                   </button>
@@ -1969,98 +2241,155 @@ echo "Webhook Processed";
 
               {/* Grid Framework selector */}
               <div>
-                <label className="form-label" style={{ marginBottom: '6px' }}>{t.cbLangLabel}</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px', marginTop: '6px' }}>
-                  {frameworks.map(fw => (
-                    <button
-                      key={fw.id}
-                      onClick={() => setSelectedLang(fw.id as any)}
-                      className={`btn ${selectedLang === fw.id ? 'btn-primary' : ''}`}
-                      style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
-                        padding: '10px 4px', 
-                        fontSize: '11px', 
-                        gap: '6px',
-                        background: selectedLang === fw.id ? '' : 'none',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '6px'
-                      }}
-                    >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: selectedLang === fw.id ? 'var(--bg-color)' : 'var(--text-secondary)' }}>
-                        {renderTemplateIcon(fw.icon, 16)}
-                      </span>
-                      <span style={{ fontWeight: 600 }}>{fw.name}</span>
-                    </button>
-                  ))}
+                <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>{t.cbLangLabel}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '8px' }}>
+                  {frameworks.map(fw => {
+                    const isSelected = selectedLang === fw.id;
+                    return (
+                      <button
+                        key={fw.id}
+                        onClick={() => setSelectedLang(fw.id as any)}
+                        style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center', 
+                          padding: '12px 6px', 
+                          fontSize: '11px', 
+                          gap: '6px',
+                          background: isSelected ? 'var(--panel-bg)' : 'transparent',
+                          color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          border: `1px solid ${isSelected ? 'var(--text-primary)' : 'var(--border-color)'}`,
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          transition: 'all 0.15s ease',
+                          boxShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.04)' : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.borderColor = 'var(--border-hover)';
+                            e.currentTarget.style.backgroundColor = 'var(--panel-muted)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        <span style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)' 
+                        }}>
+                          {renderTemplateIcon(fw.icon, 16)}
+                        </span>
+                        <span>{fw.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div>
-                <label className="form-label">{t.cbKeyLabel}</label>
+                <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>{t.cbKeyLabel}</label>
                 {apiKeys.length === 0 ? (
-                  <div style={{ color: 'var(--danger-color)', fontSize: '12px', marginTop: '6px', fontWeight: 500 }}>
+                  <div style={{ color: 'var(--danger-text)', fontSize: '12px', padding: '10px', borderRadius: '8px', backgroundColor: 'var(--danger-bg)', border: '1px solid rgba(239,68,68,0.1)', fontWeight: 500 }}>
                     {t.cbKeyNone}
                   </div>
                 ) : (
-                  <select 
-                    className="form-input" 
-                    value={selectedApiKeyId}
-                    onChange={(e) => setSelectedApiKeyId(e.target.value)}
-                    style={{ height: '40px', marginTop: '6px', appearance: 'none', backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: lang === 'en' ? 'right 12px center' : 'left 12px center', backgroundSize: '16px' }}
-                  >
-                    {apiKeys.map(k => (
-                      <option key={k.id} value={k.id}>
-                        {k.name} ({k.key.slice(0, 15)}...)
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative' }}>
+                    <select 
+                      className="form-input" 
+                      value={selectedApiKeyId}
+                      onChange={(e) => setSelectedApiKeyId(e.target.value)}
+                      style={{ 
+                        height: '40px', 
+                        width: '100%',
+                        padding: '0 12px',
+                        paddingLeft: lang === 'ar' ? '32px' : '12px',
+                        paddingRight: lang === 'ar' ? '12px' : '32px',
+                        borderRadius: '8px', 
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-color)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        appearance: 'none',
+                        backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")', 
+                        backgroundRepeat: 'no-repeat', 
+                        backgroundPosition: lang === 'en' ? 'right 12px center' : 'left 12px center', 
+                        backgroundSize: '14px'
+                      }}
+                    >
+                      {apiKeys.map(k => (
+                        <option key={k.id} value={k.id}>
+                          {k.name} ({k.key.slice(0, 15)}...)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Code Output Card */}
-            <div className="card" style={{ padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column' }}>
-              <div className="flex-between" style={{ marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Code size={16} color="var(--accent-color)" />
+            <div className="card" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-bg)', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: 'var(--zentra-shadow)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Code size={16} color="var(--accent-text)" />
                   <span>{t.cbCodeHeader}</span>
                 </h3>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   <button 
                     onClick={() => handleCopy('code_block', getGeneratedCode())}
                     className="btn"
-                    style={{ padding: '6px 12px', fontSize: '11px', gap: '4px' }}
+                    style={{ padding: '6px 12px', fontSize: '11.5px', gap: '6px', borderRadius: '8px', height: '32px' }}
                   >
-                    {copiedId === 'code_block' ? <Check size={12} color="#50e3c2" /> : <Copy size={12} />}
+                    {copiedId === 'code_block' ? <Check size={12} color="var(--success-color)" /> : <Copy size={12} />}
                     <span>{copiedId === 'code_block' ? t.copied : t.cbCopyBtn}</span>
                   </button>
                   <button 
                     onClick={handleDownloadCode}
                     className="btn"
-                    style={{ padding: '6px 12px', fontSize: '11px', border: '1px solid var(--border-color)', background: 'none' }}
+                    style={{ padding: '6px 12px', fontSize: '11.5px', border: '1px solid var(--border-color)', background: 'none', borderRadius: '8px', height: '32px', color: 'var(--text-secondary)' }}
                   >
                     <span>{t.cbDownloadBtn}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Code Monospace Box */}
-              <div style={{ flex: 1, backgroundColor: '#09090b', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px', overflowX: 'auto', direction: 'ltr', textAlign: 'left' }}>
-                <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '11px', color: '#eaeaea', lineHeight: 1.5 }}>
-                  <code>
-                    {getGeneratedCode()}
-                  </code>
-                </pre>
+              {/* Code Monospace Box with VS-Code/Vercel syntax highlight */}
+              <div style={{ flex: 1, backgroundColor: '#09090b', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', direction: 'ltr', textAlign: 'left', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                {/* Simulated editor header */}
+                <div style={{ display: 'flex', gap: '6px', backgroundColor: '#101012', borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '10px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }}></span>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }}></span>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
+                  </div>
+                  <span style={{ color: '#71717a', fontSize: '10px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace' }}>
+                    {selectedLang === 'curl' ? 'send.sh' : selectedLang === 'node' ? 'send.js' : selectedLang === 'php' ? 'send.php' : selectedLang === 'python' ? 'send.py' : selectedLang === 'go' ? 'send.go' : selectedLang === 'laravel' ? '.env' : 'wp-config.php'}
+                  </span>
+                </div>
+                <div style={{ padding: '16px', overflowX: 'auto' }}>
+                  <pre style={{ margin: 0, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '12px', color: '#e4e4e7', lineHeight: 1.6 }}>
+                    <code>
+                      {highlightCode(getGeneratedCode())}
+                    </code>
+                  </pre>
+                </div>
               </div>
 
-              {/* Interactive Terminal Integration */}
-              <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+              {/* Interactive Terminal Section */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
                 {!showConsole ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                       {lang === 'en' 
                         ? 'Want to test this generated code block live? Run it in our interactive web terminal mock.' 
                         : 'هل تريد اختبار كود التكامل البرمجي المولد حياً؟ قم بتشغيله في وحدة التحكم التفاعلية المحاكاة.'}
@@ -2076,7 +2405,8 @@ echo "Webhook Processed";
                         padding: '8px 16px', 
                         fontSize: '13px', 
                         fontWeight: 600,
-                        alignSelf: 'flex-start'
+                        alignSelf: 'flex-start',
+                        borderRadius: '8px'
                       }}
                     >
                       <Terminal size={14} />
@@ -2085,10 +2415,10 @@ echo "Webhook Processed";
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="flex-between" style={{ alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Terminal size={16} color="var(--accent-color)" />
-                        <h4 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>
+                        <Terminal size={16} color="var(--accent-text)" />
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                           {lang === 'en' ? 'Interactive Terminal Console' : 'وحدة التحكم والطرفية التفاعلية'}
                         </h4>
                       </div>
@@ -2096,11 +2426,12 @@ echo "Webhook Processed";
                         onClick={() => setShowConsole(false)}
                         className="btn"
                         style={{ 
-                          padding: '4px 10px', 
+                          padding: '5px 12px', 
                           fontSize: '11px', 
                           border: '1px solid var(--border-color)', 
                           background: 'none', 
-                          color: 'var(--text-secondary)'
+                          color: 'var(--text-secondary)',
+                          borderRadius: '8px'
                         }}
                       >
                         {lang === 'en' ? 'Hide Terminal' : 'إخفاء الطرفية'}
@@ -2115,8 +2446,8 @@ echo "Webhook Processed";
 
                     {/* Inputs panel */}
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: '200px' }}>
-                        <label className="form-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>
+                      <div style={{ flex: 1, minWidth: '220px' }}>
+                        <label className="form-label" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
                           {selectedChannel === 'email' 
                             ? (lang === 'en' ? 'Recipient Email Address' : 'البريد الإلكتروني للمستلم')
                             : (lang === 'en' ? 'Recipient Phone Number (078xxxx / 077xxxx)' : 'رقم الهاتف المستلم (078xxxx / 077xxxx)')}
@@ -2127,7 +2458,7 @@ echo "Webhook Processed";
                           value={consoleRecipient}
                           onChange={(e) => setConsoleRecipient(e.target.value)}
                           placeholder={selectedChannel === 'email' ? 'customer@gmail.com' : '07801234567'}
-                          style={{ height: '36px', fontSize: '13px' }}
+                          style={{ height: '38px', fontSize: '13px', borderRadius: '6px', padding: '0 10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', width: '100%' }}
                           disabled={isExecuting}
                         />
                       </div>
@@ -2137,13 +2468,14 @@ echo "Webhook Processed";
                         className="btn btn-primary"
                         disabled={isExecuting || apiKeys.length === 0}
                         style={{ 
-                          height: '36px', 
+                          height: '38px', 
                           padding: '0 16px', 
                           fontSize: '13px', 
                           fontWeight: 600,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px'
+                          gap: '6px',
+                          borderRadius: '8px'
                         }}
                       >
                         {isExecuting ? (
@@ -2160,11 +2492,11 @@ echo "Webhook Processed";
                       </button>
                     </div>
 
-                    {/* Terminal Display */}
+                    {/* Shell Console Display */}
                     <div style={{ 
-                      backgroundColor: '#000000', 
-                      border: '1px solid #27272a', 
-                      borderRadius: '6px', 
+                      backgroundColor: '#020202', 
+                      border: '1px solid #1f1f23', 
+                      borderRadius: '10px', 
                       padding: '16px', 
                       fontFamily: 'monospace', 
                       fontSize: '12px', 

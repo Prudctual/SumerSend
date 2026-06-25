@@ -30,6 +30,7 @@ interface ReportsViewProps {
   transactions: any[];
   domains: any[];
   setCurrentTab: (tab: string) => void;
+  hideHeader?: boolean;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
@@ -38,30 +39,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   walletBalance,
   transactions,
   domains,
-  setCurrentTab
+  setCurrentTab,
+  hideHeader = false,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'channels' | 'costs' | 'exports'>('overview');
 
   const handleSubTabChange = (tab: 'overview' | 'channels' | 'costs' | 'exports') => {
-    if (!document.startViewTransition) {
-      setActiveSubTab(tab);
-      return;
-    }
-
-    const tabOrder = ['overview', 'channels', 'costs', 'exports'];
-    const oldIdx = tabOrder.indexOf(activeSubTab);
-    const newIdx = tabOrder.indexOf(tab);
-    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
-
-    const options: any = {
-      update: () => {
-        setActiveSubTab(tab);
-      }
-    };
-    if (direction) {
-      options.types = [direction];
-    }
-    (document as any).startViewTransition(options);
+    setActiveSubTab(tab);
   };
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -1006,17 +990,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       
       {/* Title & Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ 
-            fontSize: '26px', 
-            fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-            lineHeight: 1.15,
-            marginBottom: '8px',
-            color: 'var(--text-primary)'
-          }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
-        </div>
+        {!hideHeader && (
+          <div>
+            <h1 style={{ 
+              fontSize: '26px', 
+              fontWeight: 800, 
+              letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
+              lineHeight: 1.15,
+              marginBottom: '0px',
+              color: 'var(--text-primary)'
+            }}>{t.title}</h1>
+          </div>
+        )}
 
         {/* Time Range Selector */}
         <div className="capsule-tab-container">

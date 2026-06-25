@@ -14,6 +14,7 @@ interface BillingViewProps {
   setWalletBalance: React.Dispatch<React.SetStateAction<number>>;
   transactions: any[];
   setTransactions: React.Dispatch<React.SetStateAction<any[]>>;
+  hideHeader?: boolean;
 }
 
 export const BillingView: React.FC<BillingViewProps> = ({
@@ -22,6 +23,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
   setWalletBalance,
   transactions,
   setTransactions,
+  hideHeader = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'wallet' | 'tariff'>('wallet');
   const [showZainModal, setShowZainModal] = useState(false);
@@ -371,93 +373,47 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
   return (
     <ScrollReveal>
-      <div style={{ marginBottom: '20px' }} className="flex-between">
-        <div>
+      {/* Dynamic Unified Header & Sub-navigation tabs in a single, polished row */}
+      <div style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid var(--border-color)',
+        paddingBottom: '12px',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '16px',
+        direction: lang === 'ar' ? 'rtl' : 'ltr'
+      }}>
+        {!hideHeader && (
           <h1 style={{ 
-            fontSize: '26px', 
+            fontSize: '22px', 
             fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-            lineHeight: 1.15,
-            marginBottom: '6px',
-            color: 'var(--text-primary)'
-          }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
+            margin: 0, 
+            color: 'var(--text-primary)', 
+            letterSpacing: lang === 'ar' ? '0' : '-0.5px' 
+          }}>
+            {t.title}
+          </h1>
+        )}
+
+        {/* Tab Switcher */}
+        <div className="vercel-tabs-container" style={{ margin: 0, overflowX: 'auto' }}>
+          <button
+            onClick={() => setActiveTab('wallet')}
+            className={`vercel-tab-btn ${activeTab === 'wallet' ? 'active' : ''}`}
+          >
+            <Wallet size={14} />
+            <span>{lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Deposit'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('tariff')}
+            className={`vercel-tab-btn ${activeTab === 'tariff' ? 'active' : ''}`}
+          >
+            <CreditCard size={14} />
+            <span>{lang === 'ar' ? 'التعرفة وحالة الشبكات' : 'Tariff & Gateway Rates'}</span>
+          </button>
         </div>
-      </div>
-
-      <GuideBanner
-        lang={lang}
-        show={showGuide}
-        onClose={() => setShowGuide(false)}
-        title={t.guideTitle}
-        description={t.guideText}
-        badges={
-          <>
-            <span className="sumer-badge" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-              {lang === 'ar' ? 'البريد: 10 د.ع' : 'Email: 10 IQD'}
-            </span>
-            <span className="sumer-badge" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-              {lang === 'ar' ? 'رسائل SMS: 120 د.ع' : 'SMS: 120 IQD'}
-            </span>
-            <span className="sumer-badge" style={{ backgroundColor: 'rgba(37, 211, 102, 0.06)', color: '#12b050', border: '1px solid var(--border-color)', padding: '4px 10px', fontSize: '11px' }}>
-              {lang === 'ar' ? 'الواتساب: 150 د.ع' : 'WhatsApp: 150 IQD'}
-            </span>
-          </>
-        }
-        visualContent={
-          <div className="mockup-floating-card" style={{ padding: '12px 16px', maxWidth: '240px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', textAlign: 'start' }}>
-              {lang === 'ar' ? 'مقارنة تعرفة الشبكات' : 'Operator Gateway Rates'}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                  <span style={{ color: '#ffcc00' }}>Zain SMS</span>
-                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
-                </div>
-                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: '80%', backgroundColor: '#ffcc00' }} />
-                </div>
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                  <span style={{ color: '#ff3366' }}>AsiaCell SMS</span>
-                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>120 IQD</span>
-                </div>
-                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: '80%', backgroundColor: '#ff3366' }} />
-                </div>
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 600, marginBottom: '2px' }}>
-                  <span style={{ color: '#25d366' }}>WhatsApp API</span>
-                  <span className="tabular-nums-stat" style={{ color: 'var(--text-primary)' }}>150 IQD</span>
-                </div>
-                <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: '100%', backgroundColor: '#25d366' }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-      />
-
-      {/* Tab Switcher */}
-      <div className="vercel-tabs-container" style={{ marginBottom: '24px', overflowX: 'auto' }}>
-        <button
-          onClick={() => setActiveTab('wallet')}
-          className={`vercel-tab-btn ${activeTab === 'wallet' ? 'active' : ''}`}
-        >
-          <Wallet size={15} />
-          <span>{lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Deposit'}</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('tariff')}
-          className={`vercel-tab-btn ${activeTab === 'tariff' ? 'active' : ''}`}
-        >
-          <CreditCard size={15} />
-          <span>{lang === 'ar' ? 'التعرفة وحالة الشبكات' : 'Tariff & Gateway Rates'}</span>
-        </button>
       </div>
 
       {activeTab === 'wallet' ? (

@@ -10,9 +10,10 @@ interface LogsViewProps {
   lang: 'en' | 'ar';
   logs: any[];
   setLogs: React.Dispatch<React.SetStateAction<any[]>>;
+  hideHeader?: boolean;
 }
 
-export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
+export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHeader = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
@@ -281,17 +282,18 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
   return (
     <ScrollReveal>
       <div style={{ marginBottom: '20px' }} className="flex-between">
-        <div>
-          <h1 style={{ 
-            fontSize: '26px', 
-            fontWeight: 800, 
-            letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
-            lineHeight: 1.15,
-            marginBottom: '8px',
-            color: 'var(--text-primary)'
-          }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>{t.subtitle}</p>
-        </div>
+          {!hideHeader && (
+            <div>
+              <h1 style={{ 
+                fontSize: '26px', 
+                fontWeight: 800, 
+                letterSpacing: lang === 'ar' ? '0' : '-0.5px', 
+                lineHeight: 1.15,
+                marginBottom: '0px',
+                color: 'var(--text-primary)'
+              }}>{t.title}</h1>
+            </div>
+          )}
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           {/* Export Menu Dropdown */}
           <div style={{ position: 'relative' }}>
@@ -399,13 +401,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs }) => {
         </div>
       </div>
 
-      <GuideBanner
-        lang={lang}
-        show={showGuide}
-        onClose={() => setShowGuide(false)}
-        title={t.guideTitle}
-        description={t.guideText}
-      />
+
 
       {/* Filters Bar */}
       <div className="card" style={{ padding: '20px', marginBottom: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center' }}>

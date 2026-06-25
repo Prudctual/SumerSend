@@ -32,6 +32,7 @@ interface CampaignsViewProps {
   setWalletBalance: React.Dispatch<React.SetStateAction<number>>;
   setLogs: React.Dispatch<React.SetStateAction<any[]>>;
   setPhoneNotifications: React.Dispatch<React.SetStateAction<any[]>>;
+  hideHeader?: boolean;
 }
 
 interface Recipient {
@@ -139,36 +140,15 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   setWalletBalance,
   setLogs,
   setPhoneNotifications,
+  hideHeader = false,
 }) => {
   const [viewState, setViewState] = useState<'list' | 'create' | 'progress'>('list');
   const [campaigns, setCampaigns] = useState<Campaign[]>(defaultCampaignsList);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   const changeViewStateAndCampaign = (nextState: 'list' | 'create' | 'progress', nextCampaign: Campaign | null) => {
-    if (!document.startViewTransition) {
-      setViewState(nextState);
-      setSelectedCampaign(nextCampaign);
-      return;
-    }
-
-    let oldVal = selectedCampaign ? 'details' : viewState;
-    let newVal = nextCampaign ? 'details' : nextState;
-
-    const order = ['list', 'create', 'progress', 'details'];
-    const oldIdx = order.indexOf(oldVal);
-    const newIdx = order.indexOf(newVal);
-    const direction = newIdx >= oldIdx ? 'forward' : 'backward';
-
-    const options: any = {
-      update: () => {
-        setViewState(nextState);
-        setSelectedCampaign(nextCampaign);
-      }
-    };
-    if (direction) {
-      options.types = [direction];
-    }
-    (document as any).startViewTransition(options);
+    setViewState(nextState);
+    setSelectedCampaign(nextCampaign);
   };
 
   // Campaigns list sub-tab navigation
@@ -974,15 +954,16 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   return (
     <ScrollReveal>
-      <div className="campaigns-view-container" key={selectedCampaign ? `details_${selectedCampaign.id}` : viewState}>
+      <div className="campaigns-view-container">
       {/* VIEW 1: CAMPAIGNS LIST & DASHBOARD */}
       {viewState === 'list' && !selectedCampaign && (
         <div>
           <div className="flex-between" style={{ marginBottom: '16px' }}>
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{t.title}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>{t.subtitle}</p>
-            </div>
+            {!hideHeader && (
+              <div>
+                <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '0px' }}>{t.title}</h1>
+              </div>
+            )}
             <button 
               className="btn btn-primary"
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 600 }}
@@ -1220,9 +1201,6 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                       <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
                         {lang === 'ar' ? 'معرض وقوالب الرسائل الذكية' : 'Smart Message Templates Gallery'}
                       </h3>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>
-                        {lang === 'ar' ? 'اختر قالباً جاهزاً أو صمم قالباً خاصاً بحملتك الإعلانية مع تخصيص المتغيرات.' : 'Choose a predefined system template or create your own custom layout with dynamic variables.'}
-                      </p>
                     </div>
                     <button
                       className="btn btn-primary"
