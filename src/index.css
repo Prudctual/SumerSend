@@ -1475,11 +1475,11 @@ body {
 }
 
 [data-theme="dark"] {
-  --bg-color: #030303;        /* Ultra-premium obsidian deep black (zero-glare) */
-  --panel-bg: #0a0a0c;        /* High-contrast sleek zinc-black card surfaces */
-  --panel-elevated: #121215;  /* Hovered or elevated menu layers (zinc-900) */
-  --panel-muted: #101012;     /* Structured secondary sidebar/tabs background */
-  --border-color: #1a1a1e;    /* Ultra-fine, subtle border for crisp borders */
+  --bg-color: #040406;        /* Ultra-premium obsidian deep black (zero-glare) */
+  --panel-bg: #09090b;        /* Sleek Vercel zinc-950 card surfaces */
+  --panel-elevated: #18181b;  /* Hovered or elevated menu layers (zinc-900) */
+  --panel-muted: #0d0d10;     /* Structured secondary sidebar/tabs background */
+  --border-color: #1e1e24;    /* Ultra-fine, subtle border for crisp borders */
   --border-hover: #3f3f46;    /* Soft zinc-700 hover borders */
   --text-primary: #f4f4f5;    /* Soft, high-readability zinc-100 primary text */
   --text-secondary: #a1a1aa;  /* Muted zinc-400 secondary description text */
@@ -1497,8 +1497,8 @@ body {
   --danger-color: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.08);
   --danger-text: #f87171;
-  --card-shadow: 0 0 0 1px var(--border-color);
-  --card-shadow-hover: 0 0 0 1px var(--border-hover), 0 16px 32px -12px rgba(0, 0, 0, 0.8);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-color);
+  --card-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-hover);
   --focus-ring: 0 0 0 2px var(--panel-bg), 0 0 0 4px rgba(244, 244, 245, 0.2);
   --glow-rgb: 255, 255, 255;
   --dot-color: rgba(255, 255, 255, 0.015); /* Exquisite dark dot grid color */
@@ -1506,8 +1506,11 @@ body {
 
 html {
   background-color: var(--bg-color);
-  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: 
+    radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.04) 0%, transparent 65%),
+    radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
+  background-repeat: no-repeat, repeat;
   scroll-behavior: smooth;
 }
 
@@ -5893,7 +5896,7 @@ textarea.auth-input {
   justify-content: space-between;
   box-shadow: var(--card-shadow);
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .bento-card-flat:hover {
