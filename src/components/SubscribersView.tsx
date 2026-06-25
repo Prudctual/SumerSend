@@ -1004,7 +1004,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
     <ScrollReveal>
       {/* === Scholarly Dashboard Scoped Styles === */}
       <style>{`
-        /* ─── Stat Cards: Pastel colored top cards ─── */
+        /* ─── Stat Cards: Floating borderless sage-system cards ─── */
         .sch-stats-row {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1013,66 +1013,28 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         }
 
         .sch-stat-card {
-          border-radius: 18px;
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 20px;
           padding: 22px 24px;
           display: flex;
           flex-direction: column;
           gap: 8px;
           position: relative;
           overflow: hidden;
-          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+          box-shadow: var(--card-shadow);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
           cursor: default;
         }
 
         .sch-stat-card:hover {
           transform: translateY(-3px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+          box-shadow: var(--card-shadow-hover);
+          border-color: rgba(16, 185, 129, 0.12);
         }
 
-        .sch-stat-card.mint {
-          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-          color: #064e3b;
-        }
-
-        .sch-stat-card.amber {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          color: #78350f;
-        }
-
-        .sch-stat-card.rose {
-          background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-          color: #831843;
-        }
-
-        .sch-stat-card.sky {
-          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-          color: #1e3a5f;
-        }
-
-        [data-theme="dark"] .sch-stat-card.mint {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
-          color: #6ee7b7;
-        }
-        [data-theme="dark"] .sch-stat-card.amber {
-          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-          color: #fcd34d;
-        }
-        [data-theme="dark"] .sch-stat-card.rose {
-          background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.08) 100%);
-          color: #f9a8d4;
-        }
-        [data-theme="dark"] .sch-stat-card.sky {
-          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
-          color: #93c5fd;
-        }
-
-        .sch-stat-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .sch-stat-icon {
+        /* Color-Specific Icon Badges & Accents */
+        .sch-stat-card .sch-stat-icon {
           width: 36px;
           height: 36px;
           border-radius: 12px;
@@ -1080,26 +1042,65 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          transition: transform 0.25s ease;
         }
 
-        .sch-stat-card.mint .sch-stat-icon { background: rgba(6, 78, 59, 0.12); }
-        .sch-stat-card.amber .sch-stat-icon { background: rgba(120, 53, 15, 0.12); }
-        .sch-stat-card.rose .sch-stat-icon { background: rgba(131, 24, 67, 0.12); }
-        .sch-stat-card.sky .sch-stat-icon { background: rgba(30, 58, 95, 0.12); }
+        .sch-stat-card:hover .sch-stat-icon {
+          transform: scale(1.08);
+        }
 
-        [data-theme="dark"] .sch-stat-card .sch-stat-icon { background: rgba(255,255,255,0.08); }
+        /* Mint (Total Subscribers) */
+        .sch-stat-card.mint .sch-stat-icon {
+          background: rgba(16, 185, 129, 0.08);
+          color: #047857;
+        }
+        [data-theme="dark"] .sch-stat-card.mint .sch-stat-icon {
+          background: rgba(16, 185, 129, 0.16);
+          color: #34d399;
+        }
+
+        /* Amber (Active) */
+        .sch-stat-card.amber .sch-stat-icon {
+          background: rgba(245, 158, 11, 0.08);
+          color: #b45309;
+        }
+        [data-theme="dark"] .sch-stat-card.amber .sch-stat-icon {
+          background: rgba(245, 158, 11, 0.16);
+          color: #fbbf24;
+        }
+
+        /* Rose (Unsubscribed) */
+        .sch-stat-card.rose .sch-stat-icon {
+          background: rgba(239, 68, 68, 0.08);
+          color: #b91c1c;
+        }
+        [data-theme="dark"] .sch-stat-card.rose .sch-stat-icon {
+          background: rgba(239, 68, 68, 0.16);
+          color: #f87171;
+        }
+
+        /* Sky (Welcome Sent) */
+        .sch-stat-card.sky .sch-stat-icon {
+          background: rgba(59, 130, 246, 0.08);
+          color: #1e40af;
+        }
+        [data-theme="dark"] .sch-stat-card.sky .sch-stat-icon {
+          background: rgba(59, 130, 246, 0.16);
+          color: #93c5fd;
+        }
 
         .sch-stat-value {
           font-size: 32px;
           font-weight: 800;
           letter-spacing: -1px;
           line-height: 1;
+          color: var(--text-primary);
         }
 
         .sch-stat-label {
           font-size: 13px;
           font-weight: 600;
-          opacity: 0.75;
+          color: var(--text-secondary);
         }
 
         .sch-stat-badge {
@@ -1110,11 +1111,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           font-weight: 700;
           padding: 2px 8px;
           border-radius: 99px;
-          background: rgba(0,0,0,0.06);
-        }
-
-        [data-theme="dark"] .sch-stat-badge {
-          background: rgba(255,255,255,0.08);
+          background: var(--panel-muted);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
         }
 
         /* ─── Main Content Layout ─── */
@@ -1135,9 +1134,16 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         .sch-panel {
           background: var(--panel-bg);
           border: 1px solid var(--border-color);
-          border-radius: 18px;
+          border-radius: 20px;
           padding: 24px;
           box-shadow: var(--card-shadow);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+        }
+
+        .sch-panel:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--card-shadow-hover);
+          border-color: rgba(16, 185, 129, 0.12);
         }
 
         .sch-panel-title {
@@ -1620,20 +1626,23 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         /* ─── Quick Add Card ─── */
         .sch-quick-add-card {
-          background: var(--panel-muted);
-          border: 1px dashed var(--border-color);
-          border-radius: 18px;
+          background: var(--panel-bg);
+          border: 1.5px dashed var(--border-color);
+          border-radius: 20px;
           padding: 24px;
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 14px;
           text-align: center;
-          transition: border-color 0.2s ease;
+          box-shadow: var(--card-shadow);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
         }
 
         .sch-quick-add-card:hover {
-          border-color: var(--text-muted);
+          transform: translateY(-3px);
+          box-shadow: var(--card-shadow-hover);
+          border-color: rgba(16, 185, 129, 0.2);
         }
 
         .sch-quick-avatars {
