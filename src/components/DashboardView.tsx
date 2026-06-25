@@ -94,6 +94,108 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [walletPhoneInput, setWalletPhoneInput] = useState('07800000000');
   const [depositSuccessMsg, setDepositSuccessMsg] = useState(false);
 
+  // --- Phone Mockup Notification Simulator ---
+  const mockNotifications = useMemo(() => {
+    return {
+      ar: [
+        {
+          id: 1,
+          appName: 'زين كاش',
+          icon: '💸',
+          time: 'الآن',
+          title: 'دفع مستلم',
+          desc: 'تم استلام دفعة بقيمة 50,000 د.ع بنجاح'
+        },
+        {
+          id: 2,
+          appName: 'Sumer OTP',
+          icon: '💬',
+          time: 'منذ دقيقة',
+          title: 'رمز التحقق',
+          desc: 'رمز التحقق الخاص بك هو 4892 لتوثيق الدخول'
+        },
+        {
+          id: 3,
+          appName: 'النظام',
+          icon: '🌐',
+          time: 'منذ دقيقتين',
+          title: 'تم تفعيل النطاق',
+          desc: 'نطاقك sumersend.com مرتبط ونشط الآن'
+        },
+        {
+          id: 4,
+          appName: 'واتساب',
+          icon: '🟢',
+          time: 'منذ 5 د',
+          title: 'تم إرسال الحملة',
+          desc: 'تم إرسال 120 رسالة للمشتركين بنجاح'
+        }
+      ],
+      en: [
+        {
+          id: 1,
+          appName: 'Zain Cash',
+          icon: '💸',
+          time: 'now',
+          title: 'Payment Received',
+          desc: 'Payment of 50,000 IQD received successfully'
+        },
+        {
+          id: 2,
+          appName: 'Sumer OTP',
+          icon: '💬',
+          time: '1m ago',
+          title: 'Verification Code',
+          desc: 'Your verification code is 4892 for login'
+        },
+        {
+          id: 3,
+          appName: 'System',
+          icon: '🌐',
+          time: '2m ago',
+          title: 'Domain Verified',
+          desc: 'Your domain sumersend.com is now active'
+        },
+        {
+          id: 4,
+          appName: 'WhatsApp',
+          icon: '🟢',
+          time: '5m ago',
+          title: 'Campaign Sent',
+          desc: 'Successfully sent 120 messages to subscribers'
+        }
+      ]
+    };
+  }, []);
+
+  const [activeNotifIndex, setActiveNotifIndex] = useState(0);
+  const [visibleNotifs, setVisibleNotifs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const list = mockNotifications[lang];
+    setVisibleNotifs([list[0], list[1]]);
+    setActiveNotifIndex(2);
+  }, [lang, mockNotifications]);
+
+  useEffect(() => {
+    const list = mockNotifications[lang];
+    const interval = setInterval(() => {
+      setVisibleNotifs(prev => {
+        const nextNotif = list[activeNotifIndex % list.length];
+        const updatedNotif = { ...nextNotif, uniqueId: Date.now() };
+        const nextList = [...prev, updatedNotif];
+        if (nextList.length > 3) {
+          nextList.shift();
+        }
+        return nextList;
+      });
+      setActiveNotifIndex(prev => prev + 1);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [lang, activeNotifIndex, mockNotifications]);
+
+
   // Onboarding status calculations
   const step1Done = domains.length > 0 && domains.every((d: any) => d.status === 'verified');
   const step2Done = transactions.length > 1;
@@ -753,17 +855,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </h2>
                 </div>
 
-                {/* Card 3: Large Portrait Architectural Image */}
+                {/* Card 3: Animated Phone Lock Screen Simulator */}
                 <div 
-                  className="bento-card-flat bento-card-image"
+                  className="bento-card-flat bento-card-phone-mockup"
                   style={{ cursor: 'pointer' }}
                   onClick={() => handleTabClick('domains')}
                 >
-                  <img src="/dashboard_building.png" alt="Sumer Send Building" />
+                  <div className="mock-phone-container">
+                    <div className="mock-phone-glow"></div>
+                    <div className="mock-phone-shell">
+                      <div className="mock-phone-notch"></div>
+                      <div className="mock-phone-status-bar">
+                        <span>14:03</span>
+                        <div className="mock-phone-icons">
+                          <span style={{ fontSize: '8px' }}>📶</span>
+                          <span style={{ fontSize: '8px' }}>🔋 85%</span>
+                        </div>
+                      </div>
+                      <div className="mock-phone-notifications">
+                        {visibleNotifs.map((notif) => (
+                          <div 
+                            key={notif.uniqueId || notif.id} 
+                            className={`mock-phone-notif-card ${lang === 'ar' ? 'rtl' : 'ltr'}`}
+                          >
+                            <div className="mock-phone-notif-header">
+                              <div className="mock-phone-notif-app">
+                                <span className="mock-phone-notif-icon">{notif.icon}</span>
+                                <span className="mock-phone-notif-appname">{notif.appName}</span>
+                              </div>
+                              <span className="mock-phone-notif-time">{notif.time}</span>
+                            </div>
+                            <div className="mock-phone-notif-title">{notif.title}</div>
+                            <div className="mock-phone-notif-desc">{notif.desc}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mock-phone-home-indicator"></div>
+                    </div>
+                  </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleTabClick('domains'); }}
                     className="bento-image-btn" 
                     title={lang === 'ar' ? 'إدارة النطاقات' : 'Manage Domains'}
+                    style={{ zIndex: 12 }}
                   >
                     <ArrowUpRight size={18} />
                   </button>

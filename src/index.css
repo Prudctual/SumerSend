@@ -5861,7 +5861,8 @@ textarea.auth-input {
   grid-row: span 1;
 }
 
-.bento-card-image {
+.bento-card-image,
+.bento-card-phone-mockup {
   grid-column: span 1;
   grid-row: span 2;
 }
@@ -5929,7 +5930,8 @@ textarea.auth-input {
 }
 
 /* Image Card */
-.bento-card-image {
+.bento-card-image,
+.bento-card-phone-mockup {
   padding: 0 !important;
   position: relative;
 }
@@ -6509,6 +6511,7 @@ textarea.auth-input {
   .bento-card-sparkline,
   .bento-card-demographics,
   .bento-card-image,
+  .bento-card-phone-mockup,
   .bento-card-stats,
   .bento-card-promo,
   .bento-card-status {
@@ -6516,8 +6519,187 @@ textarea.auth-input {
     grid-row: span 1 !important;
     min-height: 150px;
   }
-  .bento-card-image {
-    min-height: 250px;
+  .bento-card-image,
+  .bento-card-phone-mockup {
+    min-height: 380px; /* Give phone screen enough height on mobile to display beautifully */
   }
 }
 
+/* Animated Phone Notification Mockup Styles */
+.mock-phone-container {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  background: linear-gradient(180deg, rgba(8, 14, 28, 0.9) 0%, rgba(2, 4, 8, 0.98) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px 10px;
+  position: relative;
+  border-radius: 24px;
+}
+
+/* Elegant radial mesh-like accent overlay behind phone */
+.mock-phone-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mock-phone-shell {
+  width: 100%;
+  max-width: 195px;
+  height: 340px;
+  border: 7px solid #27272a;
+  border-radius: 32px;
+  background: radial-gradient(circle at top, #18181b, #09090b);
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* Phone screen top notch/island */
+.mock-phone-notch {
+  width: 60px;
+  height: 14px;
+  background: #27272a;
+  border-radius: 0 0 10px 10px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.mock-phone-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 4px 6px 4px;
+  font-family: monospace;
+  margin-top: 4px;
+}
+
+.mock-phone-icons {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mock-phone-notifications {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: flex-start;
+  padding-top: 8px;
+  overflow: hidden;
+}
+
+.mock-phone-notif-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px 10px;
+  animation: slideInPhoneNotif 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mock-phone-notif-card.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.mock-phone-notif-card.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.mock-phone-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 2px;
+}
+
+.mock-phone-notif-app {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mock-phone-notif-icon {
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+}
+
+.mock-phone-notif-appname {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mock-phone-notif-time {
+  font-size: 7px;
+}
+
+.mock-phone-notif-title {
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1px;
+}
+
+.mock-phone-notif-desc {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.25;
+}
+
+.mock-phone-home-indicator {
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 6px auto 0 auto;
+  animation: pulseUnlockBar 2.5s infinite ease-in-out;
+}
+
+@keyframes slideInPhoneNotif {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulseUnlockBar {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
