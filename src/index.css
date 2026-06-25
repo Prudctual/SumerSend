@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 :root {
   --font-family: 'Inter', 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-arabic: 'Cairo', sans-serif;
@@ -1529,9 +1527,9 @@ body {
   --panel-muted: #eef3f0;     /* Soft sage-muted sidebar background */
   --border-color: rgba(0, 0, 0, 0.04); /* Nearly invisible border — shadow does the work */
   --border-hover: #18181b;    /* Elegant zinc-900 focus border */
-  --text-primary: #1a2b23;    /* Deep forest-green-black primary text */
-  --text-secondary: #4a5e53;  /* Muted sage-green secondary text */
-  --text-muted: #8a9b91;      /* Soft sage placeholder text */
+  --text-primary: #111d17;    /* Deep forest-green-black primary text */
+  --text-secondary: #2d3f35;  /* Muted sage-green secondary text (contrast compliance) */
+  --text-muted: #4a5e53;      /* Soft sage placeholder text (contrast compliance) */
   --accent-color: #1a2b23;
   --accent-rgb: 26, 43, 35;
   --accent-text: #0f766e;     /* Teal accent for active indicators */
@@ -1565,9 +1563,9 @@ body {
   --panel-muted: #111714;     /* Structured secondary sidebar background */
   --border-color: rgba(255, 255, 255, 0.06); /* Whisper-thin luminous border */
   --border-hover: rgba(255, 255, 255, 0.12);
-  --text-primary: #e8efeb;    /* Soft sage-white primary text */
-  --text-secondary: #8a9b91;  /* Muted sage secondary text */
-  --text-muted: #4a5e53;      /* Deep sage placeholder text */
+  --text-primary: #f0f7f3;    /* Soft sage-white primary text */
+  --text-secondary: #a2b5ab;  /* Muted sage secondary text (contrast compliance) */
+  --text-muted: #718278;      /* Deep sage placeholder text (contrast compliance) */
   --accent-color: #e8efeb;
   --accent-rgb: 232, 239, 235;
   --accent-text: #34d399;

@@ -1,0 +1,21 @@
+# Sumer Send (Rafidain Send)
+
+Sumer Send is an enterprise-grade notification gateway designed for developer and business needs in Iraq. It supports multi-channel notification dispatch including Email (SMTP), SMS, and WhatsApp.
+
+## Core Services
+
+- **Email Dispatch:** Integrates with standard SMTP settings to deliver high-speed transactional emails.
+- **SMS OTP Gateway:** High-reliability SMS gateway supporting Iraqi mobile operators (Zain, AsiaCell, Korek).
+- **WhatsApp WebSockets:** Independent stateless WhatsApp socket client (Baileys-based) with automatic session synchronization.
+
+## API Integration
+
+Access token authorization is performed using Bearer API keys (`sm_live_...` or `sm_send_...`).
+
+### Endpoints
+
+- `POST /v1/emails` - Deliver transactional email messages.
+- `POST /v1/sms` - Send SMS notifications.
+- `POST /v1/whatsapp` - Send WhatsApp messages.
+
+For visual interactive sandbox and SDK examples, register an account and visit the Developer Hub.

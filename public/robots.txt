@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Host
+Host: https://sumer-send.vercel.app
+
+# Sitemaps
+Sitemap: https://sumer-send.vercel.app/sitemap.xml

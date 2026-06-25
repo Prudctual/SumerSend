@@ -998,7 +998,9 @@ func main() {
 
           {/* Column 2: Logo */}
           <a
-            onClick={() => {
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
               setCurrentTab('landing');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
@@ -1397,6 +1399,8 @@ func main() {
         )}
       </div>
 
+      <main id="landing-main-content">
+
       {/* Hero Section */}
       <section className="apple-animate-hero" style={{
         maxWidth: '960px',
@@ -1486,6 +1490,16 @@ func main() {
           margin: '0 auto',
           padding: '10px 24px 45px 24px',
         }}>
+          <h2 style={{
+            fontSize: '30px',
+            fontWeight: 800,
+            letterSpacing: '-0.8px',
+            margin: '0 0 32px 0',
+            textAlign: 'center',
+            color: 'var(--text-primary)'
+          }}>
+            {isAr ? 'قنوات الإرسال المدعومة' : 'Supported Delivery Channels'}
+          </h2>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
@@ -2353,6 +2367,7 @@ func main() {
                 </div>
                 <input 
                   type="range" 
+                  aria-label={isAr ? 'حجم البريد الإلكتروني' : 'Email Volume'}
                   min="0" 
                   max="100000" 
                   step="1000"
@@ -2399,6 +2414,7 @@ func main() {
                 </div>
                 <input 
                   type="range" 
+                  aria-label={isAr ? 'حجم رسائل SMS' : 'SMS Volume'}
                   min="0" 
                   max="20000" 
                   step="100"
@@ -2445,6 +2461,7 @@ func main() {
                 </div>
                 <input 
                   type="range" 
+                  aria-label={isAr ? 'حجم رسائل واتساب' : 'WhatsApp Volume'}
                   min="0" 
                   max="10000" 
                   step="100"
@@ -2537,6 +2554,8 @@ func main() {
           </div>
         </section>
       </ScrollReveal>
+
+      </main>
 
       {/* Luxurious Glassmorphic Floating Pill Footer matching Header style */}
       <footer style={{
