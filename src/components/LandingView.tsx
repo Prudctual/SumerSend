@@ -2089,7 +2089,7 @@ func main() {
                               fontWeight: 700, 
                               padding: '2px 6px', 
                               borderRadius: '4px',
-                              color: log.type === 'email' ? 'var(--channel-email)' : log.type === 'sms' ? 'var(--channel-sms)' : 'var(--channel-whatsapp)',
+                              color: log.type === 'email' ? 'var(--channel-email-text)' : log.type === 'sms' ? 'var(--channel-sms-text)' : 'var(--channel-whatsapp-text)',
                               backgroundColor: log.type === 'email' ? 'rgba(var(--channel-email-rgb), 0.08)' : log.type === 'sms' ? 'rgba(var(--channel-sms-rgb), 0.08)' : 'rgba(var(--channel-whatsapp-rgb), 0.08)'
                             }}>
                               {log.type.toUpperCase()}
