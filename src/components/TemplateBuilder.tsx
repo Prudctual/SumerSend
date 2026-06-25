@@ -1112,6 +1112,80 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         outline: none !important;
         box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1) !important;
       }
+      .tb-input-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: var(--panel-bg);
+        padding: 0 12px;
+        height: 38px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      }
+      .tb-input-group:hover {
+        border-color: var(--border-hover, #d1d5db);
+      }
+      .tb-input-group:focus-within {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+      }
+      .tb-input-field {
+        border: none !important;
+        background: none !important;
+        outline: none !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: var(--text-primary) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: 100% !important;
+        width: 180px;
+      }
+      .tb-desc-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: var(--panel-bg);
+        padding: 0 12px;
+        height: 38px;
+        width: 260px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      }
+      .tb-desc-group:hover {
+        border-color: var(--border-hover, #d1d5db);
+      }
+      .tb-desc-group:focus-within {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+      }
+      .tb-desc-field {
+        border: none !important;
+        background: none !important;
+        outline: none !important;
+        font-size: 12px !important;
+        color: var(--text-secondary) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: 100% !important;
+        width: 100%;
+      }
+      .tb-emoji-trigger {
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        user-select: none;
+      }
+      .tb-emoji-trigger:hover {
+        background-color: var(--panel-muted);
+      }
     `}</style>
   );
 
@@ -1129,37 +1203,38 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         paddingBottom: '15px', 
         marginBottom: '15px', 
         flexWrap: 'wrap', 
-        gap: '12px' 
+        gap: '12px',
+        direction: isAr ? 'rtl' : 'ltr'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <button 
             onClick={onCancel} 
             className="btn" 
-            style={{ padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              padding: 0, 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
             title={isAr ? 'رجوع' : 'Back'}
           >
             <ArrowLeft size={16} style={{ transform: isAr ? 'rotate(180deg)' : 'none' }} />
           </button>
           
           {/* Vertical Separator Line */}
-          <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)' }} />
+          <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', flexShrink: 0 }} />
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="tb-input-group">
               {/* Emoji Icon Picker */}
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <span 
                   onClick={() => setShowIconPicker(prev => !prev)}
-                  style={{ 
-                    fontSize: '18px', 
-                    cursor: 'pointer',
-                    padding: '2px 6px',
-                    borderRadius: '6px',
-                    backgroundColor: showIconPicker ? 'var(--panel-muted)' : 'transparent',
-                    border: showIconPicker ? '1px solid var(--border-color)' : '1px solid transparent',
-                    display: 'inline-block',
-                    transition: 'all 0.15s ease'
-                  }} 
+                  className="tb-emoji-trigger"
                   title={isAr ? 'تغيير الأيقونة التعبيرية' : 'Change emoji icon'}
                 >
                   {icon}
@@ -1224,6 +1299,9 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 )}
               </div>
 
+              {/* Inner Separator */}
+              <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--border-color)', margin: '0 8px', flexShrink: 0 }} />
+
               {/* Title Input */}
               <input 
                 type="text" 
@@ -1233,63 +1311,36 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   else setNameEn(e.target.value);
                 }}
                 placeholder={isAr ? 'اسم القالب المخصص...' : 'Custom template name...'}
-                style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 700, 
-                  background: 'none', 
-                  border: 'none', 
-                  outline: 'none',
-                  color: 'var(--text-primary)',
-                  padding: '2px 6px',
-                  width: '240px',
-                  borderRadius: '4px',
-                  transition: 'background-color 0.15s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                onFocus={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
-                onBlur={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="tb-input-field"
               />
 
               {/* Category Badge */}
-              <span className={`badge ${category === 'email' ? 'badge-blue' : category === 'sms' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '9px', padding: '2px 6px', height: 'fit-content' }}>
+              <span className={`badge ${category === 'email' ? 'badge-blue' : category === 'sms' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '9px', padding: '2px 6px', height: 'fit-content', marginInlineStart: '8px' }}>
                 {category.toUpperCase()}
               </span>
             </div>
             
-            {/* Description Subtitle */}
-            <input 
-              type="text"
-              value={isAr ? descAr : descEn}
-              onChange={(e) => {
-                if (isAr) setDescAr(e.target.value);
-                else setDescEn(e.target.value);
-              }}
-              placeholder={isAr ? 'أضف وصفاً موجزاً للقالب...' : 'Short description...'}
-              style={{
-                fontSize: '11px',
-                color: 'var(--text-muted)',
-                border: 'none',
-                background: 'none',
-                outline: 'none',
-                width: '320px',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                transition: 'background-color 0.15s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              onFocus={(e) => e.currentTarget.style.backgroundColor = 'var(--panel-muted)'}
-              onBlur={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            />
+            <div className="tb-desc-group">
+              {/* Description Subtitle */}
+              <input 
+                type="text"
+                value={isAr ? descAr : descEn}
+                onChange={(e) => {
+                  if (isAr) setDescAr(e.target.value);
+                  else setDescEn(e.target.value);
+                }}
+                placeholder={isAr ? 'أضف وصفاً موجزاً للقالب...' : 'Short description...'}
+                className="tb-desc-field"
+              />
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button 
             onClick={() => setTourStep(0)} 
             className="btn" 
-            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', height: '38px' }}
           >
             <HelpCircle size={14} />
             <span>{isAr ? 'مساعدة باللوحة' : 'Builder Tour'}</span>
@@ -1299,7 +1350,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
             <button 
               onClick={() => setIsPreviewMode(!isPreviewMode)} 
               className={`btn ${isPreviewMode ? 'btn-primary' : ''}`}
-              style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+              style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', height: '38px' }}
             >
               <Eye size={14} />
               <span>{isPreviewMode ? (isAr ? 'وضع التحرير' : 'Edit Mode') : (isAr ? 'معاينة حية' : 'Live Preview')}</span>
@@ -1310,7 +1361,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
             onClick={handleSave} 
             disabled={isSavingInProgress}
             className="btn btn-primary"
-            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700 }}
+            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700, height: '38px' }}
           >
             {isSavingInProgress ? '...' : (isAr ? 'حفظ ونشر القالب' : 'Publish & Save')}
           </button>
