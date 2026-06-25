@@ -494,7 +494,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   
                   {/* Collapsed Hover Popover Menu */}
                   <div className="sidebar-popover" style={{
-                    display: 'flex',
                     flexDirection: 'column',
                     gap: '4px',
                     padding: '6px'
