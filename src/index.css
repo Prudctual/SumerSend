@@ -1529,7 +1529,7 @@ body {
   --border-hover: #18181b;    /* Elegant zinc-900 focus border */
   --text-primary: #111d17;    /* Deep forest-green-black primary text */
   --text-secondary: #2d3f35;  /* Muted sage-green secondary text (contrast compliance) */
-  --text-muted: #4a5e53;      /* Soft sage placeholder text (contrast compliance) */
+  --text-muted: #3d4f45;      /* Soft sage placeholder text (contrast compliance) */
   --accent-color: #1a2b23;
   --accent-rgb: 26, 43, 35;
   --accent-text: #0f766e;     /* Teal accent for active indicators */
