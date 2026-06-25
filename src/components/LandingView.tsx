@@ -594,11 +594,9 @@ func main() {
         @keyframes appleSlideUp {
           from {
             opacity: 0;
-            transform: translateY(40px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
           }
         }
         @keyframes appleFade {
@@ -642,6 +640,7 @@ func main() {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
+          contain: layout style;
         }
         @media (max-width: 768px) {
           .bento-features-grid {
@@ -668,6 +667,9 @@ func main() {
           flex-direction: column;
           justify-content: space-between;
           overflow: hidden;
+          contain: content;
+          height: 340px;
+          box-sizing: border-box;
           transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
                       transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
                       box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1522,9 +1524,7 @@ func main() {
           </h2>
           <div className="bento-features-grid">
             {/* Email API Card - Large (Span 2) */}
-            <BentoCard glowColor="37, 99, 235" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card bento-col-span-2">
+            <BentoCard glowColor="37, 99, 235" className="apple-bento-card bento-col-span-2">
               {/* Visual Simulator */}
               <div className="bento-sim-container" style={{ height: '120px', position: 'relative' }}>
                 {/* Animated envelope and screen */}
@@ -1598,9 +1598,7 @@ func main() {
             </BentoCard>
 
             {/* Baghdad Latency Card - Small (Span 1) */}
-            <BentoCard glowColor="249, 115, 22" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card">
+            <BentoCard glowColor="249, 115, 22" className="apple-bento-card">
               {/* Radar Simulator */}
               <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', height: '110px' }}>
                 <div style={{
@@ -1654,9 +1652,7 @@ func main() {
             </BentoCard>
 
             {/* Carrier Info Card - Small (Span 1) */}
-            <BentoCard glowColor="16, 185, 129" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card">
+            <BentoCard glowColor="16, 185, 129" className="apple-bento-card">
               {/* Live routing visual */}
               <div className="bento-sim-container" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', height: '110px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
@@ -1688,9 +1684,7 @@ func main() {
             </BentoCard>
 
             {/* SMS API Card - Large (Span 2) */}
-            <BentoCard glowColor="16, 185, 129" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card bento-col-span-2">
+            <BentoCard glowColor="16, 185, 129" className="apple-bento-card bento-col-span-2">
               {/* SMS Simulator visual */}
               <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
                 <div style={{
@@ -1747,9 +1741,7 @@ func main() {
             </BentoCard>
 
             {/* WhatsApp API Card - Large (Span 2) */}
-            <BentoCard glowColor="37, 211, 102" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card bento-col-span-2">
+            <BentoCard glowColor="37, 211, 102" className="apple-bento-card bento-col-span-2">
               {/* Interactive WhatsApp chat visual */}
               <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', height: '130px' }}>
                 <div style={{
@@ -1818,9 +1810,7 @@ func main() {
             </BentoCard>
 
             {/* Shield Security Card - Small (Span 1) */}
-            <BentoCard glowColor="0, 107, 255" style={{
-              minHeight: '340px'
-            }} className="apple-bento-card">
+            <BentoCard glowColor="0, 107, 255" className="apple-bento-card">
               {/* Key signature visual */}
               <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
                 <div style={{
