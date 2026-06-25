@@ -295,18 +295,18 @@ body {
 .card {
   background-color: var(--panel-bg);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 20px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.015), 0 1px 3px rgba(15, 23, 42, 0.01);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card:hover {
-  border-color: var(--border-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035), 0 2px 6px rgba(15, 23, 42, 0.015);
+  border-color: rgba(16, 185, 129, 0.12);
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .card-title {
@@ -1445,21 +1445,21 @@ body {
 
 /* Vercel Theme Override */
 :root {
-  --bg-color: #fafafa;        /* Pure, pristine minimalist off-white */
-  --panel-bg: #ffffff;        /* Crisp pure white card surfaces */
+  --bg-color: #e8efeb;        /* Soft sage-tinted background inspired by premium dashboards */
+  --panel-bg: #ffffff;        /* Pure white floating card surfaces */
   --panel-elevated: #ffffff;  
-  --panel-muted: #f4f4f5;     /* Sleek secondary/sidebar background (zinc-100) */
-  --border-color: #e4e4e7;    /* Subtle, clean card/panel borders (zinc-200) */
+  --panel-muted: #eef3f0;     /* Soft sage-muted sidebar background */
+  --border-color: rgba(0, 0, 0, 0.04); /* Nearly invisible border — shadow does the work */
   --border-hover: #18181b;    /* Elegant zinc-900 focus border */
-  --text-primary: #09090b;    /* High-contrast zinc-950 readable text */
-  --text-secondary: #52525b;  /* Refined zinc-600 secondary body text */
-  --text-muted: #a1a1aa;      /* Zinc-400 helper/placeholder text */
-  --accent-color: #09090b;
-  --accent-rgb: 9, 9, 11;
-  --accent-text: #0284c7;     /* High-end sky blue for active indicators */
-  --accent-bg: rgba(2, 132, 199, 0.04);
+  --text-primary: #1a2b23;    /* Deep forest-green-black primary text */
+  --text-secondary: #4a5e53;  /* Muted sage-green secondary text */
+  --text-muted: #8a9b91;      /* Soft sage placeholder text */
+  --accent-color: #1a2b23;
+  --accent-rgb: 26, 43, 35;
+  --accent-text: #0f766e;     /* Teal accent for active indicators */
+  --accent-bg: rgba(15, 118, 110, 0.05);
   --success-color: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.06);
+  --success-bg: rgba(16, 185, 129, 0.08);
   --success-text: #047857;
   --warning-color: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.06);
@@ -1467,50 +1467,51 @@ body {
   --danger-color: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.06);
   --danger-text: #b91c1c;
-  --card-shadow: 0 1px 3px rgba(9, 9, 11, 0.02), 0 1px 2px rgba(9, 9, 11, 0.01);
-  --card-shadow-hover: 0 12px 24px -8px rgba(9, 9, 11, 0.08), 0 0 0 1px rgba(9, 9, 11, 0.02);
-  --focus-ring: 0 0 0 2px var(--panel-bg), 0 0 0 4px rgba(9, 9, 11, 0.15);
-  --glow-rgb: 9, 9, 11;
-  --dot-color: rgba(9, 9, 11, 0.025); /* Exquisite dot grid color */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.02);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.04);
+  --focus-ring: 0 0 0 2px var(--panel-bg), 0 0 0 4px rgba(26, 43, 35, 0.15);
+  --glow-rgb: 26, 43, 35;
+  --dot-color: rgba(0, 0, 0, 0.0); /* No dot grid on light — clean sage bg */
+  --input-bg: #f6f9f7;        /* Soft sage-white input backgrounds */
 }
 
 [data-theme="dark"] {
-  --bg-color: #040406;        /* Ultra-premium obsidian deep black (zero-glare) */
-  --panel-bg: #09090b;        /* Sleek Vercel zinc-950 card surfaces */
-  --panel-elevated: #18181b;  /* Hovered or elevated menu layers (zinc-900) */
-  --panel-muted: #0d0d10;     /* Structured secondary sidebar/tabs background */
-  --border-color: #1e1e24;    /* Ultra-fine, subtle border for crisp borders */
-  --border-hover: #3f3f46;    /* Soft zinc-700 hover borders */
-  --text-primary: #f4f4f5;    /* Soft, high-readability zinc-100 primary text */
-  --text-secondary: #a1a1aa;  /* Muted zinc-400 secondary description text */
-  --text-muted: #52525b;      /* Zinc-600 helper labels and placeholders */
-  --accent-color: #f4f4f5;
-  --accent-rgb: 244, 244, 245;
-  --accent-text: #3b82f6;
-  --accent-bg: rgba(59, 130, 246, 0.08);
+  --bg-color: #0b100e;        /* Deep forest-dark background */
+  --panel-bg: #141a17;        /* Elevated dark sage card surfaces */
+  --panel-elevated: #1c2420;  /* Hovered or elevated menu layers */
+  --panel-muted: #111714;     /* Structured secondary sidebar background */
+  --border-color: rgba(255, 255, 255, 0.06); /* Whisper-thin luminous border */
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --text-primary: #e8efeb;    /* Soft sage-white primary text */
+  --text-secondary: #8a9b91;  /* Muted sage secondary text */
+  --text-muted: #4a5e53;      /* Deep sage placeholder text */
+  --accent-color: #e8efeb;
+  --accent-rgb: 232, 239, 235;
+  --accent-text: #34d399;
+  --accent-bg: rgba(52, 211, 153, 0.08);
   --success-color: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.08);
+  --success-bg: rgba(16, 185, 129, 0.1);
   --success-text: #34d399;
   --warning-color: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.08);
+  --warning-bg: rgba(245, 158, 11, 0.1);
   --warning-text: #fbbf24;
   --danger-color: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-bg: rgba(239, 68, 68, 0.1);
   --danger-text: #f87171;
-  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-color);
-  --card-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-hover);
-  --focus-ring: 0 0 0 2px var(--panel-bg), 0 0 0 4px rgba(244, 244, 245, 0.2);
-  --glow-rgb: 255, 255, 255;
-  --dot-color: rgba(255, 255, 255, 0.015); /* Exquisite dark dot grid color */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.25), 0 16px 48px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --focus-ring: 0 0 0 2px var(--panel-bg), 0 0 0 4px rgba(232, 239, 235, 0.15);
+  --glow-rgb: 232, 239, 235;
+  --dot-color: rgba(255, 255, 255, 0.012);
+  --input-bg: #111714;
 }
 
 html {
   background-color: var(--bg-color);
   background-image: 
-    radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.04) 0%, transparent 65%),
-    radial-gradient(var(--dot-color) 1px, transparent 1px);
-  background-size: 100% 100%, 24px 24px;
-  background-repeat: no-repeat, repeat;
+    radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.03) 0%, transparent 60%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
   scroll-behavior: smooth;
 }
 
@@ -5889,19 +5890,20 @@ textarea.auth-input {
 .bento-card-flat {
   background: var(--panel-bg);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-shadow: var(--card-shadow);
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.25s ease, background 0.25s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
 }
 
 .bento-card-flat:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--card-shadow-hover);
+  border-color: rgba(16, 185, 129, 0.12);
 }
 
 /* Sparkline Card Details */
@@ -6000,14 +6002,15 @@ textarea.auth-input {
 
 /* Teal Promo Banner */
 .bento-card-teal {
-  background: #0e5d4e !important;
-  border-color: #0a4d40 !important;
+  background: linear-gradient(135deg, #0d5244 0%, #0a3d32 50%, #083028 100%) !important;
+  border-color: transparent !important;
   color: #ffffff !important;
   display: flex;
   flex-direction: row !important;
   justify-content: space-between;
   align-items: center;
   padding: 24px !important;
+  box-shadow: 0 4px 16px rgba(13, 82, 68, 0.25), 0 8px 32px rgba(13, 82, 68, 0.15) !important;
 }
 
 .bento-card-teal-content {
@@ -6037,9 +6040,10 @@ textarea.auth-input {
 
 /* Dark Green Status Card */
 .bento-card-forest {
-  background: #064e3b !important;
-  border-color: #043e2f !important;
+  background: linear-gradient(135deg, #064e3b 0%, #043e2f 60%, #032e22 100%) !important;
+  border-color: transparent !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(6, 78, 59, 0.25), 0 8px 32px rgba(6, 78, 59, 0.15) !important;
 }
 
 /* Dispatch Channels / Booking Cards */
@@ -6070,8 +6074,9 @@ textarea.auth-input {
 }
 
 .dispatch-card-premium:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--card-shadow-hover);
+  border-color: rgba(16, 185, 129, 0.12);
 }
 
 .dispatch-card-header {
