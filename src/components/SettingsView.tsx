@@ -95,7 +95,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Template gallery states
   const [activeCategory, setActiveCategory] = useState<'email' | 'sms' | 'whatsapp'>('email');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('welcome_substack');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('welcome_onboarding');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [searchQuery, setSearchQuery] = useState('');
