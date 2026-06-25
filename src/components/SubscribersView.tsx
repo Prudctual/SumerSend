@@ -1065,8 +1065,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           flex-shrink: 0;
           transition: transform 0.25s ease;
           z-index: 1;
-          color: #ffffff !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          box-shadow: none; /* Removed heavy shadow */
         }
 
         .sch-stat-card:hover .sch-stat-icon {
@@ -1075,22 +1074,42 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         /* Mint (Total Subscribers) */
         .sch-stat-card.mint .sch-stat-icon {
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          background: rgba(16, 185, 129, 0.08);
+          color: #047857 !important;
+        }
+        [data-theme="dark"] .sch-stat-card.mint .sch-stat-icon {
+          background: rgba(16, 185, 129, 0.16);
+          color: #34d399 !important;
         }
 
         /* Amber (Active) */
         .sch-stat-card.amber .sch-stat-icon {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          background: rgba(245, 158, 11, 0.08);
+          color: #b45309 !important;
+        }
+        [data-theme="dark"] .sch-stat-card.amber .sch-stat-icon {
+          background: rgba(245, 158, 11, 0.16);
+          color: #fbbf24 !important;
         }
 
         /* Rose (Unsubscribed) */
         .sch-stat-card.rose .sch-stat-icon {
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          background: rgba(239, 68, 68, 0.08);
+          color: #b91c1c !important;
+        }
+        [data-theme="dark"] .sch-stat-card.rose .sch-stat-icon {
+          background: rgba(239, 68, 68, 0.16);
+          color: #f87171 !important;
         }
 
         /* Sky (Welcome Sent) */
         .sch-stat-card.sky .sch-stat-icon {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: rgba(59, 130, 246, 0.08);
+          color: #1e40af !important;
+        }
+        [data-theme="dark"] .sch-stat-card.sky .sch-stat-icon {
+          background: rgba(59, 130, 246, 0.16);
+          color: #93c5fd !important;
         }
 
         .sch-stat-value {
@@ -2097,16 +2116,25 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+          box-shadow: none;
         }
 
         .sch-showcase-icon.orange {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          background: rgba(245, 158, 11, 0.08);
+          color: #d97706 !important;
+        }
+        [data-theme="dark"] .sch-showcase-icon.orange {
+          background: rgba(245, 158, 11, 0.16);
+          color: #fbbf24 !important;
         }
 
         .sch-showcase-icon.blue {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: rgba(59, 130, 246, 0.08);
+          color: #1e40af !important;
+        }
+        [data-theme="dark"] .sch-showcase-icon.blue {
+          background: rgba(59, 130, 246, 0.16);
+          color: #93c5fd !important;
         }
 
         .sch-showcase-title {
