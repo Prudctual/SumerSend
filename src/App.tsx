@@ -411,6 +411,11 @@ export default function App() {
           lang={lang} 
           apiKeys={apiKeys} 
           initialSubTab={subTab}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          setPhoneNotifications={setPhoneNotifications}
+          setLogs={setLogs}
+          setCurrentTab={handleTabChange}
         />
       );
     }

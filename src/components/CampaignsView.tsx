@@ -1,7 +1,4 @@
-
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -20,8 +17,14 @@ import {
   Coins,
   Activity,
   TrendingUp,
-  Lock
+  Lock,
+  Upload,
+  FileSpreadsheet,
+  Users,
+  Smartphone,
+  Laptop
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { templatesDb } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { renderTemplateIcon } from './IconHelper';
@@ -352,6 +355,38 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const [duplicateCount, setDuplicateCount] = useState<number>(0);
   const [parseError, setParseError] = useState<string | null>(null);
 
+  // Premium Campaigns Builder states (Matching Subscribers View)
+  const [audienceSource, setAudienceSource] = useState<'current' | 'upload' | 'manual'>('current');
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [uploadedHeaders, setUploadedHeaders] = useState<string[]>([]);
+  const [uploadedRows, setUploadedRows] = useState<any[]>([]);
+  const [mapEmail, setMapEmail] = useState('');
+  const [mapName, setMapName] = useState('');
+  const [mapPhone, setMapPhone] = useState('');
+  const [saveTemplateForFuture, setSaveTemplateForFuture] = useState(false);
+  const [newCustomTemplateName, setNewCustomTemplateName] = useState('');
+  const [previewSubIndex, setPreviewSubIndex] = useState(0);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [testSendTo, setTestSendTo] = useState('');
+  const [isTestSending, setIsTestSending] = useState(false);
+  
+  // Loaded Subscribers List for opt-in database targeting
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  
+  // Refs
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load subscribers for campaign target selector
+  useEffect(() => {
+    fetch('http://127.0.0.1:3000/api/subscribers')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setSubscribers(data);
+      })
+      .catch(err => console.warn('Could not load subscribers in CampaignsView:', err));
+  }, [viewState]);
+
   // Execution Progress State
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const [execLogs, setExecLogs] = useState<string[]>([]);
@@ -494,6 +529,45 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       .catch(err => console.warn('Could not load campaigns list, using fallback:', err));
   }, []);
 
+  // getAudienceList resolves the recipient array based on selected source
+  const getAudienceList = (): Recipient[] => {
+    if (audienceSource === 'current') {
+      return subscribers
+        .filter((s: any) => s.status === 'active')
+        .map((s: any) => ({
+          name: s.name || '',
+          to: campChannel === 'email' ? s.email : (s.phone || s.email),
+          status: 'pending' as const,
+          error: null,
+          variables: { name: s.name || '', email: s.email, phone: s.phone || '' }
+        }));
+    } else if (audienceSource === 'upload') {
+      return uploadedRows.map((row: any) => {
+        const emailVal = mapEmail ? String(row[mapEmail] || '').trim() : '';
+        const nameVal = mapName ? String(row[mapName] || '').trim() : '';
+        const phoneVal = mapPhone ? String(row[mapPhone] || '').trim() : '';
+        const toVal = campChannel === 'email' ? emailVal : (phoneVal || emailVal);
+        
+        // build variables dictionary from all row fields
+        const variables: Record<string, string> = {};
+        Object.keys(row).forEach(k => {
+          variables[k] = String(row[k] || '');
+          variables[k.toLowerCase()] = String(row[k] || '');
+        });
+        
+        return {
+          name: nameVal || (lang === 'en' ? 'Recipient' : 'مستلم'),
+          to: toVal,
+          status: 'pending' as const,
+          error: null,
+          variables
+        };
+      }).filter(r => r.to);
+    } else {
+      return parsedRecipients;
+    }
+  };
+
   // Pre-load demo CSV data based on channel
   const handleLoadDemoCSV = () => {
     if (campChannel === 'email') {
@@ -581,6 +655,211 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     setParsedRecipients(list);
   }, [csvText, campChannel]);
 
+  const processCampaignFile = (file: File) => {
+    setUploadedFileName(file.name);
+    setParseError(null);
+    
+    const fileReader = new FileReader();
+    fileReader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) {
+          throw new Error(lang === 'ar' ? 'فشل قراءة بيانات الملف.' : 'Failed to read file data.');
+        }
+        const workbook = XLSX.read(new Uint8Array(data as ArrayBuffer), { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (rawJson.length === 0) {
+          throw new Error(lang === 'ar' ? 'الملف فارغ.' : 'The selected file is empty.');
+        }
+
+        const headers = rawJson[0].map((h: any) => h ? String(h).trim() : '');
+        setUploadedHeaders(headers);
+
+        const objectsJson = XLSX.utils.sheet_to_json(worksheet);
+        setUploadedRows(objectsJson);
+
+        // Auto map columns
+        const emailIdx = headers.findIndex((h: string) => /email|mail|البريد|الايميل/i.test(h));
+        const nameIdx = headers.findIndex((h: string) => /name|fullname|الاسم|الزبون|العميل/i.test(h));
+        const phoneIdx = headers.findIndex((h: string) => /phone|tel|mobile|هاتف|جوال|رقم/i.test(h));
+
+        if (emailIdx !== -1) {
+          setMapEmail(headers[emailIdx]);
+        } else if (headers.length > 0) {
+          setMapEmail(headers[0]);
+        }
+        if (nameIdx !== -1) {
+          setMapName(headers[nameIdx]);
+        }
+        if (phoneIdx !== -1) {
+          setMapPhone(headers[phoneIdx]);
+        }
+
+        // If email or any columns mapped, auto set audience and advance
+        if (emailIdx !== -1 || headers.length > 0) {
+          const emailCol = emailIdx !== -1 ? headers[emailIdx] : headers[0];
+          const nameCol = nameIdx !== -1 ? headers[nameIdx] : '';
+          const phoneCol = phoneIdx !== -1 ? headers[phoneIdx] : '';
+          
+          const mapped = objectsJson.map((row: any) => {
+            const emailVal = row[emailCol] ? String(row[emailCol]).trim() : '';
+            const nameVal = nameCol && row[nameCol] ? String(row[nameCol]).trim() : '';
+            const phoneVal = phoneCol && row[phoneCol] ? String(row[phoneCol]).trim() : '';
+            const toVal = campChannel === 'email' ? emailVal : (phoneVal || emailVal);
+            
+            // build variables dictionary from all row fields
+            const variables: Record<string, string> = {};
+            Object.keys(row).forEach(k => {
+              variables[k] = String(row[k] || '');
+              variables[k.toLowerCase()] = String(row[k] || '');
+            });
+
+            return {
+              name: nameVal || (lang === 'en' ? 'Recipient' : 'مستلم'),
+              to: toVal,
+              status: 'pending' as const,
+              error: null,
+              variables
+            };
+          }).filter(s => s.to);
+
+          setStep(4); // auto advance to Step 4 (Review/Launch)
+        }
+      } catch (err: any) {
+        setParseError(lang === 'ar' ? `فشل تحليل الملف: ${err.message}` : `File parsing failed: ${err.message}`);
+      }
+    };
+    fileReader.onerror = () => {
+      setParseError(lang === 'ar' ? 'فشل قراءة الملف.' : 'FileReader error occurred.');
+    };
+    fileReader.readAsArrayBuffer(file);
+  };
+
+  const handleMapColumns = () => {
+    if (!mapEmail && !mapPhone) {
+      alert(lang === 'ar' ? 'يرجى تحديد عمود واحد على الأقل للمستلم.' : 'Please select at least one column for recipient.');
+      return;
+    }
+    setStep(4);
+  };
+
+  const insertTokenToComposer = (token: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setCampBody(prev => prev + token);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setCampBody(before + token + after);
+    
+    // Refocus and place cursor directly after the inserted token
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + token.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 50);
+  };
+
+  const getPreviewText = (text: string, recipient: any) => {
+    if (!text) return '';
+    let result = text;
+    if (recipient) {
+      result = result.replaceAll('{{name}}', recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader'));
+      result = result.replaceAll('{{email}}', recipient.email || recipient.to || '');
+      result = result.replaceAll('{{phone}}', recipient.to || '');
+      
+      // Support dynamic replacements of all keys inside the recipient object (like variables)
+      if (recipient.variables) {
+        Object.keys(recipient.variables).forEach(key => {
+          result = result.replaceAll(`{{${key}}}`, recipient.variables[key] || '');
+        });
+      }
+      Object.keys(recipient).forEach(key => {
+        if (key !== 'variables') {
+          result = result.replaceAll(`{{${key}}}`, recipient[key] || '');
+        }
+      });
+    }
+    
+    // Fallbacks from template variables
+    const templates = getMergedTemplates(campChannel);
+    const template = templates.find(t => t.id === campTemplateId);
+    if (template && template.variables) {
+      template.variables.forEach((v: any) => {
+        const val = lang === 'ar' ? (v.defaultValAr || v.defaultValEn) : (v.defaultValEn || v.defaultValAr);
+        result = result.replaceAll(`{{${v.key}}}`, val);
+      });
+    }
+    return result;
+  };
+
+  const handleSendTestMessage = async () => {
+    if (!testSendTo.trim()) {
+      alert(lang === 'ar' ? 'يرجى إدخال وجهة الإرسال التجريبي.' : 'Please enter a test destination.');
+      return;
+    }
+    
+    setIsTestSending(true);
+    
+    const audience = getAudienceList();
+    const mockRecipient = audience[previewSubIndex] || { 
+      name: lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem', 
+      email: 'jasim@prudctual.substack.com', 
+      to: campChannel === 'email' ? 'jasim@prudctual.substack.com' : '07801234567',
+      variables: {}
+    };
+    
+    const subjectText = getPreviewText(campSubject, mockRecipient);
+    const bodyText = getPreviewText(campBody, mockRecipient);
+    
+    const payload = campChannel === 'email' ? {
+      to: testSendTo,
+      subject: subjectText || 'Test Send',
+      html: `<p>${bodyText}</p>`
+    } : {
+      to: testSendTo,
+      body: bodyText
+    };
+
+    const endpoint = campChannel === 'email' ? 'emails' : campChannel;
+    const url = `http://127.0.0.1:3000/v1/${endpoint}`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer sm_live_campaign_auth'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        window.dispatchEvent(new CustomEvent('sumer-toast', {
+          detail: { 
+            message: lang === 'ar' ? 'تم إرسال الرسالة التجريبية بنجاح!' : 'Test message sent successfully!', 
+            type: 'success' 
+          }
+        }));
+      } else {
+        const data = await res.json();
+        throw new Error(data.error?.message || 'Send failed');
+      }
+    } catch (err: any) {
+      alert((lang === 'ar' ? 'فشل إرسال التجربة: ' : 'Test send failed: ') + err.message);
+    } finally {
+      setIsTestSending(false);
+    }
+  };
+
   // Handle template selection
   const handleTemplateSelect = (id: string) => {
     setCampTemplateId(id);
@@ -598,7 +877,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   };
 
   const calculateTotalCost = () => {
-    return parsedRecipients.length * getCostPerMessage();
+    return getAudienceList().length * getCostPerMessage();
   };
 
   const isBalanceSufficient = () => {
@@ -612,7 +891,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       return;
     }
 
-    if (parsedRecipients.length === 0) {
+    const audience = getAudienceList();
+    if (audience.length === 0) {
       alert(lang === 'en' ? 'Audience list is empty.' : 'قائمة المستهدفين فارغة.');
       return;
     }
@@ -669,6 +949,37 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   };
 
   const executeCampaignLaunch = async (totalCost: number) => {
+    // Save template for future use if checked
+    if (saveTemplateForFuture && newCustomTemplateName.trim()) {
+      try {
+        const templatePayload = {
+          nameAr: lang === 'ar' ? newCustomTemplateName : 'قالب مخصص',
+          nameEn: lang === 'en' ? newCustomTemplateName : 'Custom Template',
+          descAr: 'تم حفظه من معالج إطلاق الحملات',
+          descEn: 'Saved from Campaign Wizard',
+          subjectAr: campSubject,
+          subjectEn: campSubject,
+          body: campBody,
+          icon: 'FileText',
+          variables: [],
+          type: campChannel
+        };
+        const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(templatePayload)
+        });
+        if (res.ok) {
+          const saved = await res.json();
+          setCustomTemplates(prev => [...prev, saved]);
+        }
+      } catch (err) {
+        console.warn('Failed to save template during campaign launch:', err);
+      }
+    }
+
+    const audience = getAudienceList();
+
     // Step 1: Create Campaign Draft on Backend
     changeViewStateAndCampaign('progress', null);
     setExecProgress(0);
@@ -684,7 +995,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           type: campChannel,
           subject: campSubject,
           body: campBody,
-          recipients: parsedRecipients,
+          recipients: audience,
           totalCost
         })
       });
@@ -700,12 +1011,12 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         status: 'sending',
         subject: campSubject,
         body: campBody,
-        recipientsCount: parsedRecipients.length,
+        recipientsCount: audience.length,
         successCount: 0,
         failedCount: 0,
         totalCost,
         timestamp: new Date().toISOString(),
-        recipients: parsedRecipients
+        recipients: audience
       };
       setActiveCampaign(createdCamp);
     }
@@ -748,8 +1059,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       }
 
       bodyTags.forEach(tag => {
-        // Find in recipient variables (case-insensitive or matching case)
-        let val = rc.variables?.[tag] || rc.variables?.[tag.toLowerCase()];
+        // Find in recipient variables (case-insensitive or matching case) or direct fields
+        let val = (rc as any)[tag] || rc.variables?.[tag] || rc.variables?.[tag.toLowerCase()];
         
         // If not found, use template fallback
         if (val === undefined && template) {
@@ -1861,6 +2172,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                 <label className="form-label" style={{ marginBottom: '4px', display: 'block' }}>{t.messageBodyLabel}</label>
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>{t.bodyDesc}</p>
                 <textarea
+                  ref={textareaRef}
                   className="form-input"
                   rows={6}
                   value={campBody}
@@ -1869,35 +2181,296 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   style={{ fontFamily: 'monospace', fontSize: '13px', padding: '12px', lineHeight: 1.5 }}
                 />
               </div>
+
+              {/* Token Helpers */}
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', backgroundColor: 'var(--panel-bg)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
+                  {lang === 'ar' ? 'انقر لإدراج متغير تخصيص في موضع المؤشر:' : 'Click to insert dynamic personalization token:'}
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button"
+                    onClick={() => insertTokenToComposer('{{name}}')}
+                    className="btn"
+                    style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                  >
+                    <span>{"{{name}}"}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>({lang === 'ar' ? 'اسم العميل' : 'Name'})</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => insertTokenToComposer('{{email}}')}
+                    className="btn"
+                    style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                  >
+                    <span>{"{{email}}"}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>({lang === 'ar' ? 'البريد' : 'Email'})</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => insertTokenToComposer('{{phone}}')}
+                    className="btn"
+                    style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                  >
+                    <span>{"{{phone}}"}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>({lang === 'ar' ? 'الهاتف' : 'Phone'})</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
           {/* STEP 3: AUDIENCE */}
           {step === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="flex-between" style={{ alignItems: 'center' }}>
-                <label className="form-label">{t.audienceTitle}</label>
-                <button 
-                  type="button" 
-                  onClick={handleLoadDemoCSV}
-                  className="btn"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11px' }}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                
+                {/* Current Subscribers card */}
+                <div 
+                  onClick={() => { setAudienceSource('current'); setParseError(null); }}
+                  style={{
+                    border: '1px solid ' + (audienceSource === 'current' ? 'var(--text-primary)' : 'var(--border-color)'),
+                    borderRadius: '8px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    backgroundColor: audienceSource === 'current' ? 'var(--panel-bg)' : 'transparent',
+                    transition: 'all 0.2s ease',
+                    textAlign: lang === 'ar' ? 'right' : 'left'
+                  }}
                 >
-                  <FileText size={12} />
-                  <span>{t.loadDemoBtn}</span>
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <Users size={16} color={audienceSource === 'current' ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {lang === 'ar' ? 'المشتركين في النظام' : 'System Subscribers'}
+                    </h4>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {lang === 'ar' 
+                      ? `استخدام قاعدة المشتركين الحالية. النشطون: ${subscribers.filter(s => s.status === 'active').length} مشترك.`
+                      : `Use current opt-in database. Active: ${subscribers.filter(s => s.status === 'active').length} users.`}
+                  </p>
+                </div>
+
+                {/* Upload Spreadsheet card */}
+                <div 
+                  onClick={() => { setAudienceSource('upload'); setParseError(null); }}
+                  style={{
+                    border: '1px solid ' + (audienceSource === 'upload' ? 'var(--text-primary)' : 'var(--border-color)'),
+                    borderRadius: '8px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    backgroundColor: audienceSource === 'upload' ? 'var(--panel-bg)' : 'transparent',
+                    transition: 'all 0.2s ease',
+                    textAlign: lang === 'ar' ? 'right' : 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <FileSpreadsheet size={16} color={audienceSource === 'upload' ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {lang === 'ar' ? 'تحميل ملف Excel / CSV' : 'Spreadsheet Uploader'}
+                    </h4>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {lang === 'ar'
+                      ? 'رفع ملف Excel يحتوي على قائمة عملائك وتعيين الحقول فوراً.'
+                      : 'Upload a spreadsheet containing customer rows and map fields.'}
+                  </p>
+                  {uploadedFileName && (
+                    <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--success-color)', fontWeight: 600 }}>
+                      {lang === 'ar' ? `✓ تم تحميل: ${uploadedFileName}` : `✓ Loaded: ${uploadedFileName}`}
+                    </div>
+                  )}
+                </div>
+
+                {/* Copied CSV Text card */}
+                <div 
+                  onClick={() => { setAudienceSource('manual'); setParseError(null); }}
+                  style={{
+                    border: '1px solid ' + (audienceSource === 'manual' ? 'var(--text-primary)' : 'var(--border-color)'),
+                    borderRadius: '8px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    backgroundColor: audienceSource === 'manual' ? 'var(--panel-bg)' : 'transparent',
+                    transition: 'all 0.2s ease',
+                    textAlign: lang === 'ar' ? 'right' : 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <FileText size={16} color={audienceSource === 'manual' ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {lang === 'ar' ? 'لصق نص CSV يدوي' : 'Paste CSV Text'}
+                    </h4>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {lang === 'ar'
+                      ? 'نسخ ولصق قائمة جهات اتصال مفصولة بفاصلة مباشرة.'
+                      : 'Manually copy-paste comma-separated recipient lines.'}
+                  </p>
+                </div>
               </div>
 
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 4px 0', lineHeight: 1.4 }}>{t.csvDesc}</p>
+              {/* Conditional Options Render */}
+              {audienceSource === 'current' && (
+                <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--panel-bg)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--success-color)' }}>
+                    <CheckCircle2 size={16} />
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>
+                      {lang === 'ar' 
+                        ? `قاعدة البيانات نشطة وجاهزة! سيتم إرسال الحملة لـ ${subscribers.filter(s => s.status === 'active').length} مشترك نشط.`
+                        : `Database active! Ready to dispatch to ${subscribers.filter(s => s.status === 'active').length} active opt-ins.`}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-              <textarea
-                className="form-input"
-                rows={7}
-                value={csvText}
-                onChange={(e) => setCsvText(e.target.value)}
-                placeholder={t.csvPl}
-                style={{ fontFamily: 'monospace', fontSize: '12px', padding: '12px', lineHeight: 1.4, direction: 'ltr', textAlign: 'left' }}
-              />
+              {audienceSource === 'upload' && (
+                <div style={{ border: '1px dashed var(--border-color)', borderRadius: '8px', padding: '20px', backgroundColor: 'var(--panel-bg)' }}>
+                  {!uploadedFileName ? (
+                    <div 
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload size={28} color="var(--text-secondary)" />
+                      <span style={{ fontSize: '13px', fontWeight: 600 }}>
+                        {lang === 'ar' ? 'انقر لتصفح ورفع ملف جهات الاتصال' : 'Click to browse contact spreadsheet'}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'يدعم الملفات بصيغة .xlsx, .csv أو .xls' : 'Supports .xlsx, .csv or .xls files'}
+                      </span>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        style={{ display: 'none' }} 
+                        accept=".xlsx,.xls,.csv" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) processCampaignFile(file);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                          {lang === 'ar' ? `الملف المرفوع: ${uploadedFileName}` : `Uploaded file: ${uploadedFileName}`}
+                        </span>
+                        <button 
+                          className="btn" 
+                          style={{ padding: '4px 10px', fontSize: '11px' }}
+                          onClick={() => { setUploadedFileName(''); setUploadedRows([]); setUploadedHeaders([]); }}
+                        >
+                          {lang === 'ar' ? 'تغيير الملف' : 'Change File'}
+                        </button>
+                      </div>
+
+                      {/* Columns Mapping section */}
+                      <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <h5 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700 }}>
+                          {lang === 'ar' ? 'ربط وتعيين حقول الملف أعلاه:' : 'Map spreadsheet headers to columns:'}
+                        </h5>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                          <div>
+                            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                              {lang === 'ar' ? 'عمود البريد الإلكتروني (مطلوب)' : 'Email (Required)'}
+                            </label>
+                            <select 
+                              className="form-input" 
+                              style={{ height: '34px', fontSize: '12px', padding: '0 8px' }} 
+                              value={mapEmail} 
+                              onChange={(e) => setMapEmail(e.target.value)}
+                            >
+                              <option value="">-- select --</option>
+                              {uploadedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                              {lang === 'ar' ? 'عمود الاسم (اختياري)' : 'Name (Optional)'}
+                            </label>
+                            <select 
+                              className="form-input" 
+                              style={{ height: '34px', fontSize: '12px', padding: '0 8px' }} 
+                              value={mapName} 
+                              onChange={(e) => setMapName(e.target.value)}
+                            >
+                              <option value="">-- select --</option>
+                              {uploadedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                              {lang === 'ar' ? 'عمود الهاتف (اختياري)' : 'Phone (Optional)'}
+                            </label>
+                            <select 
+                              className="form-input" 
+                              style={{ height: '34px', fontSize: '12px', padding: '0 8px' }} 
+                              value={mapPhone} 
+                              onChange={(e) => setMapPhone(e.target.value)}
+                            >
+                              <option value="">-- select --</option>
+                              {uploadedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ alignSelf: 'flex-end', height: '32px', fontSize: '11.5px', borderRadius: '6px', padding: '0 14px', marginTop: '6px' }}
+                          onClick={handleMapColumns}
+                        >
+                          {lang === 'ar' ? 'تطبيق المزامنة والربط' : 'Apply Mapping'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {audienceSource === 'manual' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div className="flex-between" style={{ alignItems: 'center' }}>
+                    <label className="form-label" style={{ fontSize: '12px' }}>{lang === 'ar' ? 'محتوى نص CSV:' : 'Pasted CSV Lines:'}</label>
+                    <button 
+                      type="button" 
+                      onClick={handleLoadDemoCSV}
+                      className="btn"
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '10.5px' }}
+                    >
+                      <FileText size={11} />
+                      <span>{t.loadDemoBtn}</span>
+                    </button>
+                  </div>
+                  
+                  <textarea
+                    className="form-input"
+                    rows={6}
+                    value={csvText}
+                    onChange={(e) => setCsvText(e.target.value)}
+                    placeholder={t.csvPl}
+                    style={{ fontFamily: 'monospace', fontSize: '12px', padding: '12px', lineHeight: 1.4, direction: 'ltr', textAlign: 'left' }}
+                  />
+
+                  {parsedRecipients.length > 0 && !parseError && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <CheckCircle2 size={13} />
+                        <span>{t.parsedSuccess.replace('{count}', parsedRecipients.length.toString())}</span>
+                      </div>
+                      {duplicateCount > 0 && (
+                        <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <AlertCircle size={13} />
+                          <span>
+                            {lang === 'ar' 
+                              ? `تم استبعاد ${duplicateCount} مستلم مكرر تلقائياً.` 
+                              : `Successfully excluded ${duplicateCount} duplicate recipient(s) automatically.`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {parseError && (
                 <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1905,94 +2478,260 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   <span>{parseError}</span>
                 </div>
               )}
-
-              {parsedRecipients.length > 0 && !parseError && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <CheckCircle2 size={14} />
-                    <span>{t.parsedSuccess.replace('{count}', parsedRecipients.length.toString())}</span>
-                  </div>
-                  {duplicateCount > 0 && (
-                    <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <AlertCircle size={14} />
-                      <span>
-                        {lang === 'ar' 
-                          ? `تم استبعاد ${duplicateCount} مستلم مكرر تلقائياً.` 
-                          : `Successfully excluded ${duplicateCount} duplicate recipient(s) automatically.`}
-                      </span>
-                    </div>
-                  )}
-                  <div style={{ padding: '10px 14px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {(() => {
-                      const regex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
-                      const bodyTags: string[] = ['name', 'to'];
-                      let match;
-                      while ((match = regex.exec(campBody)) !== null) {
-                        const tag = match[1];
-                        if (!bodyTags.includes(tag)) {
-                          bodyTags.push(tag);
-                        }
-                      }
-                      const tagsStr = bodyTags.map(t => `"${t}"`).join(', ');
-                      return t.parsedTags.replace('{tags}', tagsStr);
-                    })()}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* STEP 4: REVIEW & LAUNCH */}
+          {/* STEP 4: REVIEW & LIVE PREVIEW */}
           {step === 4 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px', backgroundColor: 'var(--panel-bg)' }}>
-                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px 0', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span>📢</span>
-                  <span>{lang === 'en' ? 'Campaign Parameters Summary' : 'ملخص مواصفات الحملة'}</span>
-                </h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Campaign Name:' : 'اسم الحملة:'}</span>{' '}
-                    <strong style={{ color: 'var(--text-primary)' }}>{campName}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Channel:' : 'القناة:'}</span>{' '}
-                    <span className="badge badge-info" style={{ textTransform: 'uppercase', fontSize: '10px' }}>{campChannel}</span>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Audience Size:' : 'حجم قائمة الجمهور المستهدف:'}</span>{' '}
-                    <strong>{parsedRecipients.length} {lang === 'en' ? 'Recipients' : 'مستلم'}</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              
+              {/* Left Pane: Summary, Cost, Templates, Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px', backgroundColor: 'var(--panel-bg)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px 0', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span>📢</span>
+                    <span>{lang === 'en' ? 'Campaign Parameters Summary' : 'ملخص مواصفات الحملة'}</span>
+                  </h4>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Campaign Name:' : 'اسم الحملة:'}</span>{' '}
+                      <strong style={{ color: 'var(--text-primary)' }}>{campName}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Channel:' : 'القناة:'}</span>{' '}
+                      <span className="badge badge-info" style={{ textTransform: 'uppercase', fontSize: '10px' }}>{campChannel}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Audience Size:' : 'حجم قائمة الجمهور المستهدف:'}</span>{' '}
+                      <strong>{getAudienceList().length} {lang === 'en' ? 'Recipients' : 'مستلم'}</strong>
+                    </div>
                   </div>
                 </div>
+
+                {/* Cost Box */}
+                <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{t.summaryCost}</span>
+                  <h3 style={{ fontSize: '24px', fontWeight: 800, margin: '6px 0', color: 'var(--accent-color)' }}>
+                    {calculateTotalCost().toLocaleString()} {t.iqd}
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                    {t.summaryCostDetails
+                      .replace('{count}', getAudienceList().length.toString())
+                      .replace('{rate}', getCostPerMessage().toString())
+                      .replace('{total}', calculateTotalCost().toLocaleString())}
+                  </p>
+                </div>
+
+                {/* Save Template for Future Use Option */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px', backgroundColor: 'var(--panel-bg)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={saveTemplateForFuture} 
+                      onChange={(e) => setSaveTemplateForFuture(e.target.checked)} 
+                      style={{ accentColor: 'var(--accent-color)' }}
+                    />
+                    <span>{lang === 'ar' ? 'حفظ هذا التصميم كقالب جديد للاستخدام المستقبلي' : 'Save this design as a template for future use'}</span>
+                  </label>
+                  
+                  {saveTemplateForFuture && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {lang === 'ar' ? 'اسم القالب المخصص الجديد:' : 'New Custom Template Name:'}
+                      </label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        style={{ height: '34px', fontSize: '12px' }} 
+                        value={newCustomTemplateName} 
+                        onChange={(e) => setNewCustomTemplateName(e.target.value)} 
+                        placeholder={lang === 'ar' ? 'مثال: نشرة عروض البصرة 2026' : 'e.g. Basra Promo Template 2026'} 
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Wallet Balance verification status */}
+                {!isBalanceSufficient() ? (
+                  <div style={{ padding: '12px 16px', borderRadius: '6px', backgroundColor: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255, 59, 48, 0.2)', color: '#ff3b30', fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <AlertCircle size={18} />
+                    <span>{t.balanceWarning}</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px 16px', borderRadius: '6px', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <CheckCircle2 size={16} />
+                    <span>{lang === 'en' ? 'Wallet balance is sufficient. Ready to launch.' : 'رصيد المحفظة الإلكترونية كافٍ لتشغيل الحملة بنجاح.'}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Cost Box */}
-              <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', padding: '16px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{t.summaryCost}</span>
-                <h3 style={{ fontSize: '24px', fontWeight: 800, margin: '6px 0', color: 'var(--accent-color)' }}>
-                  {calculateTotalCost().toLocaleString()} {t.iqd}
-                </h3>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
-                  {t.summaryCostDetails
-                    .replace('{count}', parsedRecipients.length.toString())
-                    .replace('{rate}', getCostPerMessage().toString())
-                    .replace('{total}', calculateTotalCost().toLocaleString())}
-                </p>
+              {/* Right Pane: Real-time Live Preview with desktop/mobile mode & test send */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  
+                  {/* Recipient browser */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                      {lang === 'ar' ? 'تخصيص المعاينة حسب:' : 'Resolve Preview For:'}
+                    </span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button 
+                        type="button"
+                        className="btn" 
+                        style={{ padding: '4px 8px', borderRadius: '6px' }}
+                        disabled={previewSubIndex === 0}
+                        onClick={() => setPreviewSubIndex(p => Math.max(0, p - 1))}
+                      >
+                        &larr;
+                      </button>
+                      
+                      <select
+                        className="form-input"
+                        style={{ height: '30px', fontSize: '11.5px', padding: '0 6px', width: '130px' }}
+                        value={previewSubIndex}
+                        onChange={(e) => setPreviewSubIndex(Number(e.target.value))}
+                      >
+                        {getAudienceList().slice(0, 15).map((aud, idx) => (
+                          <option key={idx} value={idx}>
+                            {aud.name || aud.to}
+                          </option>
+                        ))}
+                        {getAudienceList().length === 0 && (
+                          <option value="0">{lang === 'ar' ? 'لا يوجد مستلمين' : 'No Recipients'}</option>
+                        )}
+                      </select>
+
+                      <button 
+                        type="button"
+                        className="btn" 
+                        style={{ padding: '4px 8px', borderRadius: '6px' }}
+                        disabled={previewSubIndex >= getAudienceList().length - 1}
+                        onClick={() => setPreviewSubIndex(p => Math.min(getAudienceList().length - 1, p + 1))}
+                      >
+                        &rarr;
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop / Mobile view mode toggle */}
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <button 
+                      type="button"
+                      className="btn" 
+                      style={{ border: 'none', background: previewMode === 'desktop' ? 'var(--text-primary)' : 'transparent', color: previewMode === 'desktop' ? 'var(--background-color)' : 'var(--text-secondary)', padding: '6px 12px', fontSize: '11px', borderRadius: 0 }}
+                      onClick={() => setPreviewMode('desktop')}
+                    >
+                      <Laptop size={12} style={{ display: 'inline', marginInlineEnd: '4px' }} />
+                      {lang === 'ar' ? 'شاشة كاملة' : 'Desktop'}
+                    </button>
+                    <button 
+                      type="button"
+                      className="btn" 
+                      style={{ border: 'none', background: previewMode === 'mobile' ? 'var(--text-primary)' : 'transparent', color: previewMode === 'mobile' ? 'var(--background-color)' : 'var(--text-secondary)', padding: '6px 12px', fontSize: '11px', borderRadius: 0 }}
+                      onClick={() => setPreviewMode('mobile')}
+                    >
+                      <Smartphone size={12} style={{ display: 'inline', marginInlineEnd: '4px' }} />
+                      {lang === 'ar' ? 'هاتف' : 'Mobile'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview Frame Container */}
+                <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#09090b', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <div style={{
+                    width: previewMode === 'mobile' ? '280px' : '100%',
+                    backgroundColor: '#ffffff',
+                    borderRadius: previewMode === 'mobile' ? '20px' : '4px',
+                    border: previewMode === 'mobile' ? '10px solid #18181b' : 'none',
+                    height: '280px',
+                    overflowY: 'auto',
+                    color: '#000000',
+                    textAlign: lang === 'ar' ? 'right' : 'left',
+                    direction: lang === 'ar' ? 'rtl' : 'ltr'
+                  }}>
+                    
+                    {/* Mock Email Frame */}
+                    {campChannel === 'email' ? (
+                      <div>
+                        <div style={{ padding: '10px', borderBottom: '1px solid #e4e4e7', backgroundColor: '#f4f4f5', fontSize: '11px', color: '#3f3f46', direction: lang === 'ar' ? 'rtl' : 'ltr', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                          <div><strong>{lang === 'ar' ? 'من:' : 'From:'}</strong> sumersend@prudctual.com</div>
+                          <div><strong>{lang === 'ar' ? 'إلى:' : 'To:'}</strong> {getAudienceList()[previewSubIndex]?.to || 'jasim@prudctual.substack.com'}</div>
+                          <div style={{ marginTop: '4px' }}><strong>{lang === 'ar' ? 'الموضوع:' : 'Subject:'}</strong> {getPreviewText(campSubject, getAudienceList()[previewSubIndex]) || '(لا يوجد عنوان)'}</div>
+                        </div>
+                        
+                        <div 
+                          style={{ padding: '16px', fontSize: '13px', lineHeight: 1.5 }}
+                          dangerouslySetInnerHTML={{ __html: getPreviewText(campBody, getAudienceList()[previewSubIndex]).replace(/\n/g, '<br />') }}
+                        />
+                      </div>
+                    ) : (
+                      // Mock Mobile Chat Bubble (WhatsApp / SMS)
+                      <div style={{
+                        backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
+                        backgroundSize: 'cover',
+                        height: '100%',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        minHeight: '260px'
+                      }}>
+                        <div style={{
+                          alignSelf: lang === 'ar' ? 'flex-start' : 'flex-end',
+                          backgroundColor: campChannel === 'whatsapp' ? '#dcf8c6' : '#e5e5ea',
+                          color: '#000000',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          maxWidth: '85%',
+                          fontSize: '12px',
+                          lineHeight: 1.4,
+                          boxShadow: '0 1px 1px rgba(0,0,0,0.1)',
+                          textAlign: lang === 'ar' ? 'right' : 'left',
+                          whiteSpace: 'pre-wrap'
+                        }}>
+                          {getPreviewText(campBody, getAudienceList()[previewSubIndex]) || '(محتوى الرسالة فارغ)'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Test Send Dispatcher Block */}
+                <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: 'var(--panel-bg)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700 }}>
+                      {lang === 'ar' ? 'إرسال رسالة تجريبية سريعة:' : 'Send Test Sample:'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {lang === 'ar' ? 'تحقق من وصول الرسالة فعلياً لهاتفك أو بريدك الإلكتروني.' : 'Verify delivery directly on your real mailbox or phone.'}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      style={{ height: '32px', fontSize: '12px', flex: 1 }} 
+                      placeholder={campChannel === 'email' ? 'your-email@gmail.com' : '07801234567'} 
+                      value={testSendTo}
+                      onChange={(e) => setTestSendTo(e.target.value)}
+                    />
+                    <button 
+                      type="button"
+                      className="btn btn-primary" 
+                      style={{ height: '32px', fontSize: '12px', padding: '0 12px', borderRadius: '6px' }}
+                      disabled={isTestSending}
+                      onClick={handleSendTestMessage}
+                    >
+                      {isTestSending ? '...' : (lang === 'ar' ? 'إرسال تجربة' : 'Send Test')}
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Wallet Balance verification status */}
-              {!isBalanceSufficient() ? (
-                <div style={{ padding: '12px 16px', borderRadius: '6px', backgroundColor: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255, 59, 48, 0.2)', color: '#ff3b30', fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <AlertCircle size={18} />
-                  <span>{t.balanceWarning}</span>
-                </div>
-              ) : (
-                <div style={{ padding: '12px 16px', borderRadius: '6px', backgroundColor: 'rgba(76,217,100,0.1)', color: '#4cd964', fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} />
-                  <span>{lang === 'en' ? 'Wallet balance is sufficient. Ready to launch.' : 'رصيد المحفظة الإلكترونية كافٍ لتشغيل الحملة بنجاح.'}</span>
-                </div>
-              )}
             </div>
           )}
 
@@ -2014,7 +2753,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                 disabled={
                   (step === 1 && !campName.trim()) || 
                   (step === 2 && !campBody.trim()) || 
-                  (step === 3 && (parsedRecipients.length === 0 || !!parseError))
+                  (step === 3 && (getAudienceList().length === 0 || !!parseError))
                 }
                 onClick={() => setStep(step + 1)}
               >
@@ -2024,7 +2763,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             ) : (
               <button 
                 className="btn btn-primary" 
-                disabled={!isBalanceSufficient() || parsedRecipients.length === 0}
+                disabled={!isBalanceSufficient() || getAudienceList().length === 0}
                 onClick={handleLaunchCampaign}
               >
                 {t.launchBtn}
