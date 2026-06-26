@@ -119,6 +119,25 @@ export async function authMiddleware(req, res, next) {
     };
     next();
   } catch (err) {
+    // Fallback: If verification fails, try to verify token by calling the Render backend directly.
+    // This resolves token validation failures due to JWT_SECRET mismatch between Vercel and Render.
+    try {
+      const renderBackendUrl = 'https://sumersend-backend.onrender.com';
+      const verifyRes = await fetch(`${renderBackendUrl}/api/auth/me`, {
+        headers: {
+          'Authorization': authHeader
+        }
+      });
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json();
+        if (verifyData && verifyData.user) {
+          req.user = verifyData.user;
+          return next();
+        }
+      }
+    } catch (fetchErr) {
+      console.error('Failed to verify token via Render fallback:', fetchErr);
+    }
     return res.status(401).json({ error: 'Session expired or token invalid.' });
   }
 }
