@@ -207,6 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       subItems: [
         { id: 'apikeys', subTab: 'apikeys', labelAr: 'مفاتيح الـ API', labelEn: 'API Keys' },
         { id: 'webhooks', labelAr: 'الويب هوكس Webhooks', labelEn: 'Webhooks Setup' },
+        { id: 'code', labelAr: 'منشئ الأكواد التفاعلي', labelEn: 'Interactive Code Builder' },
       ]
     },
     {
@@ -246,9 +247,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'templates':
         return currentTab === 'dashboard' && activeDashboardSubTab === 'templates';
       case 'apikeys':
-        return currentTab === 'dashboard' && activeDashboardSubTab === 'apikeys';
+        return currentTab === 'apikeys' || currentTab === 'developer' || currentTab === 'api' || (currentTab === 'dashboard' && activeDashboardSubTab === 'apikeys');
       case 'webhooks':
         return currentTab === 'webhooks';
+      case 'code':
+        return currentTab === 'code';
       case 'logs':
         return currentTab === 'logs' || currentTab === 'logs-list';
       case 'reports':
