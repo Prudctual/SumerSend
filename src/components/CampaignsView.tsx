@@ -797,7 +797,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           const defaultPlaceholders = [
             'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
             'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
-            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient',
+            'شريكنا العزيز', 'valued partner', 'أحمد', 'ahmed'
           ];
           if (trimmedName && !defaultPlaceholders.includes(trimmedName.toLowerCase())) {
             val = trimmedName;
@@ -835,7 +836,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           const defaultPlaceholders = [
             'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
             'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
-            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient',
+            'شريكنا العزيز', 'valued partner', 'أحمد', 'ahmed'
           ];
           if (defaultPlaceholders.includes(valStr.toLowerCase())) {
             val = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
@@ -858,7 +860,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       const defaultPlaceholders = [
         'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
         'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
-        'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+        'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient',
+        'شريكنا العزيز', 'valued partner', 'أحمد', 'ahmed'
       ];
       const finalName = defaultPlaceholders.includes(subName.toLowerCase()) ? (lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber') : subName;
       result = result

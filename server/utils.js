@@ -110,7 +110,8 @@ export function compileWelcomeMessage(body, name, email) {
   const defaultPlaceholders = [
     'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
     'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
-    'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+    'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient',
+    'شريكنا العزيز', 'valued partner', 'أحمد', 'ahmed'
   ];
   if (!subName || defaultPlaceholders.includes(lowerSub)) {
     subName = fallbackNameAr;
