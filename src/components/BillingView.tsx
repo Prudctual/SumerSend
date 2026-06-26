@@ -29,7 +29,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
   const [showZainModal, setShowZainModal] = useState(false);
   const [showFastPayModal, setShowFastPayModal] = useState(false);
   const [amount, setAmount] = useState('25000');
-  const [phoneNumber, setPhoneNumber] = useState('07801234567');
+  const [phoneNumber, setPhoneNumber] = useState(() => localStorage.getItem('sumer_admin_test_phone') || '07739396298');
   const [pin, setPin] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);

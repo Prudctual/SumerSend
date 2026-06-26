@@ -196,7 +196,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     if (selectedChannel === 'email') {
       setConsoleRecipient(localStorage.getItem('sumer_admin_test_email') || 'customer@gmail.com');
     } else {
-      setConsoleRecipient('07801234567');
+      setConsoleRecipient(localStorage.getItem('sumer_admin_test_phone') || '07739396298');
     }
   }, [selectedChannel]);
 
@@ -1954,7 +1954,7 @@ echo "Webhook Processed";
                           setSimRecipient('customer@gmail.com');
                           setSimMessage(e.target.value.endsWith('failed') ? 'Message rejected: quota exceeded.' : 'Delivered successfully.');
                         } else {
-                          setSimRecipient('07801234567');
+                          setSimRecipient(localStorage.getItem('sumer_admin_test_phone') || '07739396298');
                           setSimMessage('OTP successfully delivered to device.');
                         }
                       }}

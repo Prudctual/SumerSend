@@ -53,7 +53,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [emailFrom, setEmailFrom] = useState('');
   const [emailTo, setEmailTo] = useState(() => localStorage.getItem('sumer_admin_test_email') || 'developer@baghdad.dev');
   // SMS/WA Form State
-  const [phoneTo, setPhoneTo] = useState('07801234567');
+  const [phoneTo, setPhoneTo] = useState(() => localStorage.getItem('sumer_admin_test_phone') || '07739396298');
 
   const [activeCodeLang, setActiveCodeLang] = useState<'node' | 'python' | 'curl'>('node');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -81,6 +81,10 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   useEffect(() => {
     localStorage.setItem('sumer_admin_test_email', emailTo);
   }, [emailTo]);
+
+  useEffect(() => {
+    localStorage.setItem('sumer_admin_test_phone', phoneTo);
+  }, [phoneTo]);
 
   // Load custom templates from API
   const [customTemplates, setCustomTemplates] = useState<TemplateItem[]>([]);
