@@ -13,24 +13,33 @@ window.fetch = async (input, init) => {
   const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
   const apiBaseUrl = import.meta.env.VITE_API_URL || '';
   
-  if (url && url.startsWith('http://127.0.0.1:3000')) {
-    let rewrittenUrl = url;
-    if (isProduction && apiBaseUrl) {
-      rewrittenUrl = url.replace('http://127.0.0.1:3000', apiBaseUrl);
-    } else if (isProduction) {
-      // Fallback: use Render backend URL if VITE_API_URL is not set
-      rewrittenUrl = url.replace('http://127.0.0.1:3000', 'https://sumersend-backend.onrender.com');
+    if (url && url.startsWith('http://127.0.0.1:3000')) {
+      let rewrittenUrl = url;
+      const isSmtpOrEmail = url.includes('/api/smtp') || url.includes('/v1/emails') || url.includes('/public/subscribers/join');
+
+      if (isProduction && apiBaseUrl) {
+        if (isSmtpOrEmail) {
+          rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
+        } else {
+          rewrittenUrl = url.replace('http://127.0.0.1:3000', apiBaseUrl);
+        }
+      } else if (isProduction) {
+        if (isSmtpOrEmail) {
+          rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
+        } else {
+          rewrittenUrl = url.replace('http://127.0.0.1:3000', 'https://sumersend-backend.onrender.com');
+        }
+      }
+      
+      if (typeof input === 'string') {
+        input = rewrittenUrl;
+      } else if (input instanceof Request) {
+        input = new Request(rewrittenUrl, input as any);
+      } else {
+        input = rewrittenUrl;
+      }
+      url = rewrittenUrl;
     }
-    
-    if (typeof input === 'string') {
-      input = rewrittenUrl;
-    } else if (input instanceof Request) {
-      input = new Request(rewrittenUrl, input as any);
-    } else {
-      input = rewrittenUrl;
-    }
-    url = rewrittenUrl;
-  }
 
   
   if (url && (url.includes('/api/') || url.includes('/v1/')) && !url.includes('/api/auth/')) {
