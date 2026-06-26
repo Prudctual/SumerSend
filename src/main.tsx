@@ -18,8 +18,8 @@ window.fetch = async (input, init) => {
     if (isProduction && apiBaseUrl) {
       rewrittenUrl = url.replace('http://127.0.0.1:3000', apiBaseUrl);
     } else if (isProduction) {
-      // Fallback: use relative URL if VITE_API_URL is not set
-      rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
+      // Fallback: use Render backend URL if VITE_API_URL is not set
+      rewrittenUrl = url.replace('http://127.0.0.1:3000', 'https://sumersend-backend.onrender.com');
     }
     
     if (typeof input === 'string') {
