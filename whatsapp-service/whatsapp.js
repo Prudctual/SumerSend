@@ -71,6 +71,14 @@ export async function connectToWhatsApp(userId) {
                     } catch (e) {
                         console.error(`[WhatsApp Service] Error removing database auth info for ${userId}:`, e);
                     }
+                    
+                    // Trigger a system notification for the user
+                    await addServiceNotification(
+                        userId,
+                        'انقطاع جلسة الواتساب',
+                        'تم تسجيل الخروج من جلسة الواتساب الخاصة بك. يرجى مسح رمز الاستجابة السريعة (QR Code) مجدداً لإعادة الاتصال.',
+                        'error'
+                    );
                 }
                 
                 // Always schedule a reconnect attempt
@@ -173,5 +181,29 @@ export async function initializeAllWhatsAppConnections() {
         }
     } catch (e) {
         console.error('[WhatsApp Service] Failed to initialize WhatsApp connections from database:', e);
+    }
+}
+
+// Low-level helper to inject notification records from the WhatsApp background service
+async function addServiceNotification(userId, title, body, type = 'info') {
+    try {
+        const id = 'nt_' + Math.random().toString(36).substring(2, 15);
+        const { error } = await supabase
+            .from('notifications')
+            .insert({
+                id,
+                user_id: userId,
+                title,
+                body,
+                type,
+                is_read: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+        if (error) {
+            console.error(`[WhatsApp Service] Error creating notification for user ${userId}:`, error);
+        }
+    } catch (e) {
+        console.error(`[WhatsApp Service] Error in addServiceNotification for user ${userId}:`, e);
     }
 }

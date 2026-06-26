@@ -34,7 +34,13 @@ import {
   bulkAddSubscribers,
   appendLogsBulk,
   refundWallet,
-  chargeWallet
+  chargeWallet,
+  loadNotifications,
+  addNotification,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  deleteAllNotifications
 } from '../db.js';
 import {
   createTransporter,
@@ -421,6 +427,7 @@ apiRouter.post('/campaigns/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Campaign not found.' });
     }
     
+    const oldStatus = campaigns[index].status;
     if (status) campaigns[index].status = status;
     if (successCount !== undefined) campaigns[index].successCount = successCount;
     if (failedCount !== undefined) campaigns[index].failedCount = failedCount;
@@ -428,6 +435,28 @@ apiRouter.post('/campaigns/:id/status', async (req, res) => {
     if (recipients) campaigns[index].recipients = recipients;
     
     await saveCampaigns(userId, campaigns);
+
+    // Trigger notification if status transitioned
+    if (status && status !== oldStatus) {
+      if (status === 'completed' || status === 'sent') {
+        const succ = successCount !== undefined ? successCount : campaigns[index].successCount || 0;
+        const fail = failedCount !== undefined ? failedCount : campaigns[index].failedCount || 0;
+        await addNotification(
+          userId,
+          `اكتمال إرسال حملة: ${campaigns[index].name}`,
+          `تم الانتهاء من إرسال الحملة بنجاح. الناجحة: ${succ}، الفاشلة: ${fail}.`,
+          'success'
+        );
+      } else if (status === 'failed') {
+        await addNotification(
+          userId,
+          `فشل إرسال حملة: ${campaigns[index].name}`,
+          'حدث خطأ غير متوقع أدى إلى فشل الحملة بالكامل.',
+          'error'
+        );
+      }
+    }
+
     res.json(campaigns[index]);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update campaign status.' });
@@ -640,6 +669,77 @@ apiRouter.get('/whatsapp/status', async (req, res) => {
 apiRouter.post('/whatsapp/logout', async (req, res) => {
   await logoutWhatsApp(req.user.id);
   res.json({ success: true });
+});
+
+// =========================================================================
+// Notifications Router Endpoints
+// =========================================================================
+
+// GET /api/notifications
+apiRouter.get('/notifications', async (req, res) => {
+  try {
+    const list = await loadNotifications(req.user.id);
+    res.json(list);
+  } catch (err) {
+    console.error('Failed to load notifications:', err);
+    res.status(500).json({ error: 'Failed to load notifications.' });
+  }
+});
+
+// PUT /api/notifications/:id/read
+apiRouter.put('/notifications/:id/read', async (req, res) => {
+  try {
+    const success = await markNotificationAsRead(req.user.id, req.params.id);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to mark notification as read.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to update notification read status:', err);
+    res.status(500).json({ error: 'Failed to update notification read status.' });
+  }
+});
+
+// PUT /api/notifications/read-all
+apiRouter.put('/notifications/read-all', async (req, res) => {
+  try {
+    const success = await markAllNotificationsAsRead(req.user.id);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to mark all notifications as read.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to mark all notifications as read:', err);
+    res.status(500).json({ error: 'Failed to mark all notifications as read.' });
+  }
+});
+
+// DELETE /api/notifications/:id
+apiRouter.delete('/notifications/:id', async (req, res) => {
+  try {
+    const success = await deleteNotification(req.user.id, req.params.id);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to delete notification.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to delete notification:', err);
+    res.status(500).json({ error: 'Failed to delete notification.' });
+  }
+});
+
+// DELETE /api/notifications
+apiRouter.delete('/notifications', async (req, res) => {
+  try {
+    const success = await deleteAllNotifications(req.user.id);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to delete all notifications.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to delete all notifications:', err);
+    res.status(500).json({ error: 'Failed to delete all notifications.' });
+  }
 });
 
 // GET /api/subscribers
@@ -904,6 +1004,15 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
         }
       }
     }
+
+    // Trigger notification
+    let importBody = `تم استيراد ${validSubs.length} مشترك بنجاح.`;
+    let importType = 'success';
+    if (sendWelcome && walletShortage) {
+      importBody += ` تنبيه: لم يتم إرسال رسائل ترحيب لـ ${subsToFail.length} مشترك بسبب نقص رصيد المحفظة.`;
+      importType = 'warning';
+    }
+    await addNotification(userId, 'اكتمال استيراد المشتركين', importBody, importType);
 
     res.json({
       success: true,

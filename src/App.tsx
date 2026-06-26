@@ -26,6 +26,7 @@ import { SkeletonView } from './components/SkeletonView';
 import { getTabFromPath, getPathFromTab, updateSEOMetadata } from './utils/seo';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { AdminPortalView } from './components/AdminPortalView';
+import NotificationsDropdown from './components/NotificationsDropdown';
 
 import { useSumer } from './context/SumerContext';
 
@@ -462,14 +463,7 @@ export default function App() {
 
           {/* Right: Notifications Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-            {/* Notification Bell */}
-            <button className="navbar-notification-btn" title={lang === 'ar' ? 'الإشعارات' : 'Notifications'}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-              <span className="navbar-notification-dot"></span>
-            </button>
+            <NotificationsDropdown lang={lang} />
           </div>
         </div>
 

@@ -360,6 +360,36 @@ export async function chargeWallet(userId, amount, description, provider = 'Usag
     console.error(`Error executing charge_wallet_atomic RPC for user ${userId}:`, error);
     return false;
   }
+
+  if (data) {
+    // Check if the balance falls below 5,000 IQD and notify user
+    try {
+      const wallet = await loadWallet(userId);
+      if (wallet && wallet.balance < 5000) {
+        // Prevent duplicate low-wallet alerts by checking if there's already an unread one
+        const { data: existing } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('type', 'warning')
+          .eq('is_read', false)
+          .like('title', '%رصيد%')
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          await addNotification(
+            userId,
+            'تنبيه: رصيد المحفظة منخفض',
+            `رصيدك الحالي هو ${wallet.balance.toLocaleString()} دينار عراقي. يرجى إعادة شحن المحفظة لتجنب توقف الحملات.`,
+            'warning'
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error auto-triggering low-wallet warning notification:', err);
+    }
+  }
+
   return !!data;
 }
 
@@ -992,6 +1022,117 @@ export async function appendLogsBulk(userId, logEntries) {
       console.error(`Error bulk inserting logs for user ${userId}:`, error);
       throw error;
     }
+  }
+  return true;
+}
+
+// =========================================================================
+// 12. Notifications Database Helper Methods
+// =========================================================================
+
+export async function loadNotifications(userId) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(`Error loading notifications for user ${userId}:`, error);
+    return [];
+  }
+  return data.map(n => ({
+    id: n.id,
+    userId: n.user_id,
+    title: n.title,
+    body: n.body,
+    type: n.type,
+    isRead: n.is_read,
+    createdAt: n.created_at
+  }));
+}
+
+export async function addNotification(userId, title, body, type = 'info') {
+  const id = 'nt_' + Math.random().toString(36).substring(2, 15);
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      id,
+      user_id: userId,
+      title,
+      body,
+      type,
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error(`Error adding notification for user ${userId}:`, error);
+    return null;
+  }
+  return {
+    id,
+    userId,
+    title,
+    body,
+    type,
+    isRead: false,
+    createdAt: new Date().toISOString()
+  };
+}
+
+export async function markNotificationAsRead(userId, id) {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`Error marking notification ${id} as read for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function markAllNotificationsAsRead(userId) {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('is_read', false);
+
+  if (error) {
+    console.error(`Error marking all notifications as read for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteNotification(userId, id) {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`Error deleting notification ${id} for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteAllNotifications(userId) {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`Error deleting all notifications for user ${userId}:`, error);
+    return false;
   }
   return true;
 }
