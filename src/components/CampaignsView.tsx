@@ -1135,8 +1135,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       const endpoint = campChannel === 'email' ? 'emails' : campChannel;
       const url = `http://127.0.0.1:3000/v1/${endpoint}`;
 
-      // Wait 1.2s between sends to simulate realistic latency
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Wait 100ms between sends to simulate latency but keep it very fast
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       try {
         const sendRes = await fetch(url, {
