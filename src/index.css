@@ -7681,26 +7681,33 @@ textarea.auth-input {
 .dashboard-right-sidebar .timeline-pin-node.red { background-color: #ffffff !important; }
 
 /* Timeline Event Cards */
-.dashboard-right-sidebar .timeline-event-card-new {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-}
-
-.dashboard-right-sidebar .timeline-event-card-new.green {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #ffffff !important;
-  color: #166534 !important;
-}
-
-.dashboard-right-sidebar .timeline-event-card-new.yellow {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #ffffff !important;
-  color: #92400e !important;
-}
-
+.dashboard-right-sidebar .timeline-event-card-new,
+.dashboard-right-sidebar .timeline-event-card-new.green,
+.dashboard-right-sidebar .timeline-event-card-new.yellow,
 .dashboard-right-sidebar .timeline-event-card-new.red {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #ffffff !important;
-  color: #9b1c1c !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  color: #ffffff !important;
+}
+
+.dashboard-right-sidebar .timeline-card-title {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.dashboard-right-sidebar .timeline-card-time {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-size: 10.5px !important;
+}
+
+.dashboard-right-sidebar .timeline-card-icon {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  width: 26px !important;
+  height: 26px !important;
 }
 
 /* Gradient Fog overlays matching the red background */
