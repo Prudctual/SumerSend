@@ -123,12 +123,21 @@ export async function sendWhatsAppMessage(userId, to, body) {
     }
     
     // Format the phone number correctly for WhatsApp API
-    let jid = to;
-    if (jid.startsWith('0')) {
-        jid = '964' + jid.substring(1);
-    }
+    let jid = to.trim();
     if (!jid.includes('@')) {
-        jid = jid + '@s.whatsapp.net';
+        let clean = jid.replace(/\D/g, ''); // Keep only digits (removes + and spaces)
+        if (clean.startsWith('00964')) {
+            clean = '964' + clean.substring(5);
+        } else if (clean.startsWith('964')) {
+            // Already has country code 964
+        } else if (clean.startsWith('07')) {
+            clean = '964' + clean.substring(1); // replace 0 with 964
+        } else if (clean.startsWith('7') && clean.length === 10) {
+            clean = '964' + clean;
+        } else if (clean.startsWith('0') && !clean.startsWith('00')) {
+            clean = '964' + clean.substring(1);
+        }
+        jid = clean + '@s.whatsapp.net';
     }
 
     try {
