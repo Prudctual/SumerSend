@@ -1803,28 +1803,62 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
 
   const renderPreviewBrowserMockup = () => {
     return (
-      <div className="sch-browser-mockup">
+      <div className="premium-browser-mockup">
         {/* Mock Window Header */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-muted)', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <span className="sch-browser-dot" style={{ backgroundColor: '#ef4444' }} />
-            <span className="sch-browser-dot" style={{ backgroundColor: '#eab308' }} />
-            <span className="sch-browser-dot" style={{ backgroundColor: '#22c55e' }} />
+        <div className="browser-title-bar" style={{ justifyContent: 'space-between' }}>
+          <div className="browser-dots">
+            <span className="browser-dot red" />
+            <span className="browser-dot yellow" />
+            <span className="browser-dot green" />
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 700, textAlign: 'center' }}>{t.previewTitle}</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 700, textAlign: 'center', letterSpacing: '-0.2px' }}>
+            {t.previewTitle}
+          </span>
 
           <div style={{ display: 'flex', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '2px', gap: '2px' }}>
-            <button type="button" onClick={() => setPreviewMode('desktop')} style={{ border: 'none', backgroundColor: previewMode === 'desktop' ? 'var(--panel-muted)' : 'transparent', color: previewMode === 'desktop' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' }}>{t.desktopPreview}</button>
-            <button type="button" onClick={() => setPreviewMode('mobile')} style={{ border: 'none', backgroundColor: previewMode === 'mobile' ? 'var(--panel-muted)' : 'transparent', color: previewMode === 'mobile' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' }}>{t.mobilePreview}</button>
+            <button 
+              type="button" 
+              onClick={() => setPreviewMode('desktop')} 
+              style={{ 
+                border: 'none', 
+                backgroundColor: previewMode === 'desktop' ? 'var(--panel-muted)' : 'transparent', 
+                color: previewMode === 'desktop' ? 'var(--text-primary)' : 'var(--text-secondary)', 
+                padding: '4px 10px', 
+                fontSize: '11px', 
+                fontWeight: 700, 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' 
+              }}
+            >
+              {t.desktopPreview}
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setPreviewMode('mobile')} 
+              style={{ 
+                border: 'none', 
+                backgroundColor: previewMode === 'mobile' ? 'var(--panel-muted)' : 'transparent', 
+                color: previewMode === 'mobile' ? 'var(--text-primary)' : 'var(--text-secondary)', 
+                padding: '4px 10px', 
+                fontSize: '11px', 
+                fontWeight: 700, 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' 
+              }}
+            >
+              {t.mobilePreview}
+            </button>
           </div>
         </div>
 
         {previewMode === 'mobile' ? (
-          <div style={{ padding: '24px 16px', backgroundColor: 'var(--panel-muted)', display: 'flex', justifyContent: 'center', borderBottomLeftRadius: '18px', borderBottomRightRadius: '18px' }}>
-            <div className="smartphone-mockup">
+          <div style={{ padding: '28px 16px', backgroundColor: 'var(--panel-muted)', display: 'flex', justifyContent: 'center', transition: 'all 0.3s' }}>
+            <div className="smartphone-mockup" style={{ boxShadow: '0 12px 30px rgba(0,0,0,0.1)' }}>
               <div className="smartphone-notch"><div className="smartphone-speaker" /></div>
               <div className="smartphone-screen" style={{ backgroundColor: '#ffffff' }}>
-                <div className="smartphone-status-bar">
+                <div className="smartphone-status-bar" style={{ color: '#000000' }}>
                   <span style={{ fontWeight: 600 }}>9:41</span>
                   <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 600 }}>5G</span>
@@ -1832,9 +1866,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                   </div>
                 </div>
                 <div style={{ borderBottom: '1px solid #e4e4e7', paddingBottom: '8px', marginBottom: '12px', fontSize: '11px', color: '#71717a', direction: 'ltr', textAlign: 'start' }}>
-                  <div><strong>Subject:</strong> {settings.welcomeSubject}</div>
+                  <div><strong style={{ color: '#000000' }}>Subject:</strong> {settings.welcomeSubject}</div>
                 </div>
-                <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#27272a', direction: 'ltr', textAlign: 'start', overflowY: 'auto', maxHeight: '280px', paddingInlineEnd: '4px' }} className="custom-code-scroll">
+                <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#27272a', direction: 'ltr', textAlign: 'start', overflowY: 'auto', maxHeight: '280px', paddingInlineEnd: '4px' }} className="custom-code-scroll">
                   {settings.welcomeEnabled ? (
                     <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
                   ) : (
@@ -1849,7 +1883,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
           </div>
         ) : (
           <>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--panel-muted)' }}>
               <div>
                 <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t.previewFrom}: </span>
                 <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>SMTP Sender &lt;no-reply@sumersend.com&gt;</span>
@@ -1864,7 +1898,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
               </div>
             </div>
 
-            <div style={{ padding: '24px', backgroundColor: '#ffffff', color: '#111111', minHeight: '260px', maxHeight: '360px', overflowY: 'auto', direction: 'ltr', fontFamily: 'system-ui, -apple-system, sans-serif' }} className="custom-code-scroll">
+            <div style={{ padding: '32px 24px', backgroundColor: '#ffffff', color: '#111111', minHeight: '260px', maxHeight: '360px', overflowY: 'auto', direction: 'ltr', fontFamily: 'system-ui, -apple-system, sans-serif' }} className="custom-code-scroll">
               <div style={{ maxWidth: '500px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6', color: '#333333', textAlign: 'start' }}>
                 {settings.welcomeEnabled ? (
                   <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
@@ -3436,6 +3470,293 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
         @keyframes sch-float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
+        }
+
+        /* ─── Premium Redesigned Wizard & Customizers ─── */
+        
+        /* Segmented Step Navigator */
+        .premium-wizard-nav {
+          display: flex;
+          background-color: var(--panel-muted);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 6px;
+          gap: 6px;
+          width: 100%;
+          justify-content: space-between;
+          box-sizing: border-box;
+          margin-bottom: 24px;
+        }
+        
+        .premium-wizard-step {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 16px;
+          background: transparent;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          white-space: nowrap;
+        }
+        
+        .premium-wizard-step:hover:not(.active) {
+          background-color: rgba(0, 0, 0, 0.03);
+          color: var(--text-primary);
+        }
+        
+        .premium-wizard-step.active {
+          background-color: var(--panel-bg);
+          color: var(--accent-text);
+          font-weight: 700;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03);
+          border: 1px solid var(--border-color);
+        }
+        
+        .premium-wizard-step.completed {
+          color: var(--success-color);
+        }
+        
+        .step-badge {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: bold;
+          border: 1.5px solid var(--text-muted);
+          transition: all 0.2s;
+        }
+        
+        .premium-wizard-step.active .step-badge {
+          border-color: var(--accent-text);
+          background-color: var(--accent-text);
+          color: var(--panel-bg);
+        }
+
+        .premium-wizard-step.completed .step-badge {
+          border-color: var(--success-color);
+          background-color: var(--success-color);
+          color: #ffffff;
+        }
+        
+        /* Premium Browser Mockup */
+        .premium-browser-mockup {
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          overflow: hidden;
+          background: var(--panel-bg);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .browser-title-bar {
+          display: flex;
+          align-items: center;
+          padding: 10px 16px;
+          background-color: var(--panel-muted);
+          border-bottom: 1px solid var(--border-color);
+          gap: 12px;
+        }
+        
+        .browser-dots {
+          display: flex;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        
+        .browser-dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+        }
+        
+        .browser-dot.red { background-color: #ff5f56; }
+        .browser-dot.yellow { background-color: #ffbd2e; }
+        .browser-dot.green { background-color: #27c93f; }
+        
+        .browser-address {
+          flex: 1;
+          height: 22px;
+          background-color: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          font-size: 10px;
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: monospace;
+          letter-spacing: 0.2px;
+        }
+        
+        .browser-viewport {
+          padding: 24px;
+          overflow-y: auto;
+          background-color: var(--panel-bg);
+          flex: 1;
+        }
+        
+        /* AI Copilot Panel */
+        .ai-copilot-card {
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 20px;
+          background: linear-gradient(to bottom, var(--panel-bg), var(--panel-muted));
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .ai-copilot-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, var(--accent-text), transparent);
+          opacity: 0.5;
+        }
+        
+        .ai-generate-btn {
+          width: 100%;
+          height: 40px;
+          border-radius: 8px;
+          border: none;
+          background-color: var(--text-primary);
+          color: var(--panel-bg);
+          font-weight: 700;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ai-generate-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+          opacity: 0.95;
+        }
+        
+        .ai-generate-btn:active {
+          transform: translateY(0);
+        }
+        
+        /* Premium Token Badges */
+        .premium-token-badge {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 8px;
+          border-radius: 6px;
+          border: 1px solid var(--border-color);
+          background-color: var(--panel-bg);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .premium-token-badge:hover {
+          border-color: var(--accent-text);
+          background-color: var(--panel-muted);
+          transform: translateY(-1px);
+        }
+        
+        /* Developer Code Card */
+        .developer-code-card {
+          background-color: #09090b;
+          border: 1px solid #222222;
+          border-radius: 12px;
+          padding: 0;
+          overflow: hidden;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .code-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 16px;
+          background-color: #121214;
+          border-bottom: 1px solid #222222;
+        }
+        
+        .code-card-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #a1a1aa;
+          font-family: monospace;
+        }
+        
+        .code-card-copy-btn {
+          height: 24px;
+          padding: 0 10px;
+          font-size: 10px;
+          font-weight: 600;
+          border-radius: 6px;
+          border: 1px solid #333336;
+          background-color: transparent;
+          color: #e4e4e7;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.2s;
+        }
+        
+        .code-card-copy-btn:hover {
+          background-color: #1e1e20;
+          border-color: #52525b;
+          color: #ffffff;
+        }
+        
+        .code-card-pre {
+          margin: 0;
+          padding: 16px;
+          font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace;
+          font-size: 12px;
+          color: #f4f4f5;
+          overflow-x: auto;
+          max-height: 220px;
+          line-height: 1.6;
+          text-align: left;
+        }
+        
+        .code-card-pre::-webkit-scrollbar {
+          height: 8px;
+          width: 8px;
+        }
+        .code-card-pre::-webkit-scrollbar-track {
+          background: #09090b;
+        }
+        .code-card-pre::-webkit-scrollbar-thumb {
+          background: #27272a;
+          border-radius: 4px;
+        }
+        .code-card-pre::-webkit-scrollbar-thumb:hover {
+          background: #3f3f46;
         }
       `}</style>
 
@@ -5160,124 +5481,42 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Step Indicator Header */}
-          <div className="sch-panel" style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '16px 24px',
-            backgroundColor: 'var(--panel-muted)',
-            borderRadius: '8px',
-            gap: '12px',
-            flexWrap: 'wrap',
-            transform: 'none',
-            boxShadow: 'none'
-          }}>
-            {/* Step 1 indicator */}
+          {/* Premium Segmented Step Navigator */}
+          <div className="premium-wizard-nav" style={{ direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+            {/* Step 1 */}
             <button 
               type="button" 
               onClick={() => setSettingsStep(1)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                opacity: settingsStep === 1 ? 1 : 0.6,
-                fontWeight: settingsStep === 1 ? 800 : 500,
-                color: settingsStep === 1 ? 'var(--accent-text)' : 'var(--text-secondary)',
-                fontSize: '13px',
-                transition: 'all 0.2s ease',
-                direction: lang === 'ar' ? 'rtl' : 'ltr'
-              }}
+              className={`premium-wizard-step ${settingsStep === 1 ? 'active' : ''} ${settingsStep > 1 ? 'completed' : ''}`}
             >
-              <span style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                backgroundColor: settingsStep === 1 ? 'var(--accent-text)' : 'transparent',
-                border: `2px solid ${settingsStep === 1 ? 'var(--accent-text)' : 'var(--text-muted)'}`,
-                color: settingsStep === 1 ? 'var(--panel-bg)' : 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: 'bold'
-              }}>1</span>
+              <span className="step-badge">
+                {settingsStep > 1 ? <Check size={10} style={{ strokeWidth: 3 }} /> : '1'}
+              </span>
+              <Sparkles size={14} style={{ opacity: 0.8 }} />
               <span>{lang === 'ar' ? 'حملة الترحيب الذكية' : 'Smart Welcome Email'}</span>
             </button>
 
-            <ChevronLeft size={16} style={{ color: 'var(--text-muted)', transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
-
-            {/* Step 2 indicator */}
+            {/* Step 2 */}
             <button 
               type="button" 
               onClick={() => setSettingsStep(2)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                opacity: settingsStep === 2 ? 1 : 0.6,
-                fontWeight: settingsStep === 2 ? 800 : 500,
-                color: settingsStep === 2 ? 'var(--accent-text)' : 'var(--text-secondary)',
-                fontSize: '13px',
-                transition: 'all 0.2s ease',
-                direction: lang === 'ar' ? 'rtl' : 'ltr'
-              }}
+              className={`premium-wizard-step ${settingsStep === 2 ? 'active' : ''} ${settingsStep > 2 ? 'completed' : ''}`}
             >
-              <span style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                backgroundColor: settingsStep === 2 ? 'var(--accent-text)' : 'transparent',
-                border: `2px solid ${settingsStep === 2 ? 'var(--accent-text)' : 'var(--text-muted)'}`,
-                color: settingsStep === 2 ? 'var(--panel-bg)' : 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: 'bold'
-              }}>2</span>
+              <span className="step-badge">
+                {settingsStep > 2 ? <Check size={10} style={{ strokeWidth: 3 }} /> : '2'}
+              </span>
+              <Settings size={14} style={{ opacity: 0.8 }} />
               <span>{lang === 'ar' ? 'تخصيص نموذج الاشتراك' : 'Subscription Widget'}</span>
             </button>
 
-            <ChevronLeft size={16} style={{ color: 'var(--text-muted)', transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
-
-            {/* Step 3 indicator */}
+            {/* Step 3 */}
             <button 
               type="button" 
               onClick={() => setSettingsStep(3)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                opacity: settingsStep === 3 ? 1 : 0.6,
-                fontWeight: settingsStep === 3 ? 800 : 500,
-                color: settingsStep === 3 ? 'var(--accent-text)' : 'var(--text-secondary)',
-                fontSize: '13px',
-                transition: 'all 0.2s ease',
-                direction: lang === 'ar' ? 'rtl' : 'ltr'
-              }}
+              className={`premium-wizard-step ${settingsStep === 3 ? 'active' : ''}`}
             >
-              <span style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                backgroundColor: settingsStep === 3 ? 'var(--accent-text)' : 'transparent',
-                border: `2px solid ${settingsStep === 3 ? 'var(--accent-text)' : 'var(--text-muted)'}`,
-                color: settingsStep === 3 ? 'var(--panel-bg)' : 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: 'bold'
-              }}>3</span>
+              <span className="step-badge">3</span>
+              <Code size={14} style={{ opacity: 0.8 }} />
               <span>{lang === 'ar' ? 'كود الدمج والتشغيل' : 'Embed & Launch'}</span>
             </button>
           </div>
@@ -5314,16 +5553,16 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                   {settings.welcomeEnabled && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {/* Smart Generator Block */}
-                      <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--panel-muted)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div className="ai-copilot-card">
                         <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Sparkles size={13} style={{ color: 'var(--accent-text)' }} />
                           {lang === 'ar' ? 'صانع المحتوى الترحيبي الذكي والآلي' : 'Smart Campaign Welcome Copy Generator'}
                         </span>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                           <div>
-                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{lang === 'ar' ? 'أسلوب ونبرة المحتوى' : 'Tone / Style'}</label>
-                            <select className="sch-input" value={generatorStyle} onChange={(e) => setGeneratorStyle(e.target.value as any)} style={{ height: '34px', fontSize: '12px', padding: '0 8px' }}>
+                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'أسلوب ونبرة المحتوى' : 'Tone / Style'}</label>
+                            <select className="sch-input" value={generatorStyle} onChange={(e) => setGeneratorStyle(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
                               <option value="philosophical">
                                 {lang === 'ar' ? 'فلسفي وعميق (لمدونتك)' : 'Deep Philosophical (For your blog)'}
                               </option>
@@ -5332,8 +5571,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                             </select>
                           </div>
                           <div>
-                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{lang === 'ar' ? 'الغرض من الرسالة' : 'Campaign Objective'}</label>
-                            <select className="sch-input" value={generatorOffer} onChange={(e) => setGeneratorOffer(e.target.value as any)} style={{ height: '34px', fontSize: '12px', padding: '0 8px' }}>
+                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'الغرض من الرسالة' : 'Campaign Objective'}</label>
+                            <select className="sch-input" value={generatorOffer} onChange={(e) => setGeneratorOffer(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
                               <option value="welcome">{lang === 'ar' ? 'ترحيب كلاسيكي بالمشتركين' : 'Classic Subscriber Welcome'}</option>
                               <option value="vision">{lang === 'ar' ? 'شرح رؤية ورسالة المدونة' : 'Blog Vision & Philosophy'}</option>
                               <option value="gift">{lang === 'ar' ? 'تقديم دليل قراءة كهدية مجانية' : 'Gift Free Reading Guide'}</option>
@@ -5344,27 +5583,16 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                         <button 
                           type="button" 
                           onClick={handleGenerateCampaign}
-                          className="sch-btn sch-btn-primary" 
-                          style={{ 
-                            width: '100%', 
-                            height: '36px', 
-                            justifyContent: 'center', 
-                            borderRadius: '6px', 
-                            fontSize: '12px',
-                            backgroundColor: 'var(--text-primary)',
-                            color: 'var(--panel-bg)',
-                            border: 'none',
-                            fontWeight: 700
-                          }}
+                          className="ai-generate-btn" 
                         >
-                          <Sparkles size={13} style={{ marginInlineEnd: '4px' }} />
-                          {lang === 'ar' ? 'توليد الرسالة وصياغتها فورياً ✨' : 'Generate Welcome Copy Instantly ✨'}
+                          <Sparkles size={13} />
+                          <span>{lang === 'ar' ? 'توليد الرسالة وصياغتها فورياً ✨' : 'Generate Welcome Copy Instantly ✨'}</span>
                         </button>
                       </div>
 
                       {/* Manual Edit Fields */}
                       <div>
-                        <label className="sch-label" style={{ fontSize: '11px' }}>{t.welcomeSubjectLabel}</label>
+                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{t.welcomeSubjectLabel}</label>
                         <input 
                           type="text" 
                           className="sch-input" 
@@ -5376,14 +5604,14 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       </div>
 
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                           <label className="sch-label" style={{ marginBottom: 0, fontSize: '11px' }}>{t.welcomeBodyLabel}</label>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.insertTokenLabel}</span>
-                            <button type="button" onClick={() => handleInsertToken('{name}')} className="sch-btn" style={{ height: '22px', fontSize: '10px', padding: '0 6px', borderRadius: '4px' }}>
+                            <button type="button" onClick={() => handleInsertToken('{name}')} className="premium-token-badge">
                               {"{name}"}
                             </button>
-                            <button type="button" onClick={() => handleInsertToken('{email}')} className="sch-btn" style={{ height: '22px', fontSize: '10px', padding: '0 6px', borderRadius: '4px' }}>
+                            <button type="button" onClick={() => handleInsertToken('{email}')} className="premium-token-badge">
                               {"{email}"}
                             </button>
                           </div>
@@ -5395,9 +5623,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                           value={settings.welcomeBody} 
                           onChange={(e) => setSettings(prev => ({ ...prev, welcomeBody: e.target.value }))} 
                           required 
-                          style={{ fontSize: '12px' }}
+                          style={{ fontSize: '12px', lineHeight: 1.6 }}
                         />
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.3 }}>{t.welcomeBodyDesc}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px', display: 'block', lineHeight: 1.4 }}>{t.welcomeBodyDesc}</span>
                       </div>
                     </div>
                   )}
@@ -5407,7 +5635,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       type="button" 
                       onClick={() => setSettingsStep(2)} 
                       className="sch-btn sch-btn-primary" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ height: '36px', borderRadius: '8px', padding: '0 18px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                     >
                       <span>{lang === 'ar' ? 'التالي: تخصيص نموذج الاشتراك' : 'Next: Customize Widget'}</span>
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
@@ -5431,59 +5659,125 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                     <Settings size={18} style={{ color: 'var(--accent-text)' }} />
                     <span>{lang === 'ar' ? 'الخطوة الثانية: تصميم وتجربة نموذج الاشتراك' : 'Step 2: Design & Test Subscription Widget'}</span>
                   </h2>
-                  <p className="sch-panel-desc" style={{ fontSize: '12px' }}>
+                  <p className="sch-panel-desc" style={{ fontSize: '12px', marginBottom: '20px' }}>
                     {lang === 'ar' 
                       ? 'قم بتهيئة مظهر النموذج ليتكامل مع تصميم مدونتك، واختبر آلية الاشتراك بنفسك في صندوق التجربة.' 
                       : 'Configure the design of the sign-up widget to blend with your blog, and try subscribing in the sandbox below.'}
                   </p>
 
                   {/* Settings Customizer */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--panel-muted)', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.customizerTitle}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', backgroundColor: 'var(--panel-muted)', marginBottom: '20px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.customizerTitle}</span>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+                      {/* Theme Selector Grid */}
                       <div>
-                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.widgetThemeLabel}</label>
-                        <select className="sch-input" value={widgetTheme} onChange={(e) => setWidgetTheme(e.target.value as any)} style={{ height: '34px', fontSize: '12px', padding: '0 8px' }}>
-                          <option value="light">{lang === 'ar' ? 'فاتح' : 'Light'}</option>
-                          <option value="dark">{lang === 'ar' ? 'مظلم' : 'Dark'}</option>
-                          <option value="glass">{lang === 'ar' ? 'زجاجي ومميز' : 'Glassmorphism'}</option>
-                        </select>
+                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{t.widgetThemeLabel}</label>
+                        <div className="theme-selector-grid">
+                          <button 
+                            type="button" 
+                            className={`theme-card-btn ${widgetTheme === 'light' ? 'active' : ''}`}
+                            onClick={() => setWidgetTheme('light')}
+                          >
+                            <span className="theme-badge-dot light" />
+                            <span className="theme-card-label">{lang === 'ar' ? 'فاتح' : 'Light'}</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            className={`theme-card-btn ${widgetTheme === 'dark' ? 'active' : ''}`}
+                            onClick={() => setWidgetTheme('dark')}
+                          >
+                            <span className="theme-badge-dot dark" />
+                            <span className="theme-card-label">{lang === 'ar' ? 'مظلم' : 'Dark'}</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            className={`theme-card-btn ${widgetTheme === 'glass' ? 'active' : ''}`}
+                            onClick={() => setWidgetTheme('glass')}
+                          >
+                            <span className="theme-badge-dot glass" />
+                            <span className="theme-card-label">{lang === 'ar' ? 'زجاجي' : 'Glass'}</span>
+                          </button>
+                        </div>
                       </div>
                       
-                      <div>
-                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.widgetButtonColorLabel}</label>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <div style={{ position: 'relative', width: '34px', height: '34px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
-                            <input type="color" value={widgetButtonColor} onChange={(e) => setWidgetButtonColor(e.target.value)} style={{ position: 'absolute', top: '-6px', left: '-6px', width: '48px', height: '48px', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }} />
+                      {/* Button Color & Presets */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label className="sch-label" style={{ fontSize: '11px', display: 'block' }}>{t.widgetButtonColorLabel}</label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                            <input 
+                              type="color" 
+                              value={widgetButtonColor} 
+                              onChange={(e) => setWidgetButtonColor(e.target.value)} 
+                              style={{ position: 'absolute', top: '-6px', left: '-6px', width: '48px', height: '48px', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }} 
+                            />
                           </div>
-                          <input type="text" className="sch-input" value={widgetButtonColor} onChange={(e) => setWidgetButtonColor(e.target.value)} style={{ flex: 1, fontSize: '11px', height: '34px', fontFamily: 'monospace', padding: '0 6px' }} />
+                          <input 
+                            type="text" 
+                            className="sch-input" 
+                            value={widgetButtonColor} 
+                            onChange={(e) => setWidgetButtonColor(e.target.value)} 
+                            style={{ flex: 1, fontSize: '12px', height: '36px', fontFamily: 'monospace', padding: '0 10px', borderRadius: '8px' }} 
+                          />
+                        </div>
+                        {/* Presets */}
+                        <div className="preset-colors-container">
+                          {[
+                            { value: '#000000', name: 'Vercel Black', className: 'black' },
+                            { value: '#0070f3', name: 'Vercel Blue', className: 'blue' },
+                            { value: '#10b981', name: 'Emerald', className: 'emerald' },
+                            { value: '#ec4899', name: 'Pink', className: 'pink' },
+                            { value: '#f59e0b', name: 'Amber', className: 'amber' },
+                            { value: '#6366f1', name: 'Indigo', className: 'indigo' },
+                            { value: '#ffffff', name: 'White', className: 'white' }
+                          ].map(preset => (
+                            <button
+                              key={preset.value}
+                              type="button"
+                              title={preset.name}
+                              className={`preset-color-pill ${preset.className} ${widgetButtonColor.toLowerCase() === preset.value.toLowerCase() ? 'active' : ''}`}
+                              style={{ backgroundColor: preset.value }}
+                              onClick={() => setWidgetButtonColor(preset.value)}
+                            />
+                          ))}
                         </div>
                       </div>
 
+                      {/* Border Radius */}
                       <div>
-                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '4px' }}>{t.widgetRadiusLabel} (<span style={{ fontFamily: 'monospace' }}>{widgetBorderRadius}px</span>)</label>
-                        <input type="range" min="0" max="24" value={widgetBorderRadius} onChange={(e) => setWidgetBorderRadius(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--text-primary)', height: '20px', cursor: 'pointer' }} />
+                        <label className="sch-label" style={{ fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>{t.widgetRadiusLabel}</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{widgetBorderRadius}px</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="24" 
+                          value={widgetBorderRadius} 
+                          onChange={(e) => setWidgetBorderRadius(parseInt(e.target.value))} 
+                          className="premium-slider"
+                        />
                       </div>
                     </div>
                   </div>
 
                   {/* Interactive Sandbox Form */}
-                  <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--panel-bg)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', backgroundColor: 'var(--panel-bg)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.01)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {lang === 'ar' ? 'صندوق تجربة الاشتراك التفاعلي والحي' : 'Interactive Live Subscription Sandbox'}
                       </span>
-                      <span style={{ fontSize: '10px', color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 8px', backgroundColor: 'var(--success-bg)', borderRadius: '20px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
                         <Circle size={6} style={{ fill: 'currentColor' }} />
                         {lang === 'ar' ? 'بيئة محاكاة نشطة' : 'Active Sandbox Simulator'}
                       </span>
                     </div>
 
                     {!testSubscribed ? (
-                      <form onSubmit={handleTestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <form onSubmit={handleTestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div>
-                          <label className="sch-label" style={{ fontSize: '10px', marginBottom: '2px' }}>{lang === 'ar' ? 'الاسم لتجربة الدمج' : 'Name (For testing)'}</label>
+                          <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{lang === 'ar' ? 'الاسم لتجربة الدمج' : 'Name (For testing)'}</label>
                           <input 
                             type="text" 
                             className="sch-input" 
@@ -5491,11 +5785,11 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                             value={testName}
                             onChange={(e) => setTestName(e.target.value)}
                             required
-                            style={{ height: '34px', fontSize: '12px' }}
+                            style={{ height: '36px', fontSize: '12px', borderRadius: '8px' }}
                           />
                         </div>
                         <div>
-                          <label className="sch-label" style={{ fontSize: '10px', marginBottom: '2px' }}>{lang === 'ar' ? 'البريد الإلكتروني للتجربة' : 'Email (For testing)'}</label>
+                          <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{lang === 'ar' ? 'البريد الإلكتروني للتجربة' : 'Email (For testing)'}</label>
                           <input 
                             type="email" 
                             className="sch-input" 
@@ -5503,7 +5797,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                             value={testEmail}
                             onChange={(e) => setTestEmail(e.target.value)}
                             required
-                            style={{ height: '34px', fontSize: '12px' }}
+                            style={{ height: '36px', fontSize: '12px', borderRadius: '8px' }}
                           />
                         </div>
 
@@ -5512,29 +5806,32 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                           className="sch-btn" 
                           style={{ 
                             width: '100%', 
-                            height: '36px', 
+                            height: '40px', 
                             justifyContent: 'center', 
-                            borderRadius: '6px', 
+                            borderRadius: '8px', 
                             backgroundColor: widgetButtonColor,
                             color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff',
                             fontWeight: 700,
-                            border: 'none',
-                            fontSize: '12px'
+                            border: widgetButtonColor.toLowerCase() === '#ffffff' ? '1px solid var(--border-color)' : 'none',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxShadow: widgetButtonColor.toLowerCase() === '#ffffff' ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.05)'
                           }}
                         >
                           {lang === 'ar' ? 'اختبر الاشتراك فورياً ⚡' : 'Test Subscription Live ⚡'}
                         </button>
                       </form>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '12px 6px', textAlign: 'center' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)' }}>
-                          <CheckCircle2 size={20} />
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px 8px', textAlign: 'center' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)' }}>
+                          <CheckCircle2 size={24} />
                         </div>
                         <div>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
                             {lang === 'ar' ? 'تمت محاكاة عملية الاشتراك بنجاح!' : 'Simulated Subscription Succeeded!'}
                           </h4>
-                          <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                             {lang === 'ar' 
                               ? `تم إدخال المشترك "${testName}" بنجاح. وفي بيئة التشغيل الفعلية، سيستلم الآن بريد الترحيب الذي جهزته في الخطوة السابقة.`
                               : `Subscriber "${testName}" added successfully. In production, they would now receive the welcome email defined in Step 1.`}
@@ -5548,7 +5845,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                             setTestEmail('');
                           }} 
                           className="sch-btn" 
-                          style={{ height: '30px', fontSize: '11px', borderRadius: '6px', padding: '0 12px' }}
+                          style={{ height: '32px', fontSize: '11px', borderRadius: '6px', padding: '0 16px', marginTop: '4px' }}
                         >
                           {lang === 'ar' ? 'إعادة التجربة ببيانات أخرى' : 'Reset & Test Again'}
                         </button>
@@ -5561,7 +5858,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       type="button" 
                       onClick={() => setSettingsStep(1)} 
                       className="sch-btn" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ height: '36px', borderRadius: '8px', padding: '0 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
                       <span>{lang === 'ar' ? 'السابق: بريد الترحيب' : 'Back: Welcome Email'}</span>
@@ -5571,7 +5868,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       type="button" 
                       onClick={() => setSettingsStep(3)} 
                       className="sch-btn sch-btn-primary" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ height: '36px', borderRadius: '8px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       <span>{lang === 'ar' ? 'التالي: كود الدمج' : 'Next: Embed Code'}</span>
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
@@ -5582,75 +5879,87 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
 
               {/* Customized theme widget preview */}
               <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="sch-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-secondary)', alignSelf: 'flex-start' }}>
-                    {lang === 'ar' ? 'معاينة مباشرة للنموذج المخصص:' : 'Live Widget Theme Preview:'}
+                <div className="sch-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {lang === 'ar' ? 'معاينة مباشرة للنموذج المخصص' : 'Live Widget Theme Preview'}
                   </span>
                   
-                  <div style={{
-                    maxWidth: '100%', 
-                    width: '320px', 
-                    padding: '24px 20px',
-                    borderRadius: `${widgetBorderRadius}px`,
-                    border: `1px solid ${widgetTheme === 'dark' ? '#222222' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.15)' : '#eaeaea'}`,
-                    backgroundColor: widgetTheme === 'dark' ? '#09090b' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff',
-                    color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#0a0a0a',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
-                    backdropFilter: widgetTheme === 'glass' ? 'blur(12px)' : 'none',
-                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    fontFamily: 'var(--font-family)', 
-                    direction: lang === 'ar' ? 'rtl' : 'ltr'
-                  }}>
-                    <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 800, textAlign: 'center', letterSpacing: '-0.3px' }}>
-                      {lang === 'ar' ? 'اشترك في المدونة ليصلك كل جديد' : 'Subscribe to our newsletter'}
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <input 
-                        type="text" 
-                        placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Your Name'} 
-                        disabled 
-                        style={{ 
-                          width: '100%', 
-                          padding: '8px 10px', 
-                          border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#d1d1d1'}`, 
-                          backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.05)' : '#ffffff', 
-                          borderRadius: '6px', 
-                          fontSize: '12px', 
-                          color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
-                          boxSizing: 'border-box' 
-                        }} 
-                      />
-                      <input 
-                        type="email" 
-                        placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'email@example.com'} 
-                        disabled 
-                        style={{ 
-                          width: '100%', 
-                          padding: '8px 10px', 
-                          border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#d1d1d1'}`, 
-                          backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.05)' : '#ffffff', 
-                          borderRadius: '6px', 
-                          fontSize: '12px', 
-                          color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
-                          boxSizing: 'border-box' 
-                        }} 
-                      />
-                      <button 
-                        type="button" 
-                        style={{ 
-                          width: '100%', 
-                          padding: '9px', 
-                          backgroundColor: widgetButtonColor, 
-                          color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff', 
-                          border: 'none', 
-                          borderRadius: '6px', 
-                          fontWeight: 700, 
-                          fontSize: '12px', 
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        {lang === 'ar' ? 'سجل اشتراكك' : 'Subscribe'}
-                      </button>
+                  <div className="designer-canvas">
+                    <div className="designer-canvas-badge">
+                      <Sparkles size={10} style={{ color: 'var(--accent-text)' }} />
+                      <span>{lang === 'ar' ? 'بيئة التصميم' : 'Canvas'}</span>
+                    </div>
+
+                    <div style={{
+                      width: '100%', 
+                      maxWidth: '300px', 
+                      padding: '24px 20px',
+                      borderRadius: `${widgetBorderRadius}px`,
+                      border: `1px solid ${widgetTheme === 'dark' ? '#222222' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.15)' : '#eaeaea'}`,
+                      backgroundColor: widgetTheme === 'dark' ? '#09090b' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff',
+                      color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#0a0a0a',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
+                      backdropFilter: widgetTheme === 'glass' ? 'blur(12px)' : 'none',
+                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      fontFamily: 'var(--font-family)', 
+                      direction: lang === 'ar' ? 'rtl' : 'ltr',
+                      position: 'relative',
+                      zIndex: 2
+                    }}>
+                      <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 800, textAlign: 'center', letterSpacing: '-0.3px' }}>
+                        {lang === 'ar' ? 'اشترك في المدونة ليصلك كل جديد' : 'Subscribe to our newsletter'}
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <input 
+                          type="text" 
+                          placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Your Name'} 
+                          disabled 
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px 12px', 
+                            border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#eaeaea'}`, 
+                            backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff', 
+                            borderRadius: '6px', 
+                            fontSize: '12px', 
+                            color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
+                            boxSizing: 'border-box',
+                            outline: 'none'
+                          }} 
+                        />
+                        <input 
+                          type="email" 
+                          placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'email@example.com'} 
+                          disabled 
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px 12px', 
+                            border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#eaeaea'}`, 
+                            backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff', 
+                            borderRadius: '6px', 
+                            fontSize: '12px', 
+                            color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
+                            boxSizing: 'border-box',
+                            outline: 'none'
+                          }} 
+                        />
+                        <button 
+                          type="button" 
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            backgroundColor: widgetButtonColor, 
+                            color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff', 
+                            border: widgetButtonColor.toLowerCase() === '#ffffff' ? '1px solid #eaeaea' : 'none', 
+                            borderRadius: '6px', 
+                            fontWeight: 700, 
+                            fontSize: '12px', 
+                            cursor: 'pointer',
+                            boxShadow: widgetButtonColor.toLowerCase() === '#ffffff' ? 'none' : '0 2px 8px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          {lang === 'ar' ? 'سجل اشتراكك' : 'Subscribe'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5664,41 +5973,59 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                 {/* Hosted Shareable Link Panel */}
                 <div className="sch-panel">
                   <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
-                    <Globe size={18} style={{ color: 'var(--success-color)' }} />
-                    <span>{lang === 'ar' ? 'رابط الاشتراك المباشر' : 'Hosted Subscription Link'}</span>
+                    <Globe size={18} style={{ color: 'var(--accent-text)' }} />
+                    <span>{lang === 'ar' ? 'رابط الاشتراك المباشر والجاهز' : 'Hosted Direct Subscription Link'}</span>
                   </h2>
                   <p className="sch-panel-desc" style={{ fontSize: '12px' }}>
                     {lang === 'ar' 
-                      ? 'شارك هذا الرابط مباشرة مع زبائنك لجمع بياناتهم في قاعدة بياناتك.' 
-                      : 'Share this link directly with your audience to capture subscriber info.'}
+                      ? 'شارك هذا الرابط مباشرة مع جمهورك وقرائك في منصات التواصل أو مدونتك لجمع بياناتهم مباشرة.' 
+                      : 'Share this direct hosted link with your audience to capture subscriber opt-ins immediately.'}
                   </p>
                   
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={publicShareableLink} 
-                      className="sch-input" 
-                      style={{ flex: 1, fontFamily: 'monospace', fontSize: '12px', height: '36px', minWidth: 0, backgroundColor: 'var(--panel-muted)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0 10px' }} 
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleCopyCode('link', publicShareableLink)} 
-                      className="sch-btn sch-btn-primary" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      {settingsCopied === 'link' ? <Check size={14} style={{ color: '#ffffff' }} /> : <Copy size={14} />}
-                      <span>{settingsCopied === 'link' ? t.copied : (lang === 'ar' ? 'نسخ الرابط' : 'Copy Link')}</span>
-                    </button>
-                    <a 
-                      href={publicShareableLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="sch-btn" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <ExternalLink size={14} style={{ color: 'var(--text-secondary)' }} />
-                    </a>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    backgroundColor: 'var(--panel-muted)', 
+                    border: '1px solid var(--border-color)', 
+                    borderRadius: '8px', 
+                    padding: '6px 12px',
+                    gap: '12px', 
+                    marginTop: '12px' 
+                  }}>
+                    <Globe size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <span style={{ 
+                      flex: 1, 
+                      fontFamily: 'monospace', 
+                      fontSize: '12px', 
+                      color: 'var(--text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      direction: 'ltr',
+                      textAlign: 'left'
+                    }}>
+                      {publicShareableLink}
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <button 
+                        type="button" 
+                        onClick={() => handleCopyCode('link', publicShareableLink)} 
+                        className="sch-btn" 
+                        style={{ height: '30px', borderRadius: '6px', padding: '0 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {settingsCopied === 'link' ? <Check size={12} style={{ color: 'var(--success-color)' }} /> : <Copy size={12} />}
+                        <span>{settingsCopied === 'link' ? t.copied : (lang === 'ar' ? 'نسخ' : 'Copy')}</span>
+                      </button>
+                      <a 
+                        href={publicShareableLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="sch-btn" 
+                        style={{ height: '30px', width: '30px', borderRadius: '6px', padding: 0, border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <ExternalLink size={12} style={{ color: 'var(--text-secondary)' }} />
+                      </a>
+                    </div>
                   </div>
                 </div>
 
@@ -5708,48 +6035,67 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                     <Code size={18} style={{ color: 'var(--accent-text)' }} />
                     <span>{t.integrationTitle}</span>
                   </h2>
-                  <p className="sch-panel-desc" style={{ fontSize: '12px' }}>{t.integrationDesc}</p>
+                  <p className="sch-panel-desc" style={{ fontSize: '12px', marginBottom: '20px' }}>{t.integrationDesc}</p>
 
                   {/* HTML Snippet */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>{t.integrationSnippetHtml}</span>
-                      <button type="button" onClick={() => handleCopyCode('html', formHtmlCode)} className="sch-btn" style={{ height: '26px', padding: '0 8px', fontSize: '10px', borderRadius: '6px' }}>
-                        {settingsCopied === 'html' ? <Check size={10} style={{ color: 'var(--success-color)' }} /> : <Copy size={10} />}
-                        <span style={{ marginInlineStart: '4px' }}>{settingsCopied === 'html' ? t.copied : t.copyCode}</span>
+                  <div className="developer-code-card" style={{ marginBottom: '16px' }}>
+                    <div className="code-card-header">
+                      <span className="code-card-title">{t.integrationSnippetHtml}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => handleCopyCode('html', formHtmlCode)} 
+                        className="code-card-copy-btn"
+                      >
+                        {settingsCopied === 'html' ? <Check size={12} style={{ color: 'var(--success-color)' }} /> : <Copy size={12} />}
+                        <span>{settingsCopied === 'html' ? t.copied : t.copyCode}</span>
                       </button>
                     </div>
-                    <pre className="sch-code-block custom-code-scroll" style={{ fontSize: '11px', padding: '12px' }}>{formHtmlCode}</pre>
+                    <pre className="code-card-pre">{formHtmlCode}</pre>
                   </div>
 
                   {/* JS Snippet */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>{t.integrationSnippetJs}</span>
-                      <button type="button" onClick={() => handleCopyCode('js', formJsCode)} className="sch-btn" style={{ height: '26px', padding: '0 8px', fontSize: '10px', borderRadius: '6px' }}>
-                        {settingsCopied === 'js' ? <Check size={10} style={{ color: 'var(--success-color)' }} /> : <Copy size={10} />}
-                        <span style={{ marginInlineStart: '4px' }}>{settingsCopied === 'js' ? t.copied : t.copyCode}</span>
+                  <div className="developer-code-card" style={{ marginBottom: '20px' }}>
+                    <div className="code-card-header">
+                      <span className="code-card-title">{t.integrationSnippetJs}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => handleCopyCode('js', formJsCode)} 
+                        className="code-card-copy-btn"
+                      >
+                        {settingsCopied === 'js' ? <Check size={12} style={{ color: 'var(--success-color)' }} /> : <Copy size={12} />}
+                        <span>{settingsCopied === 'js' ? t.copied : t.copyCode}</span>
                       </button>
                     </div>
-                    <pre className="sch-code-block custom-code-scroll" style={{ fontSize: '11px', padding: '12px' }}>{formJsCode}</pre>
+                    <pre className="code-card-pre">{formJsCode}</pre>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', padding: '12px', backgroundColor: 'var(--panel-muted)', borderRadius: '8px', border: '1px dashed var(--border-color)', marginBottom: '20px' }}>
-                    <div style={{ flexShrink: 0, color: 'var(--accent-text)', marginTop: '2px' }}>
-                      <ExternalLink size={13} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.embedInstructions}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3 }}>{t.embedInstructionsText}</span>
+                  {/* Beautiful alert guide box */}
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '12px', 
+                    padding: '14px 16px', 
+                    backgroundColor: 'var(--panel-muted)', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--border-color)', 
+                    borderInlineStart: '4px solid var(--accent-text)',
+                    marginBottom: '24px',
+                    direction: lang === 'ar' ? 'rtl' : 'ltr',
+                    textAlign: 'start'
+                  }}>
+                    <HelpCircle size={18} style={{ flexShrink: 0, color: 'var(--accent-text)', marginTop: '2px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.embedInstructions}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.embedInstructionsText}</span>
                     </div>
                   </div>
 
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                  {/* Wizard Footer Navigation */}
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                     <button 
                       type="button" 
                       onClick={() => setSettingsStep(2)} 
                       className="sch-btn" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ height: '38px', borderRadius: '8px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                     >
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
                       <span>{lang === 'ar' ? 'السابق: تصميم النموذج' : 'Back: Customize Widget'}</span>
@@ -5760,7 +6106,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       onClick={handleSaveSettings}
                       disabled={saveLoading} 
                       className="sch-btn sch-btn-primary" 
-                      style={{ height: '36px', borderRadius: '6px', padding: '0 18px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--success-color)', color: '#ffffff' }}
+                      style={{ height: '38px', borderRadius: '8px', padding: '0 20px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--success-color)', border: 'none', color: '#ffffff', cursor: 'pointer' }}
                     >
                       <Check size={13} />
                       <span>{saveLoading ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ وتفعيل الإعدادات' : 'Save & Publish')}</span>
