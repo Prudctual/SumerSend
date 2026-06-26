@@ -1892,9 +1892,20 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
         // Compile using the active welcomeVars state values
         if (template.variables) {
           template.variables.forEach((v: any) => {
-            const val = welcomeVars[v.key] !== undefined && welcomeVars[v.key] !== ''
-              ? welcomeVars[v.key]
-              : (lang === 'ar' ? v.defaultValAr : v.defaultValEn);
+            let val;
+            const isNameVar = ['user_name', 'customer_name', 'name'].includes(v.key);
+            const isEmailVar = v.key === 'email';
+
+            if (isNameVar) {
+              val = forPreview ? (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem') : '{name}';
+            } else if (isEmailVar) {
+              val = forPreview ? 'client@domain.com' : '{email}';
+            } else {
+              val = welcomeVars[v.key] !== undefined && welcomeVars[v.key] !== ''
+                ? welcomeVars[v.key]
+                : (lang === 'ar' ? v.defaultValAr : v.defaultValEn);
+            }
+
             body = body.split(`{{${v.key}}}`).join(val);
             subject = subject.split(`{{${v.key}}}`).join(val);
             body = body.split(`{${v.key}}`).join(val);
@@ -1902,16 +1913,29 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
           });
         }
         
-        // Only replace name/email tokens when rendering the frontend preview
-        if (forPreview) {
-          const nameVal = lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem';
-          body = body
-            .replace(/\{\{user_name\}\}/g, nameVal)
-            .replace(/\{\{name\}\}/g, nameVal)
-            .replace(/\{name\}/g, nameVal)
-            .replace(/\{\{email\}\}/g, 'client@domain.com')
-            .replace(/\{email\}/g, 'client@domain.com');
-        }
+        // Safeguard global replacement for raw subscriber placeholder occurrences
+        const nameVal = forPreview ? (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem') : '{name}';
+        const emailVal = forPreview ? 'client@domain.com' : '{email}';
+        
+        body = body
+          .replace(/\{\{user_name\}\}/g, nameVal)
+          .replace(/\{\{customer_name\}\}/g, nameVal)
+          .replace(/\{\{name\}\}/g, nameVal)
+          .replace(/\{user_name\}/g, nameVal)
+          .replace(/\{customer_name\}/g, nameVal)
+          .replace(/\{name\}/g, nameVal)
+          .replace(/\{\{email\}\}/g, emailVal)
+          .replace(/\{email\}/g, emailVal);
+
+        subject = subject
+          .replace(/\{\{user_name\}\}/g, nameVal)
+          .replace(/\{\{customer_name\}\}/g, nameVal)
+          .replace(/\{\{name\}\}/g, nameVal)
+          .replace(/\{user_name\}/g, nameVal)
+          .replace(/\{customer_name\}/g, nameVal)
+          .replace(/\{name\}/g, nameVal)
+          .replace(/\{\{email\}\}/g, emailVal)
+          .replace(/\{email\}/g, emailVal);
           
         return { subject, body, isHtml: true };
       }
@@ -6076,7 +6100,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                           </div>
 
                           {/* Variables customization inputs */}
-                          {selectedTemplate && selectedTemplate.variables && selectedTemplate.variables.length > 0 && (
+                          {selectedTemplate && selectedTemplate.variables && selectedTemplate.variables.filter((v: any) => !['user_name', 'customer_name', 'name', 'email'].includes(v.key)).length > 0 && (
                             <div className="ai-copilot-card" style={{ marginTop: '16px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-muted)' }}>
                               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Settings size={13} style={{ color: 'var(--accent-text)' }} />
@@ -6089,27 +6113,29 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                               </p>
                               
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {selectedTemplate.variables.map((v: any) => (
-                                  <div key={v.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <label className="sch-label" style={{ fontSize: '11px', marginBottom: '2px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                      {lang === 'ar' ? v.labelAr : v.labelEn}
-                                    </label>
-                                    <input
-                                      type="text"
-                                      className="sch-input"
-                                      style={{ height: '36px', fontSize: '12px', padding: '0 10px' }}
-                                      placeholder={lang === 'ar' ? v.defaultValAr : v.defaultValEn}
-                                      value={welcomeVars[v.key] || ''}
-                                      onChange={(e) => {
-                                        const newVal = e.target.value;
-                                        setWelcomeVars(prev => ({
-                                          ...prev,
-                                          [v.key]: newVal
-                                        }));
-                                      }}
-                                    />
-                                  </div>
-                                ))}
+                                {selectedTemplate.variables
+                                  .filter((v: any) => !['user_name', 'customer_name', 'name', 'email'].includes(v.key))
+                                  .map((v: any) => (
+                                    <div key={v.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      <label className="sch-label" style={{ fontSize: '11px', marginBottom: '2px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                        {lang === 'ar' ? v.labelAr : v.labelEn}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        className="sch-input"
+                                        style={{ height: '36px', fontSize: '12px', padding: '0 10px' }}
+                                        placeholder={lang === 'ar' ? v.defaultValAr : v.defaultValEn}
+                                        value={welcomeVars[v.key] || ''}
+                                        onChange={(e) => {
+                                          const newVal = e.target.value;
+                                          setWelcomeVars(prev => ({
+                                            ...prev,
+                                            [v.key]: newVal
+                                          }));
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
                               </div>
                             </div>
                           )}
