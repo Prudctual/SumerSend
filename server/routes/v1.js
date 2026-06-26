@@ -388,7 +388,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
             status: 'active',
             name: name || existingSub.name,
             phone: phone || existingSub.phone,
-            metadata: { ...(existingSub.metadata || {}), ...(metadata || {}) },
+            metadata: { source: 'api', ...(existingSub.metadata || {}), ...(metadata || {}) },
             updated_at: new Date().toISOString()
           })
           .eq('user_id', userId)
@@ -402,7 +402,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
         email: email,
         name: name,
         phone: phone,
-        metadata: metadata || {}
+        metadata: { source: 'api', ...(metadata || {}) }
       });
       isNewSubscription = true;
     }

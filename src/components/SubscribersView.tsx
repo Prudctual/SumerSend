@@ -508,7 +508,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       const res = await fetch('http://127.0.0.1:3000/api/subscribers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newSubEmail, name: newSubName, phone: newSubPhone })
+        body: JSON.stringify({ email: newSubEmail, name: newSubName, phone: newSubPhone, metadata: { source: 'manual' } })
       });
 
       if (!res.ok) {
@@ -822,7 +822,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     const mappedSubscribers = parsedRows.map(row => {
       return {
         email: row[emailColumn],
-        name: nameColumn ? row[nameColumn] : null
+        name: nameColumn ? row[nameColumn] : null,
+        metadata: { source: 'import' }
       };
     }).filter(s => {
       if (!s.email) return false;
@@ -1624,6 +1625,40 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     return avatarColors[Math.abs(hash) % avatarColors.length];
   };
 
+  const renderSourceBadge = (source?: string, currentLang: string = 'ar') => {
+    const src = source || 'unknown';
+    
+    let text = '—';
+    let badgeClass = 'source-unknown';
+    
+    if (src === 'hosted_page') {
+      text = currentLang === 'ar' ? 'صفحة الاشتراك' : 'Hosted Page';
+      badgeClass = 'source-hosted_page';
+    } else if (src === 'embed_form') {
+      text = currentLang === 'ar' ? 'نموذج مضمن' : 'Embed Form';
+      badgeClass = 'source-embed_form';
+    } else if (src === 'manual') {
+      text = currentLang === 'ar' ? 'إضافة يدوية' : 'Manual';
+      badgeClass = 'source-manual';
+    } else if (src === 'import') {
+      text = currentLang === 'ar' ? 'استيراد ملف' : 'Import';
+      badgeClass = 'source-import';
+    } else if (src === 'api') {
+      text = currentLang === 'ar' ? 'API خارجي' : 'API';
+      badgeClass = 'source-api';
+    }
+    
+    if (src === 'unknown') {
+      return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+    }
+    
+    return (
+      <span className={`sch-badge ${badgeClass}`}>
+        <span>{text}</span>
+      </span>
+    );
+  };
+
   // Donut chart for stats sidebar
   const activePercent = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
   const unsubPercent = totalCount > 0 ? 100 - activePercent : 0;
@@ -1702,7 +1737,8 @@ document.getElementById('sumersend-optin-form').addEventListener('submit', async
       body: JSON.stringify({
         email: email,
         name: name,
-        phone: phone
+        phone: phone,
+        metadata: { source: 'embed_form' }
       })
     });
     
@@ -1733,7 +1769,8 @@ const subscribeCustomer = async (email, name, phone = '') => {
     body: JSON.stringify({
       email: email,
       name: name,
-      phone: phone
+      phone: phone,
+      metadata: { source: 'embed_form' }
     })
   });
   return await response.json();
@@ -2378,6 +2415,48 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
         [data-theme="dark"] .sch-badge.active {
           background: rgba(16, 185, 129, 0.15);
           color: #6ee7b7;
+        }
+
+        .sch-badge.source-hosted_page {
+          background: #d1fae5;
+          color: #065f46;
+        }
+        [data-theme="dark"] .sch-badge.source-hosted_page {
+          background: rgba(16, 185, 129, 0.15);
+          color: #6ee7b7;
+        }
+
+        .sch-badge.source-embed_form {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        [data-theme="dark"] .sch-badge.source-embed_form {
+          background: rgba(59, 130, 246, 0.15);
+          color: #93c5fd;
+        }
+
+        .sch-badge.source-manual {
+          background: var(--panel-muted);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
+        }
+
+        .sch-badge.source-import {
+          background: #ffedd5;
+          color: #854d0e;
+        }
+        [data-theme="dark"] .sch-badge.source-import {
+          background: rgba(249, 115, 22, 0.15);
+          color: #fdba74;
+        }
+
+        .sch-badge.source-api {
+          background: #f3e8ff;
+          color: #6b21a8;
+        }
+        [data-theme="dark"] .sch-badge.source-api {
+          background: rgba(168, 85, 247, 0.15);
+          color: #d8b4fe;
         }
 
         .sch-badge-dot {
@@ -3695,6 +3774,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                         <th style={{ textAlign: 'center', width: '130px' }}>
                           {lang === 'ar' ? 'الحالة' : 'Status'}
                         </th>
+                        <th style={{ textAlign: 'center', width: '130px' }}>
+                          {lang === 'ar' ? 'المصدر' : 'Source'}
+                        </th>
                         <th style={{ textAlign: lang === 'ar' ? 'right' : 'left', width: '150px' }}>
                           {lang === 'ar' ? 'تاريخ الاشتراك' : 'Joined Date'}
                         </th>
@@ -3744,6 +3826,11 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                                   <span className="sch-badge-dot" />
                                   <span>{sub.status === 'active' ? t.statusActive : t.statusUnsubscribed}</span>
                                 </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                {renderSourceBadge(sub.metadata?.source, lang)}
                               </div>
                             </td>
                             <td>

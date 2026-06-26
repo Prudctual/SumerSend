@@ -679,7 +679,7 @@ apiRouter.post('/subscribers', async (req, res) => {
       email,
       name,
       phone: phone || null,
-      metadata: metadata || {},
+      metadata: { source: 'manual', ...(metadata || {}) },
       status: 'active',
       createdAt: new Date().toISOString()
     };
@@ -790,6 +790,8 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
         id: `sub_${Math.random().toString(36).substring(2, 15)}`,
         email: normalizedEmail,
         name: s.name ? String(s.name).trim() : null,
+        phone: s.phone ? String(s.phone).trim() : null,
+        metadata: { source: 'import', ...(s.metadata || {}) },
         status: 'active',
         createdAt: new Date().toISOString()
       });
@@ -996,7 +998,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
             status: 'active',
             name: name || existingSub.name,
             phone: phone || existingSub.phone,
-            metadata: { ...(existingSub.metadata || {}), ...(metadata || {}) },
+            metadata: { source: 'hosted_page', ...(existingSub.metadata || {}), ...(metadata || {}) },
             updated_at: new Date().toISOString()
           })
           .eq('user_id', userId)
@@ -1010,7 +1012,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
         email: email,
         name: name,
         phone: phone,
-        metadata: metadata || {}
+        metadata: { source: 'hosted_page', ...(metadata || {}) }
       });
       isNewSubscription = true;
     }

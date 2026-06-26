@@ -80,7 +80,7 @@ export function PublicSubscribeView({ userId }: PublicSubscribeViewProps) {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    fetch(`http://127.0.0.1:3000/api/public/users/${userId}/profile`)
+    fetch(`/api/public/users/${userId}/profile`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Not found');
         const data = await res.json();
@@ -106,10 +106,10 @@ export function PublicSubscribeView({ userId }: PublicSubscribeViewProps) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/public/subscribers/join/${userId}`, {
+      const res = await fetch(`/api/public/subscribers/join/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, phone })
+        body: JSON.stringify({ email, name, phone, metadata: { source: 'hosted_page' } })
       });
 
       const data = await res.json();
