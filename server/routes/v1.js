@@ -77,6 +77,35 @@ async function publicApiAuth(req, res, next) {
       };
       return next();
     } catch (err) {
+      // Fallback: If verification fails, try to verify token by calling the Render backend directly.
+      // This resolves token validation failures due to JWT_SECRET mismatch between Vercel and Render.
+      try {
+        const renderBackendUrl = 'https://sumersend-backend.onrender.com';
+        const verifyRes = await fetch(`${renderBackendUrl}/api/auth/me`, {
+          headers: {
+            'Authorization': authHeader
+          }
+        });
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          if (verifyData && verifyData.user) {
+            req.apiKeyOwner = {
+              id: verifyData.user.id,
+              email: verifyData.user.email,
+              name: verifyData.user.name
+            };
+            req.apiKeyObj = {
+              id: 'session_key',
+              name: 'Dashboard Session',
+              scope: 'full'
+            };
+            return next();
+          }
+        }
+      } catch (fetchErr) {
+        console.error('Failed to verify session token via Render fallback in v1:', fetchErr);
+      }
+
       return res.status(401).json({ 
         error: {
           message: 'Invalid API key or session token.',
