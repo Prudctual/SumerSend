@@ -483,7 +483,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Fetch current config on load
   useEffect(() => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
     fetch('http://127.0.0.1:3000/api/smtp/config', { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
@@ -507,7 +507,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setStatusMsg(null);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     fetch('http://127.0.0.1:3000/api/smtp/config', {
       method: 'POST',
@@ -554,7 +554,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setStatusMsg(null);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     fetch('http://127.0.0.1:3000/api/smtp/test', {
       method: 'POST',
