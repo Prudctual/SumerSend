@@ -577,7 +577,23 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       const parts = lines[i].split(',').map(p => p.trim());
       if (parts.length < headersRaw.length) continue;
       
-      const toValue = parts[toIndex];
+      let toValue = parts[toIndex] || '';
+      let nameValue = nameIndex !== -1 ? parts[nameIndex] : '';
+
+      // Auto-detect and correct swapped Name and Phone/Email fields
+      if (campChannel !== 'email' && nameValue && toValue) {
+        const isPhone = (val: string) => /^(07[3-9]\d{8}|\+?9647[3-9]\d{8})$/.test(val.replace(/[\s\-()]/g, ''));
+        if (isPhone(nameValue) && !isPhone(toValue)) {
+          const temp = toValue;
+          toValue = nameValue;
+          nameValue = temp;
+        }
+      }
+
+      if (!nameValue) {
+        nameValue = lang === 'en' ? 'Recipient' : 'مستلم';
+      }
+
       const normalizedTo = toValue.trim().toLowerCase();
       if (!normalizedTo) continue;
 
@@ -586,8 +602,6 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         continue;
       }
       seenTo.add(normalizedTo);
-      
-      const nameValue = nameIndex !== -1 ? parts[nameIndex] : (lang === 'en' ? 'Recipient' : 'مستلم');
 
       if (toValue) {
         const variables: Record<string, string> = {};
@@ -1150,7 +1164,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         const sendData = await sendRes.json();
         
         if (!sendRes.ok) {
-          throw { isServerError: true, message: sendData.error?.message || 'Dispatch failed' };
+          throw { isServerError: true, message: sendData.error?.message || (typeof sendData.error === 'string' ? sendData.error : '') || 'Dispatch failed' };
         }
 
         // Success
