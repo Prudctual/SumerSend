@@ -47,7 +47,8 @@ import {
   createTransporter,
   triggerWebhooks,
   activeSecurityOTPs,
-  isValidEmail
+  isValidEmail,
+  compileWelcomeMessage
 } from '../utils.js';
 import { queueMessageJob } from '../queue.js';
 
@@ -946,14 +947,15 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
           
           if (charged) {
             const queueItems = subsToWelcome.map(sub => {
-              const welcomeBody = welcomeBodyTemplate.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+              const compiledBody = compileWelcomeMessage(welcomeBodyTemplate, sub.name, sub.email);
+              const compiledSubject = compileWelcomeMessage(welcomeSubject, sub.name, sub.email);
               return {
                 id: crypto.randomUUID(),
                 user_id: userId,
                 type: 'email',
                 recipient: sub.email,
-                subject: welcomeSubject,
-                body: welcomeBody,
+                subject: compiledSubject,
+                body: compiledBody,
                 status: 'pending',
                 attempts: 0,
                 max_attempts: 3
@@ -983,14 +985,15 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
         // 2. Log failed welcome emails in a single batch insert
         if (subsToFail.length > 0) {
           const failedLogs = subsToFail.map(sub => {
-            const welcomeBody = welcomeBodyTemplate.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
+            const compiledBody = compileWelcomeMessage(welcomeBodyTemplate, sub.name, sub.email);
+            const compiledSubject = compileWelcomeMessage(welcomeSubject, sub.name, sub.email);
             return {
               id: `msg_${Math.random().toString(36).substring(2, 15)}`,
               type: 'email',
               from: fromSender,
               to: sub.email,
-              subject: welcomeSubject,
-              body: welcomeBody,
+              subject: compiledSubject,
+              body: compiledBody,
               status: 'failed',
               error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
               timestamp: new Date().toISOString()
@@ -1145,9 +1148,8 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
         const cost = 10;
         const charged = await chargeWallet(userId, cost, `Welcome Email to ${email}`);
         
-        const welcomeSubject = settings.welcomeSubject;
-        let welcomeBody = settings.welcomeBody;
-        welcomeBody = welcomeBody.replace(/{name}/g, name || 'there').replace(/{email}/g, email);
+        const compiledSubject = compileWelcomeMessage(settings.welcomeSubject, name, email);
+        const compiledBody = compileWelcomeMessage(settings.welcomeBody, name, email);
 
         if (!charged) {
           const failedLog = {
@@ -1155,8 +1157,8 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
             type: 'email',
             from: 'Sumer Send <onboarding@sumersend.com>',
             to: email,
-            subject: welcomeSubject,
-            body: welcomeBody,
+            subject: compiledSubject,
+            body: compiledBody,
             status: 'failed',
             error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
             timestamp: new Date().toISOString()
@@ -1172,8 +1174,8 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
             user_id: userId,
             type: 'email',
             recipient: email,
-            subject: welcomeSubject,
-            body: welcomeBody,
+            subject: compiledSubject,
+            body: compiledBody,
             status: 'pending',
             attempts: 0,
             max_attempts: 3,

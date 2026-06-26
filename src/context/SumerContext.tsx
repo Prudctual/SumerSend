@@ -112,6 +112,11 @@ const INITIAL_PHONE_NOTIFICATIONS = [
 export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const { tab } = getTabFromPath(window.location.pathname);
+    const hasToken = !!localStorage.getItem('sumer_token');
+    const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'public-subscribe'].includes(tab);
+    if (!hasToken && isConsoleTab) {
+      return 'auth-signin';
+    }
     return tab;
   });
   const [activeDashboardSubTab, setActiveDashboardSubTab] = useState<'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates'>(() => {
@@ -124,23 +129,29 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const handleTabChange = (newTab: string, subTab?: 'channels' | 'domains' | 'apikeys' | 'wallet' | 'templates') => {
     let targetTab = newTab;
     let targetSubTab: any = undefined;
-    if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing', 'templates'].includes(newTab)) {
-      targetTab = 'dashboard';
-      if (newTab === 'domains') {
-        setActiveDashboardSubTab('domains');
-        targetSubTab = 'domains';
-      } else if (newTab === 'apikeys' || newTab === 'api') {
-        setActiveDashboardSubTab('apikeys');
-        targetSubTab = 'apikeys';
-      } else if (newTab === 'wallet' || newTab === 'billing') {
-        setActiveDashboardSubTab('wallet');
-        targetSubTab = 'wallet';
-      } else if (newTab === 'templates') {
-        setActiveDashboardSubTab('templates');
-        targetSubTab = 'templates';
-      } else if (newTab === 'dashboard') {
-        setActiveDashboardSubTab(subTab || 'channels');
-        targetSubTab = subTab || 'channels';
+    
+    const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'public-subscribe'].includes(targetTab);
+    if (!token && isConsoleTab) {
+      targetTab = 'auth-signin';
+    } else {
+      if (['dashboard', 'domains', 'apikeys', 'api', 'wallet', 'billing', 'templates'].includes(newTab)) {
+        targetTab = 'dashboard';
+        if (newTab === 'domains') {
+          setActiveDashboardSubTab('domains');
+          targetSubTab = 'domains';
+        } else if (newTab === 'apikeys' || newTab === 'api') {
+          setActiveDashboardSubTab('apikeys');
+          targetSubTab = 'apikeys';
+        } else if (newTab === 'wallet' || newTab === 'billing') {
+          setActiveDashboardSubTab('wallet');
+          targetSubTab = 'wallet';
+        } else if (newTab === 'templates') {
+          setActiveDashboardSubTab('templates');
+          targetSubTab = 'templates';
+        } else if (newTab === 'dashboard') {
+          setActiveDashboardSubTab(subTab || 'channels');
+          targetSubTab = subTab || 'channels';
+        }
       }
     }
 
@@ -155,9 +166,9 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearTimeout(loadingTimerRef.current);
       }
       
-      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'admin-portal', 'public-subscribe'].includes(targetTab);
+      const isConsoleTabNow = !['landing', 'auth-signin', 'auth-signup', 'admin-portal', 'public-subscribe'].includes(targetTab);
       
-      if (isConsoleTab) {
+      if (isConsoleTabNow) {
         setViewLoading(true);
         setCurrentTab(targetTab);
         loadingTimerRef.current = setTimeout(() => {
@@ -309,6 +320,11 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Verify token and restore session on mount
   useEffect(() => {
     if (!token) {
+      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'public-subscribe'].includes(currentTab);
+      if (isConsoleTab) {
+        setCurrentTab('auth-signin');
+      }
+      setAuthLoading(false);
       return;
     }
     if (user) {
@@ -329,11 +345,12 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.removeItem('sumer_token');
       setToken(null);
       setUser(null);
+      setCurrentTab('auth-signin');
     })
     .finally(() => {
       setAuthLoading(false);
     });
-  }, [token, user]);
+  }, [token, user, currentTab]);
 
   // Load user data once authenticated via a single bootstrap call
   useEffect(() => {

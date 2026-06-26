@@ -1197,12 +1197,12 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     if (!text) return '';
     let result = text;
 
-    // Find all placeholders matching {{variable}} or {{ variable }}
-    const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+    // Find all placeholders matching {{variable}} or {{ variable }} or {variable} or { variable }
+    const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}/g;
     const tags: string[] = [];
     let match;
     while ((match = regex.exec(text)) !== null) {
-      const tag = match[1];
+      const tag = match[1] || match[2];
       if (!tags.includes(tag)) {
         tags.push(tag);
       }
@@ -1212,6 +1212,22 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     const customList = customTemplates.filter((t: any) => t.type === campChannel) || [];
     const allTemplates = [...staticTemplates, ...customList];
     const template = allTemplates.find(t => t.id === campTemplateId);
+
+    const isNameTag = (t: string) => {
+      const tagLower = t.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const nameTags = [
+        'name', 'username', 'user_name', 'customer_name', 'customername',
+        'recipient_name', 'recipientname', 'reader_name', 'readername', 'friend_name',
+        'friendname', 'member_name', 'membername', 'client_name', 'clientname',
+        'subscriber_name', 'subscribername', 'user'
+      ];
+      if (nameTags.includes(tagLower)) return true;
+      if (tagLower.endsWith('name')) {
+        const excludes = ['platform', 'service', 'event', 'company', 'sender', 'brand', 'site', 'app', 'coupon', 'bank', 'product', 'hotel'];
+        return !excludes.some(ex => tagLower.startsWith(ex));
+      }
+      return false;
+    };
 
     tags.forEach(tag => {
       let val: any = undefined;
@@ -1223,8 +1239,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         
         // 2. Smart mapping for common names/emails/phones
         if (val === undefined) {
-          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
-            val = recipient.name || (lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader');
+          if (isNameTag(tag)) {
+            val = recipient.name;
           } else if (tagLower === 'email') {
             val = recipient.email || recipient.to || '';
           } else if (tagLower === 'phone') {
@@ -1244,6 +1260,26 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         if (val === undefined) {
           val = '';
         }
+
+        // Clean up resolved value if it's a name tag
+        if (isNameTag(tag)) {
+          const trimmedName = recipient.name ? recipient.name.trim() : '';
+          const defaultPlaceholders = [
+            'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
+            'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
+            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+          ];
+          if (trimmedName && !defaultPlaceholders.includes(trimmedName.toLowerCase())) {
+            val = trimmedName;
+          } else {
+            const valStr = val ? String(val).trim() : '';
+            if (!valStr || defaultPlaceholders.includes(valStr.toLowerCase())) {
+              val = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
+            } else {
+              val = valStr;
+            }
+          }
+        }
       } else {
         // If no recipient is provided (general preview mode)
         // 1. Try template variable defaults
@@ -1256,12 +1292,23 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
         // 2. Try generic placeholder fallback
         if (val === undefined) {
-          if (['reader_name', 'friend_name', 'recipient_name', 'customer_name', 'username', 'name'].includes(tagLower)) {
-            val = lang === 'ar' ? 'قارئنا الكريم' : 'Valued Reader';
+          if (isNameTag(tag)) {
+            val = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
           } else if (tagLower === 'email') {
             val = lang === 'ar' ? 'البريد الإلكتروني' : 'Email';
           } else if (tagLower === 'phone') {
             val = lang === 'ar' ? 'رقم الهاتف' : 'Phone Number';
+          }
+        } else if (isNameTag(tag)) {
+          // If template default is a generic placeholder, replace it in preview too
+          const valStr = String(val).trim();
+          const defaultPlaceholders = [
+            'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
+            'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
+            'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+          ];
+          if (defaultPlaceholders.includes(valStr.toLowerCase())) {
+            val = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
           }
         }
       }
@@ -1269,10 +1316,30 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       // Perform replacement if we resolved a value
       if (val !== undefined) {
         const escapeTag = tag.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const tagRegex = new RegExp(`\\{\\{\\s*${escapeTag}\\s*\\}\\}`, 'g');
-        result = result.replace(tagRegex, val);
+        const tagRegexDouble = new RegExp(`\\{\\{\\s*${escapeTag}\\s*\\}\\}`, 'g');
+        const tagRegexSingle = new RegExp(`\\{\\s*${escapeTag}\\s*\\}`, 'g');
+        result = result.replace(tagRegexDouble, val).replace(tagRegexSingle, val);
       }
     });
+
+    // Final literal replacement to make sure no "عضو رائع" or "Valued Member" escapes in the text under any circumstances
+    if (recipient && recipient.name && recipient.name.trim()) {
+      const subName = recipient.name.trim();
+      const defaultPlaceholders = [
+        'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
+        'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
+        'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+      ];
+      const finalName = defaultPlaceholders.includes(subName.toLowerCase()) ? (lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber') : subName;
+      result = result
+        .replace(/عضو رائع/g, finalName)
+        .replace(/Valued Member/g, finalName);
+    } else {
+      const fallback = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
+      result = result
+        .replace(/عضو رائع/g, fallback)
+        .replace(/Valued Member/g, fallback);
+    }
 
     return result;
   };

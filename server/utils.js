@@ -18,7 +18,10 @@ export function createTransporter(config) {
       rejectUnauthorized: false
     },
     maxConnections: 5,
-    maxMessages: 100
+    maxMessages: 100,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000
   });
 }
 
@@ -95,4 +98,49 @@ export function isValidEmail(email) {
 export const IRAQI_PHONE_REGEX = /^(?:\+964|00964|0)?7[5789]\d{8}$/;
 export function isValidIraqiPhone(phone) {
   return IRAQI_PHONE_REGEX.test(phone);
+}
+
+export function compileWelcomeMessage(body, name, email) {
+  if (!body) return '';
+  const fallbackNameAr = 'مشتركنا الكريم';
+  const fallbackNameEn = 'Valued Subscriber';
+  
+  let subName = name && name.trim() ? name.trim() : fallbackNameAr;
+  const lowerSub = subName.toLowerCase();
+  const defaultPlaceholders = [
+    'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
+    'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
+    'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient'
+  ];
+  if (!subName || defaultPlaceholders.includes(lowerSub)) {
+    subName = fallbackNameAr;
+  }
+  
+  const subNameEn = name && name.trim() && !defaultPlaceholders.includes(name.trim().toLowerCase()) ? name.trim() : fallbackNameEn;
+  
+  return body
+    .replace(/\{\{user_name\}\}/g, subName)
+    .replace(/\{\{customer_name\}\}/g, subName)
+    .replace(/\{\{name\}\}/g, subName)
+    .replace(/\{\{username\}\}/g, subName)
+    .replace(/\{\{recipient_name\}\}/g, subName)
+    .replace(/\{\{reader_name\}\}/g, subName)
+    .replace(/\{\{friend_name\}\}/g, subName)
+    .replace(/\{\{member_name\}\}/g, subName)
+    .replace(/\{\{client_name\}\}/g, subName)
+    .replace(/\{\{subscriber_name\}\}/g, subName)
+    .replace(/\{user_name\}/g, subName)
+    .replace(/\{customer_name\}/g, subName)
+    .replace(/\{name\}/g, subName)
+    .replace(/\{username\}/g, subName)
+    .replace(/\{recipient_name\}/g, subName)
+    .replace(/\{reader_name\}/g, subName)
+    .replace(/\{friend_name\}/g, subName)
+    .replace(/\{member_name\}/g, subName)
+    .replace(/\{client_name\}/g, subName)
+    .replace(/\{subscriber_name\}/g, subName)
+    .replace(/عضو رائع/g, subName)
+    .replace(/Valued Member/g, subNameEn)
+    .replace(/\{\{email\}\}/g, email || '')
+    .replace(/\{email\}/g, email || '');
 }
