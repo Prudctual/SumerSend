@@ -4851,14 +4851,15 @@ textarea.auth-input {
 .navbar-search-container {
   display: flex;
   align-items: center;
-  background-color: rgba(243, 244, 246, 0.8);
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  border-radius: 99px;
-  padding: 6px 14px;
-  width: 240px;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 250px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 [data-theme="dark"] .navbar-search-container {
@@ -4946,7 +4947,7 @@ textarea.auth-input {
 .navbar-notification-btn {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 6px;
   background-color: var(--panel-bg);
   border: 1px solid var(--border-color);
   display: flex;
@@ -4955,13 +4956,14 @@ textarea.auth-input {
   color: var(--text-secondary);
   cursor: pointer;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 .navbar-notification-btn:hover {
   background-color: var(--panel-muted);
   color: var(--text-primary);
+  border-color: var(--text-muted);
 }
 
 .navbar-notification-dot {
@@ -4970,8 +4972,8 @@ textarea.auth-input {
   border-radius: 50%;
   background-color: #ef4444;
   position: absolute;
-  top: -1px;
-  right: -1px;
+  top: -2px;
+  right: -2px;
   border: 1.5px solid var(--panel-bg);
 }
 
@@ -7350,5 +7352,79 @@ textarea.auth-input {
 
 .nt-icon-error {
   color: #ef4444;
+}
+
+/* =========================================================================
+   14. Polished Navbar Header & Breadcrumbs Styles
+   ========================================================================= */
+
+.navbar-breadcrumbs-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.navbar-breadcrumb-parent {
+  color: var(--text-muted);
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.navbar-breadcrumb-parent:hover {
+  color: var(--text-secondary);
+}
+
+.navbar-breadcrumb-separator {
+  color: var(--border-color);
+  font-size: 12px;
+  user-select: none;
+}
+
+.navbar-breadcrumb-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.navbar-right-widgets {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.header-wallet-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  user-select: none;
+}
+
+.header-wallet-badge:hover {
+  background-color: var(--panel-muted);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+[dir="rtl"] .header-wallet-badge {
+  flex-direction: row-reverse;
 }
 

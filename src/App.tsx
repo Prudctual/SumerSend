@@ -411,6 +411,65 @@ export default function App() {
     );
   }
 
+  const getBreadcrumbs = () => {
+    let parent = '';
+    let child = '';
+    
+    if (currentTab === 'dashboard') {
+      parent = lang === 'ar' ? 'لوحة التحكم' : 'Dashboard';
+      if (activeDashboardSubTab === 'channels') {
+        child = lang === 'ar' ? 'نظرة عامة' : 'Overview';
+      } else if (activeDashboardSubTab === 'domains') {
+        child = lang === 'ar' ? 'النطاقات' : 'Domains';
+      } else if (activeDashboardSubTab === 'apikeys') {
+        child = lang === 'ar' ? 'مفاتيح الـ API' : 'API Keys';
+      } else if (activeDashboardSubTab === 'templates') {
+        child = lang === 'ar' ? 'قوالب المراسلة' : 'Message Templates';
+      } else {
+        child = lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing';
+      }
+    } else if (['messaging', 'playground', 'campaigns'].includes(currentTab)) {
+      parent = lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns';
+      if (currentTab === 'messaging') {
+        child = lang === 'ar' ? 'المراسلة الفورية' : 'Instant Dispatch';
+      } else if (currentTab === 'playground') {
+        child = lang === 'ar' ? 'منصة الاختبار (Playground)' : 'API Playground';
+      } else {
+        child = lang === 'ar' ? 'إرسال الحملات' : 'Bulk Campaigns';
+      }
+    } else if (['logs', 'reports'].includes(currentTab)) {
+      parent = lang === 'ar' ? 'السجلات والتحليلات' : 'Logs & Analytics';
+      if (currentTab === 'logs') {
+        child = lang === 'ar' ? 'سجلات الإرسال' : 'Logs & Traces';
+      } else {
+        child = lang === 'ar' ? 'التقارير التفصيلية' : 'Detailed Reports';
+      }
+    } else if (currentTab === 'billing') {
+      parent = lang === 'ar' ? 'إعدادات المنصة' : 'Platform Settings';
+      child = lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing';
+    } else if (currentTab === 'subscribers') {
+      parent = lang === 'ar' ? 'الخدمات الأساسية' : 'Core Services';
+      child = lang === 'ar' ? 'إدارة المشتركين' : 'Subscribers';
+    } else if (currentTab === 'settings') {
+      parent = lang === 'ar' ? 'إعدادات المنصة' : 'Platform Settings';
+      child = lang === 'ar' ? 'إعدادات النظام' : 'Settings';
+    } else if (currentTab === 'admin') {
+      parent = lang === 'ar' ? 'بوابة المسؤول' : 'Admin Portal';
+      child = lang === 'ar' ? 'إدارة النظام' : 'System Administration';
+    } else {
+      parent = lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub';
+      child = lang === 'ar' ? 'بوابة المطور' : 'Developer Hub';
+    }
+
+    return (
+      <div className="navbar-breadcrumbs">
+        <span className="navbar-breadcrumb-parent">{parent}</span>
+        <span className="navbar-breadcrumb-separator">/</span>
+        <span className="navbar-breadcrumb-child">{child}</span>
+      </div>
+    );
+  };
+
   return (
     <>
     <a href="#main-content" className="skip-link">
@@ -436,22 +495,10 @@ export default function App() {
       />
       
       <main id="main-content" className="main-content" style={{ paddingTop: 'var(--header-height)' }}>
-        <div className="top-navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Left: Active Tab Title */}
-          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              {currentTab === 'dashboard' ? (
-                activeDashboardSubTab === 'channels' ? (lang === 'ar' ? 'لوحة التحكم > نظرة عامة' : 'Dashboard > Overview') :
-                activeDashboardSubTab === 'domains' ? (lang === 'ar' ? 'لوحة التحكم > النطاقات' : 'Dashboard > Domains') :
-                activeDashboardSubTab === 'apikeys' ? (lang === 'ar' ? 'لوحة التحكم > مفاتيح الـ API' : 'Dashboard > API Keys') :
-                activeDashboardSubTab === 'templates' ? (lang === 'ar' ? 'لوحة التحكم > تصميم وإدارة القوالب' : 'Dashboard > Template Management') :
-                (lang === 'ar' ? 'لوحة التحكم > المحفظة والشحن' : 'Dashboard > Wallet & Billing')
-               ) : 
-               ['messaging', 'playground', 'campaigns'].includes(currentTab) ? (lang === 'ar' ? 'المراسلة والحملات' : 'Playground & Campaigns') :
-               ['logs', 'reports'].includes(currentTab) ? (lang === 'ar' ? 'السجلات والتحليلات' : 'Logs & Analytics') :
-               currentTab === 'billing' ? (lang === 'ar' ? 'المحفظة والشحن' : 'Wallet & Billing') :
-               (lang === 'ar' ? 'بوابة المطور والـ API' : 'Developer Hub')}
-            </h2>
+        <div className="top-navbar">
+          {/* Left: Active Tab Title / Breadcrumbs */}
+          <div className="navbar-breadcrumbs-wrapper">
+            {getBreadcrumbs()}
           </div>
 
           {/* Center: Search Capsule Shortcut */}
@@ -461,8 +508,12 @@ export default function App() {
             <span className="navbar-search-badge">⌘F</span>
           </div>
 
-          {/* Right: Notifications Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
+          {/* Right: Wallet & Notifications Widget */}
+          <div className="navbar-right-widgets">
+            <div className="header-wallet-badge" onClick={() => setCurrentTab('billing')} title={lang === 'ar' ? 'المحفظة والرصيد' : 'Wallet & Billing'}>
+              <Wallet size={13} />
+              <span>{walletBalance.toLocaleString()} {lang === 'ar' ? 'د.ع' : 'IQD'}</span>
+            </div>
             <NotificationsDropdown lang={lang} />
           </div>
         </div>
