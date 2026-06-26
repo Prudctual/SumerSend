@@ -7447,14 +7447,17 @@ textarea.auth-input {
   border-color: var(--text-muted) !important;
 }
 
-.dispatch-card-premium.sms-channel {
-  border-top: 3px solid #f59e0b !important;
+.dispatch-card-premium.sms-channel:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.08), 0 8px 10px -6px rgba(245, 158, 11, 0.04) !important;
 }
-.dispatch-card-premium.mail-channel {
-  border-top: 3px solid #6366f1 !important;
+.dispatch-card-premium.mail-channel:hover {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.08), 0 8px 10px -6px rgba(99, 102, 241, 0.04) !important;
 }
-.dispatch-card-premium.whatsapp-channel {
-  border-top: 3px solid #10b981 !important;
+.dispatch-card-premium.whatsapp-channel:hover {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.08), 0 8px 10px -6px rgba(16, 185, 129, 0.04) !important;
 }
 
 .dispatch-channel-info {
