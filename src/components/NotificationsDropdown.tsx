@@ -45,11 +45,67 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
       : `${days}d ago`;
   };
 
+  const knownIdsRef = useRef<Set<string>>(new Set());
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      
+      // High-fidelity synthetic double chime (C6 -> E6)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1046.50, now); // C6
+      gain1.gain.setValueAtTime(0.06, now);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.15);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+      gain2.gain.setValueAtTime(0.06, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.25);
+    } catch (e) {
+      console.warn('AudioContext failed:', e);
+    }
+  };
+
   const fetchNotifications = async () => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/notifications');
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as Notification[];
+        
+        // Play notification sound if a new unread notification is detected
+        if (knownIdsRef.current.size === 0) {
+          // Initial population
+          knownIdsRef.current = new Set(data.map(n => n.id));
+        } else {
+          let hasNewUnread = false;
+          data.forEach(n => {
+            if (!knownIdsRef.current.has(n.id)) {
+              knownIdsRef.current.add(n.id);
+              if (!n.isRead) {
+                hasNewUnread = true;
+              }
+            }
+          });
+          if (hasNewUnread) {
+            playNotificationSound();
+          }
+        }
+
         setNotifications(data);
       }
     } catch (err) {
