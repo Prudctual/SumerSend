@@ -323,7 +323,12 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     }
   } else {
     try {
-      await queueMessageJob(msgId, { priority });
+      // Wrap queue attempt with a timeout to prevent hanging when Redis is unreachable.
+      const queueWithTimeout = Promise.race([
+        queueMessageJob(msgId, { priority }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('BullMQ queue timeout (5s). Redis may be unreachable.')), 5000))
+      ]);
+      await queueWithTimeout;
       return res.json({
         id: msgId,
         type: 'email',
@@ -559,7 +564,12 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
     }
   } else {
     try {
-      await queueMessageJob(msgId, { priority });
+      // Wrap queue attempt with a timeout to prevent hanging when Redis is unreachable.
+      const queueWithTimeout = Promise.race([
+        queueMessageJob(msgId, { priority }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('BullMQ queue timeout (5s). Redis may be unreachable.')), 5000))
+      ]);
+      await queueWithTimeout;
       return res.json({
         id: msgId,
         type: 'sms',
@@ -1025,7 +1035,13 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
     }
   } else {
     try {
-      await queueMessageJob(msgId, { priority, isOtp });
+      // Wrap queue attempt with a timeout to prevent hanging when Redis is unreachable.
+      // If BullMQ fails to queue within 5 seconds, fall back to direct WhatsApp dispatch.
+      const queueWithTimeout = Promise.race([
+        queueMessageJob(msgId, { priority, isOtp }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('BullMQ queue timeout (5s). Redis may be unreachable.')), 5000))
+      ]);
+      await queueWithTimeout;
       return res.json({
         id: msgId,
         type: 'whatsapp',
