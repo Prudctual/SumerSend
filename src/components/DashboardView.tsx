@@ -484,6 +484,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         trafficNotStarted: 'Traffic has not started yet',
         leadDev: 'Lead Developer',
         calendarTitle: 'Activity Planner',
+        calendarSubtitle: 'Live system activities',
+        liveBadge: 'Live',
         zainCashWebhookAudit: 'Zain Cash Webhook Audit',
         waTemplateSync: 'WhatsApp Cloud Template Sync',
         smtpTuning: 'SMTP Performance Tuning',
@@ -558,6 +560,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         trafficNotStarted: 'لم تبدأ حركة اليوم بعد',
         leadDev: 'المطور الرئيس',
         calendarTitle: 'مخطط الأنشطة اليومية',
+        calendarSubtitle: 'متابعة حركة البيانات المباشرة',
+        liveBadge: 'مباشر',
         zainCashWebhookAudit: 'تدقيق ويب هوك زين كاش',
         waTemplateSync: 'مزامنة قوالب الواتساب السحابية',
         smtpTuning: 'ضبط أداء خادم SMTP',
@@ -1876,9 +1880,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             return (
               <div className="sidebar-timeline-section">
-                <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'start' }}>
-                  {t.calendarTitle}
-                </h3>
+                <div className="timeline-header-premium">
+                  <div className="timeline-header-left">
+                    <div className="timeline-header-icon-ring">
+                      <div className="timeline-header-icon-pulse" />
+                      <Zap size={13} className="timeline-header-icon" />
+                    </div>
+                    <div className="timeline-header-title-group">
+                      <h3 className="timeline-header-title-text">
+                        {t.calendarTitle}
+                      </h3>
+                      <span className="timeline-header-subtitle-text">
+                        {t.calendarSubtitle}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="timeline-header-badge">
+                    <span className="timeline-badge-ping" />
+                    <span className="timeline-badge-text">{t.liveBadge}</span>
+                  </div>
+                </div>
                 
                 <div className="timeline-schedule-container">
                   <div className="timeline-vertical-line" />
