@@ -158,7 +158,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const [settingsCopied, setSettingsCopied] = useState<'html' | 'js' | 'link' | null>(null);
 
   // Settings Wizard Step State
-  const [settingsStep, setSettingsStep] = useState<1 | 2 | 3>(1);
+  const [settingsStep, setSettingsStep] = useState<1 | 2>(1);
   const [generatorStyle, setGeneratorStyle] = useState<'philosophical' | 'saas' | 'casual'>('philosophical');
   const [generatorOffer, setGeneratorOffer] = useState<'welcome' | 'vision' | 'gift'>('welcome');
   const [testName, setTestName] = useState('');
@@ -5563,22 +5563,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
             <button 
               type="button" 
               onClick={() => setSettingsStep(2)}
-              className={`premium-wizard-step ${settingsStep === 2 ? 'active' : ''} ${settingsStep > 2 ? 'completed' : ''}`}
+              className={`premium-wizard-step ${settingsStep === 2 ? 'active' : ''}`}
             >
-              <span className="step-badge">
-                {settingsStep > 2 ? <Check size={10} style={{ strokeWidth: 3 }} /> : '2'}
-              </span>
-              <Settings size={14} style={{ opacity: 0.8 }} />
-              <span>{lang === 'ar' ? 'تخصيص نموذج الاشتراك' : 'Subscription Widget'}</span>
-            </button>
-
-            {/* Step 3 */}
-            <button 
-              type="button" 
-              onClick={() => setSettingsStep(3)}
-              className={`premium-wizard-step ${settingsStep === 3 ? 'active' : ''}`}
-            >
-              <span className="step-badge">3</span>
+              <span className="step-badge">2</span>
               <Code size={14} style={{ opacity: 0.8 }} />
               <span>{lang === 'ar' ? 'كود الدمج والتشغيل' : 'Embed & Launch'}</span>
             </button>
@@ -5933,7 +5920,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       className="sch-btn sch-btn-primary" 
                       style={{ height: '36px', borderRadius: '8px', padding: '0 18px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                     >
-                      <span>{lang === 'ar' ? 'التالي: تخصيص نموذج الاشتراك' : 'Next: Customize Widget'}</span>
+                      <span>{lang === 'ar' ? 'التالي: كود الدمج والتشغيل' : 'Next: Embed & Launch'}</span>
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                     </button>
                   </div>
@@ -5948,322 +5935,6 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
           )}
 
           {settingsStep === 2 && (
-            <div className="sch-settings-grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="sch-panel">
-                  <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
-                    <Settings size={18} style={{ color: 'var(--accent-text)' }} />
-                    <span>{lang === 'ar' ? 'الخطوة الثانية: تصميم وتجربة نموذج الاشتراك' : 'Step 2: Design & Test Subscription Widget'}</span>
-                  </h2>
-                  <p className="sch-panel-desc" style={{ fontSize: '12px', marginBottom: '20px' }}>
-                    {lang === 'ar' 
-                      ? 'قم بتهيئة مظهر النموذج ليتكامل مع تصميم مدونتك، واختبر آلية الاشتراك بنفسك في صندوق التجربة.' 
-                      : 'Configure the design of the sign-up widget to blend with your blog, and try subscribing in the sandbox below.'}
-                  </p>
-
-                  {/* Settings Customizer */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', backgroundColor: 'var(--panel-muted)', marginBottom: '20px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.customizerTitle}</span>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-                      {/* Theme Selector Grid */}
-                      <div>
-                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{t.widgetThemeLabel}</label>
-                        <div className="theme-selector-grid">
-                          <button 
-                            type="button" 
-                            className={`theme-card-btn ${widgetTheme === 'light' ? 'active' : ''}`}
-                            onClick={() => setWidgetTheme('light')}
-                          >
-                            <span className="theme-badge-dot light" />
-                            <span className="theme-card-label">{lang === 'ar' ? 'فاتح' : 'Light'}</span>
-                          </button>
-                          <button 
-                            type="button" 
-                            className={`theme-card-btn ${widgetTheme === 'dark' ? 'active' : ''}`}
-                            onClick={() => setWidgetTheme('dark')}
-                          >
-                            <span className="theme-badge-dot dark" />
-                            <span className="theme-card-label">{lang === 'ar' ? 'مظلم' : 'Dark'}</span>
-                          </button>
-                          <button 
-                            type="button" 
-                            className={`theme-card-btn ${widgetTheme === 'glass' ? 'active' : ''}`}
-                            onClick={() => setWidgetTheme('glass')}
-                          >
-                            <span className="theme-badge-dot glass" />
-                            <span className="theme-card-label">{lang === 'ar' ? 'زجاجي' : 'Glass'}</span>
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* Button Color & Presets */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label className="sch-label" style={{ fontSize: '11px', display: 'block' }}>{t.widgetButtonColorLabel}</label>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
-                            <input 
-                              type="color" 
-                              value={widgetButtonColor} 
-                              onChange={(e) => setWidgetButtonColor(e.target.value)} 
-                              style={{ position: 'absolute', top: '-6px', left: '-6px', width: '48px', height: '48px', border: 'none', cursor: 'pointer', backgroundColor: 'transparent' }} 
-                            />
-                          </div>
-                          <input 
-                            type="text" 
-                            className="sch-input" 
-                            value={widgetButtonColor} 
-                            onChange={(e) => setWidgetButtonColor(e.target.value)} 
-                            style={{ flex: 1, fontSize: '12px', height: '36px', fontFamily: 'monospace', padding: '0 10px', borderRadius: '8px' }} 
-                          />
-                        </div>
-                        {/* Presets */}
-                        <div className="preset-colors-container">
-                          {[
-                            { value: '#000000', name: 'Vercel Black', className: 'black' },
-                            { value: '#0070f3', name: 'Vercel Blue', className: 'blue' },
-                            { value: '#10b981', name: 'Emerald', className: 'emerald' },
-                            { value: '#ec4899', name: 'Pink', className: 'pink' },
-                            { value: '#f59e0b', name: 'Amber', className: 'amber' },
-                            { value: '#6366f1', name: 'Indigo', className: 'indigo' },
-                            { value: '#ffffff', name: 'White', className: 'white' }
-                          ].map(preset => (
-                            <button
-                              key={preset.value}
-                              type="button"
-                              title={preset.name}
-                              className={`preset-color-pill ${preset.className} ${widgetButtonColor.toLowerCase() === preset.value.toLowerCase() ? 'active' : ''}`}
-                              style={{ backgroundColor: preset.value }}
-                              onClick={() => setWidgetButtonColor(preset.value)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Border Radius */}
-                      <div>
-                        <label className="sch-label" style={{ fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>{t.widgetRadiusLabel}</span>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{widgetBorderRadius}px</span>
-                        </label>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="24" 
-                          value={widgetBorderRadius} 
-                          onChange={(e) => setWidgetBorderRadius(parseInt(e.target.value))} 
-                          className="premium-slider"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Interactive Sandbox Form */}
-                  <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', backgroundColor: 'var(--panel-bg)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.01)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '10px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {lang === 'ar' ? 'صندوق تجربة الاشتراك التفاعلي والحي' : 'Interactive Live Subscription Sandbox'}
-                      </span>
-                      <span style={{ fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 8px', backgroundColor: 'var(--success-bg)', borderRadius: '20px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                        <Circle size={6} style={{ fill: 'currentColor' }} />
-                        {lang === 'ar' ? 'بيئة محاكاة نشطة' : 'Active Sandbox Simulator'}
-                      </span>
-                    </div>
-
-                    {!testSubscribed ? (
-                      <form onSubmit={handleTestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div>
-                          <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{lang === 'ar' ? 'الاسم لتجربة الدمج' : 'Name (For testing)'}</label>
-                          <input 
-                            type="text" 
-                            className="sch-input" 
-                            placeholder={lang === 'ar' ? 'مثال: جاسم كريم' : 'e.g. Jasim Kareem'} 
-                            value={testName}
-                            onChange={(e) => setTestName(e.target.value)}
-                            required
-                            style={{ height: '36px', fontSize: '12px', borderRadius: '8px' }}
-                          />
-                        </div>
-                        <div>
-                          <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px', display: 'block' }}>{lang === 'ar' ? 'البريد الإلكتروني للتجربة' : 'Email (For testing)'}</label>
-                          <input 
-                            type="email" 
-                            className="sch-input" 
-                            placeholder="test@domain.com" 
-                            value={testEmail}
-                            onChange={(e) => setTestEmail(e.target.value)}
-                            required
-                            style={{ height: '36px', fontSize: '12px', borderRadius: '8px' }}
-                          />
-                        </div>
-
-                        <button 
-                          type="submit" 
-                          className="sch-btn" 
-                          style={{ 
-                            width: '100%', 
-                            height: '40px', 
-                            justifyContent: 'center', 
-                            borderRadius: '8px', 
-                            backgroundColor: widgetButtonColor,
-                            color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff',
-                            fontWeight: 700,
-                            border: widgetButtonColor.toLowerCase() === '#ffffff' ? '1px solid var(--border-color)' : 'none',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            boxShadow: widgetButtonColor.toLowerCase() === '#ffffff' ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.05)'
-                          }}
-                        >
-                          {lang === 'ar' ? 'اختبر الاشتراك فورياً ⚡' : 'Test Subscription Live ⚡'}
-                        </button>
-                      </form>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px 8px', textAlign: 'center' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)' }}>
-                          <CheckCircle2 size={24} />
-                        </div>
-                        <div>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                            {lang === 'ar' ? 'تمت محاكاة عملية الاشتراك بنجاح!' : 'Simulated Subscription Succeeded!'}
-                          </h4>
-                          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                            {lang === 'ar' 
-                              ? `تم إدخال المشترك "${testName}" بنجاح. وفي بيئة التشغيل الفعلية، سيستلم الآن بريد الترحيب الذي جهزته في الخطوة السابقة.`
-                              : `Subscriber "${testName}" added successfully. In production, they would now receive the welcome email defined in Step 1.`}
-                          </p>
-                        </div>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            setTestSubscribed(false);
-                            setTestName('');
-                            setTestEmail('');
-                          }} 
-                          className="sch-btn" 
-                          style={{ height: '32px', fontSize: '11px', borderRadius: '6px', padding: '0 16px', marginTop: '4px' }}
-                        >
-                          {lang === 'ar' ? 'إعادة التجربة ببيانات أخرى' : 'Reset & Test Again'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '20px', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setSettingsStep(1)} 
-                      className="sch-btn" 
-                      style={{ height: '36px', borderRadius: '8px', padding: '0 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
-                      <span>{lang === 'ar' ? 'السابق: بريد الترحيب' : 'Back: Welcome Email'}</span>
-                    </button>
-                    
-                    <button 
-                      type="button" 
-                      onClick={() => setSettingsStep(3)} 
-                      className="sch-btn sch-btn-primary" 
-                      style={{ height: '36px', borderRadius: '8px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <span>{lang === 'ar' ? 'التالي: كود الدمج' : 'Next: Embed Code'}</span>
-                      <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Customized theme widget preview */}
-              <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="sch-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {lang === 'ar' ? 'معاينة مباشرة للنموذج المخصص' : 'Live Widget Theme Preview'}
-                  </span>
-                  
-                  <div className="designer-canvas">
-                    <div className="designer-canvas-badge">
-                      <Sparkles size={10} style={{ color: 'var(--accent-text)' }} />
-                      <span>{lang === 'ar' ? 'بيئة التصميم' : 'Canvas'}</span>
-                    </div>
-
-                    <div style={{
-                      width: '100%', 
-                      maxWidth: '300px', 
-                      padding: '24px 20px',
-                      borderRadius: `${widgetBorderRadius}px`,
-                      border: `1px solid ${widgetTheme === 'dark' ? '#222222' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.15)' : '#eaeaea'}`,
-                      backgroundColor: widgetTheme === 'dark' ? '#09090b' : widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff',
-                      color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#0a0a0a',
-                      boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
-                      backdropFilter: widgetTheme === 'glass' ? 'blur(12px)' : 'none',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                      fontFamily: 'var(--font-family)', 
-                      direction: lang === 'ar' ? 'rtl' : 'ltr',
-                      position: 'relative',
-                      zIndex: 2
-                    }}>
-                      <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 800, textAlign: 'center', letterSpacing: '-0.3px' }}>
-                        {lang === 'ar' ? 'اشترك في المدونة ليصلك كل جديد' : 'Subscribe to our newsletter'}
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <input 
-                          type="text" 
-                          placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Your Name'} 
-                          disabled 
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px 12px', 
-                            border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#eaeaea'}`, 
-                            backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff', 
-                            borderRadius: '6px', 
-                            fontSize: '12px', 
-                            color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
-                            boxSizing: 'border-box',
-                            outline: 'none'
-                          }} 
-                        />
-                        <input 
-                          type="email" 
-                          placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'email@example.com'} 
-                          disabled 
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px 12px', 
-                            border: `1px solid ${widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.1)' : '#eaeaea'}`, 
-                            backgroundColor: widgetTheme === 'dark' || widgetTheme === 'glass' ? 'rgba(255,255,255,0.03)' : '#ffffff', 
-                            borderRadius: '6px', 
-                            fontSize: '12px', 
-                            color: widgetTheme === 'dark' || widgetTheme === 'glass' ? '#ffffff' : '#111111', 
-                            boxSizing: 'border-box',
-                            outline: 'none'
-                          }} 
-                        />
-                        <button 
-                          type="button" 
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            backgroundColor: widgetButtonColor, 
-                            color: widgetButtonColor.toLowerCase() === '#ffffff' ? '#000000' : '#ffffff', 
-                            border: widgetButtonColor.toLowerCase() === '#ffffff' ? '1px solid #eaeaea' : 'none', 
-                            borderRadius: '6px', 
-                            fontWeight: 700, 
-                            fontSize: '12px', 
-                            cursor: 'pointer',
-                            boxShadow: widgetButtonColor.toLowerCase() === '#ffffff' ? 'none' : '0 2px 8px rgba(0,0,0,0.05)'
-                          }}
-                        >
-                          {lang === 'ar' ? 'سجل اشتراكك' : 'Subscribe'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {settingsStep === 3 && (
             <div className="sch-settings-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Hosted Shareable Link Panel */}
@@ -6389,12 +6060,12 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                   <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                     <button 
                       type="button" 
-                      onClick={() => setSettingsStep(2)} 
+                      onClick={() => setSettingsStep(1)} 
                       className="sch-btn" 
                       style={{ height: '38px', borderRadius: '8px', padding: '0 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                     >
                       <ArrowRight size={13} style={{ transform: lang === 'ar' ? 'none' : 'rotate(180deg)' }} />
-                      <span>{lang === 'ar' ? 'السابق: تصميم النموذج' : 'Back: Customize Widget'}</span>
+                      <span>{lang === 'ar' ? 'السابق: بريد الترحيب' : 'Back: Welcome Email'}</span>
                     </button>
                     
                     <button 
