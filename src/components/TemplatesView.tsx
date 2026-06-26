@@ -23,6 +23,7 @@ import { templatesDb } from '../data/templates';
 import type { TemplateItem, TemplateVariable } from '../data/templates';
 import { TemplateBuilder } from './TemplateBuilder';
 import { BentoCard } from './LandingView';
+import { useSumer } from '../context/SumerContext';
 
 interface TemplatesViewProps {
   lang: 'en' | 'ar';
@@ -41,6 +42,7 @@ interface TemplatesViewProps {
 
 export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
   const { lang, theme, domains, setLogs, walletBalance, setWalletBalance } = props;
+  const { user } = useSumer();
 
   // Tabs & category state
   const [activeCategory, setActiveCategory] = useState<'all' | 'email' | 'sms' | 'whatsapp'>('all');
@@ -149,13 +151,36 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
   // Selected template details
   const selectedTemplate = mergedList.find(t => t.id === selectedTemplateId) || mergedList[0];
 
+  const isNameTag = (t: string) => {
+    const tagLower = t.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const nameTags = [
+      'name', 'username', 'user_name', 'customer_name', 'customername',
+      'recipient_name', 'recipientname', 'reader_name', 'readername', 'friend_name',
+      'friendname', 'member_name', 'membername', 'client_name', 'clientname',
+      'subscriber_name', 'subscribername', 'user'
+    ];
+    if (nameTags.includes(tagLower)) return true;
+    if (tagLower.endsWith('name')) {
+      const excludes = ['platform', 'service', 'event', 'company', 'sender', 'brand', 'site', 'app', 'coupon', 'bank', 'product', 'hotel'];
+      return !excludes.some(ex => tagLower.startsWith(ex));
+    }
+    return false;
+  };
+
+  const getInitialVariableValue = (v: any) => {
+    if (isNameTag(v.key)) {
+      return user?.name || (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem');
+    }
+    return lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+  };
+
   // Sync variables for selected template
   useEffect(() => {
     if (selectedTemplate) {
       const initialVars: Record<string, string> = {};
       if (selectedTemplate.variables) {
         selectedTemplate.variables.forEach(v => {
-          initialVars[v.key] = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+          initialVars[v.key] = getInitialVariableValue(v);
         });
       }
       setPreviewVars(initialVars);
@@ -172,17 +197,23 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
     let body = template.body;
     let subject = lang === 'ar' ? (template.subjectAr || '') : (template.subjectEn || '');
     
+    // Replace literal "عضو رائع" in the template itself if present before substituting vars
+    const userName = user?.name || (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem');
+    body = body.replace(/عضو رائع/g, userName).replace(/Valued Member/g, userName);
+    subject = subject.replace(/عضو رائع/g, userName).replace(/Valued Member/g, userName);
+
     if (template.variables) {
       template.variables.forEach(v => {
-        const defaultVal = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+        const defaultVal = getInitialVariableValue(v);
         const val = variables[v.key] !== undefined && variables[v.key] !== ''
           ? variables[v.key]
           : defaultVal;
         
         const escapeKey = v.key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
-        body = body.replace(tagRegex, val);
-        subject = subject.replace(tagRegex, val);
+        const tagRegexDouble = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+        const tagRegexSingle = new RegExp(`\\{\\s*${escapeKey}\\s*\\}`, 'g');
+        body = body.replace(tagRegexDouble, val).replace(tagRegexSingle, val);
+        subject = subject.replace(tagRegexDouble, val).replace(tagRegexSingle, val);
       });
     }
     return { subject, body };

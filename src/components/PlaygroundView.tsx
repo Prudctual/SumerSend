@@ -7,6 +7,7 @@ import type { TemplateItem } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { GuideBanner } from './GuideBanner';
 import { renderTemplateIcon } from './IconHelper';
+import { useSumer } from '../context/SumerContext';
 
 interface PlaygroundViewProps {
   lang: 'en' | 'ar';
@@ -46,6 +47,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   setActiveTab,
 }) => {
   const [isSending, setIsSending] = useState(false);
+  const { user } = useSumer();
   
   // Email Form State
   const [emailFrom, setEmailFrom] = useState('');
@@ -102,15 +104,44 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     ? getMergedTemplates().find(t => t.id === selectedTemplateId) 
     : null;
 
+  const isNameTag = (t: string) => {
+    const tagLower = t.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const nameTags = [
+      'name', 'username', 'user_name', 'customer_name', 'customername',
+      'recipient_name', 'recipientname', 'reader_name', 'readername', 'friend_name',
+      'friendname', 'member_name', 'membername', 'client_name', 'clientname',
+      'subscriber_name', 'subscribername', 'user'
+    ];
+    if (nameTags.includes(tagLower)) return true;
+    if (tagLower.endsWith('name')) {
+      const excludes = ['platform', 'service', 'event', 'company', 'sender', 'brand', 'site', 'app', 'coupon', 'bank', 'product', 'hotel'];
+      return !excludes.some(ex => tagLower.startsWith(ex));
+    }
+    return false;
+  };
+
+  const getInitialVariableValue = (v: any) => {
+    if (isNameTag(v.key)) {
+      return user?.name || (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem');
+    }
+    return lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+  };
+
   const compileAndSync = (template: TemplateItem, vars: Record<string, string>) => {
     let compiledBody = template.body;
     let compiledSubject = lang === 'ar' ? (template.subjectAr || '') : (template.subjectEn || '');
     
+    // Replace literal "عضو رائع" in the template itself if present before substituting vars
+    const userName = user?.name || (lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem');
+    compiledBody = compiledBody.replace(/عضو رائع/g, userName).replace(/Valued Member/g, userName);
+    compiledSubject = compiledSubject.replace(/عضو رائع/g, userName).replace(/Valued Member/g, userName);
+
     Object.entries(vars).forEach(([key, val]) => {
       const escapeKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const tagRegex = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
-      compiledBody = compiledBody.replace(tagRegex, val);
-      compiledSubject = compiledSubject.replace(tagRegex, val);
+      const tagRegexDouble = new RegExp(`\\{\\{\\s*${escapeKey}\\s*\\}\\}`, 'g');
+      const tagRegexSingle = new RegExp(`\\{\\s*${escapeKey}\\s*\\}`, 'g');
+      compiledBody = compiledBody.replace(tagRegexDouble, val).replace(tagRegexSingle, val);
+      compiledSubject = compiledSubject.replace(tagRegexDouble, val).replace(tagRegexSingle, val);
     });
     
     if (activeTab === 'email') {
@@ -126,7 +157,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     const initialVars: Record<string, string> = {};
     if (template.variables) {
       template.variables.forEach(v => {
-        initialVars[v.key] = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+        initialVars[v.key] = getInitialVariableValue(v);
       });
     }
     setTemplateVariables(initialVars);
@@ -146,7 +177,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     if (!selectedTemplate) return;
     const initialVars: Record<string, string> = {};
     selectedTemplate.variables.forEach(v => {
-      initialVars[v.key] = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+      initialVars[v.key] = getInitialVariableValue(v);
     });
     setTemplateVariables(initialVars);
     setIsVariablesCustomized(false);
