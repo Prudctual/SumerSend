@@ -1881,9 +1881,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </h3>
                 
                 <div className="timeline-schedule-container">
-                  {/* Subtle creative top & bottom fog layers */}
-                  <div className="timeline-fog-overlay top" />
-                  <div className="timeline-fog-overlay bottom" />
                   <div className="timeline-vertical-line" />
 
                   {selectedDayNumber === 21 ? (
