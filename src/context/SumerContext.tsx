@@ -240,14 +240,28 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [walletBalance, setWalletBalance] = useState<number>(50000);
 
   // Pre-populated data
-  const [domains, setDomains] = useState<any[]>(INITIAL_DOMAINS);
+  const [domains, setDomains] = useState<any[]>(() => {
+    const saved = localStorage.getItem('sumer_domains');
+    return saved ? JSON.parse(saved) : INITIAL_DOMAINS;
+  });
 
-  const [apiKeys, setApiKeys] = useState<any[]>(INITIAL_API_KEYS);
+  const [apiKeys, setApiKeys] = useState<any[]>(() => {
+    const saved = localStorage.getItem('sumer_api_keys');
+    return saved ? JSON.parse(saved) : INITIAL_API_KEYS;
+  });
 
   const [webhooks, setWebhooks] = useState<any[]>(() => {
     const saved = localStorage.getItem('sumer_webhooks');
     return saved ? JSON.parse(saved) : DEFAULT_WEBHOOKS;
   });
+
+  useEffect(() => {
+    localStorage.setItem('sumer_domains', JSON.stringify(domains));
+  }, [domains]);
+
+  useEffect(() => {
+    localStorage.setItem('sumer_api_keys', JSON.stringify(apiKeys));
+  }, [apiKeys]);
 
   useEffect(() => {
     localStorage.setItem('sumer_webhooks', JSON.stringify(webhooks));
