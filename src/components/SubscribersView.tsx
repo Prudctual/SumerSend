@@ -159,6 +159,21 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
   // Settings Wizard Step State
   const [settingsStep, setSettingsStep] = useState<1 | 2>(1);
+  const [welcomeVars, setWelcomeVars] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`sumersend_welcome_vars_${user?.id || 'default'}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`sumersend_welcome_vars_${user.id}`, JSON.stringify(welcomeVars));
+    }
+  }, [welcomeVars, user?.id]);
+
   const [generatorStyle, setGeneratorStyle] = useState<'philosophical' | 'saas' | 'casual'>('philosophical');
   const [generatorOffer, setGeneratorOffer] = useState<'welcome' | 'vision' | 'gift'>('welcome');
   const [testName, setTestName] = useState('');
@@ -507,6 +522,29 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     fetchData();
   }, [activeSubTab]);
 
+  // Find selected template
+  const selectedTemplate = settings.welcomeTemplateId
+    ? (customTemplates.find((t: any) => t.id === settings.welcomeTemplateId) || 
+       templatesDb.email.find((t: any) => t.id === settings.welcomeTemplateId))
+    : null;
+
+  // Initialize welcomeVars defaults if missing
+  useEffect(() => {
+    if (selectedTemplate && selectedTemplate.variables) {
+      setWelcomeVars(prev => {
+        const next = { ...prev };
+        let updated = false;
+        selectedTemplate.variables.forEach((v: any) => {
+          if (next[v.key] === undefined) {
+            next[v.key] = lang === 'ar' ? v.defaultValAr : v.defaultValEn;
+            updated = true;
+          }
+        });
+        return updated ? next : prev;
+      });
+    }
+  }, [settings.welcomeTemplateId, selectedTemplate, lang]);
+
   // Statistics Computations
   const totalCount = subscribers.length;
   const activeCount = subscribers.filter(s => s.status === 'active').length;
@@ -601,11 +639,21 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveLoading(true);
+
+    let compiledSettings = { ...settings };
+    if (welcomeMode === 'template' && settings.welcomeTemplateId) {
+      const activeContent = getActiveWelcomeEmailContent(false);
+      if (activeContent) {
+        compiledSettings.welcomeSubject = activeContent.subject;
+        compiledSettings.welcomeBody = activeContent.body;
+      }
+    }
+
     try {
       const res = await fetch('http://127.0.0.1:3000/api/subscribers/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(compiledSettings)
       });
 
       if (res.ok) {
@@ -1818,7 +1866,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
     }));
   };
 
-  const getActiveWelcomeEmailContent = () => {
+  const getActiveWelcomeEmailContent = (forPreview = false) => {
     if (!settings.welcomeEnabled) return null;
     
     // If a template is selected, resolve it
@@ -1831,16 +1879,29 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
         let subject = lang === 'ar' ? (template.subjectAr || template.nameAr) : (template.subjectEn || template.nameEn);
         let body = template.body || '';
         
-        // Compile/replace variables for high-fidelity preview
-        const nameVal = lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem';
-        body = body
-          .replace(/\{\{user_name\}\}/g, nameVal)
-          .replace(/\{\{name\}\}/g, nameVal)
-          .replace(/\{name\}/g, nameVal)
-          .replace(/\{\{platform_name\}\}/g, lang === 'ar' ? 'سومر سيند' : 'SumerSend')
-          .replace(/\{\{platform_desc\}\}/g, lang === 'ar' ? 'بوابتك الذكية للنمو والتواصل الرقمي' : 'Your smart partner in digital growth')
-          .replace(/\{\{email\}\}/g, 'client@domain.com')
-          .replace(/\{email\}/g, 'client@domain.com');
+        // Compile using the active welcomeVars state values
+        if (template.variables) {
+          template.variables.forEach((v: any) => {
+            const val = welcomeVars[v.key] !== undefined && welcomeVars[v.key] !== ''
+              ? welcomeVars[v.key]
+              : (lang === 'ar' ? v.defaultValAr : v.defaultValEn);
+            body = body.split(`{{${v.key}}}`).join(val);
+            subject = subject.split(`{{${v.key}}}`).join(val);
+            body = body.split(`{${v.key}}`).join(val);
+            subject = subject.split(`{${v.key}}`).join(val);
+          });
+        }
+        
+        // Only replace name/email tokens when rendering the frontend preview
+        if (forPreview) {
+          const nameVal = lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem';
+          body = body
+            .replace(/\{\{user_name\}\}/g, nameVal)
+            .replace(/\{\{name\}\}/g, nameVal)
+            .replace(/\{name\}/g, nameVal)
+            .replace(/\{\{email\}\}/g, 'client@domain.com')
+            .replace(/\{email\}/g, 'client@domain.com');
+        }
           
         return { subject, body, isHtml: true };
       }
@@ -1855,7 +1916,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
   };
 
   const renderPreviewBrowserMockup = () => {
-    const previewContent = getActiveWelcomeEmailContent();
+    const previewContent = getActiveWelcomeEmailContent(true);
 
     return (
       <div className="premium-browser-mockup">
@@ -5908,6 +5969,45 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                               <span>{lang === 'ar' ? 'مصنع القوالب 🛠️' : 'Template Builder 🛠️'}</span>
                             </button>
                           </div>
+
+                          {/* Variables customization inputs */}
+                          {selectedTemplate && selectedTemplate.variables && selectedTemplate.variables.length > 0 && (
+                            <div className="ai-copilot-card" style={{ marginTop: '16px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-muted)' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Settings size={13} style={{ color: 'var(--accent-text)' }} />
+                                {lang === 'ar' ? 'تخصيص قيم القالب' : 'Customize Template Values'}
+                              </span>
+                              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                                {lang === 'ar'
+                                  ? 'أدخل البيانات الخاصة بمشروعك أو حملتك أدناه لتحديث نصوص القالب تلقائياً.'
+                                  : 'Fill in your project or campaign details below to dynamically update the template values.'}
+                              </p>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {selectedTemplate.variables.map((v: any) => (
+                                  <div key={v.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <label className="sch-label" style={{ fontSize: '11px', marginBottom: '2px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                      {lang === 'ar' ? v.labelAr : v.labelEn}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="sch-input"
+                                      style={{ height: '36px', fontSize: '12px', padding: '0 10px' }}
+                                      placeholder={lang === 'ar' ? v.defaultValAr : v.defaultValEn}
+                                      value={welcomeVars[v.key] || ''}
+                                      onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        setWelcomeVars(prev => ({
+                                          ...prev,
+                                          [v.key]: newVal
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
