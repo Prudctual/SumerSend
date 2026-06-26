@@ -7560,3 +7560,155 @@ textarea.auth-input {
   }
 }
 
+/* =========================================================================
+   16. Premium Red Sidebar Theme (Jasim Profile & Calendar)
+   ========================================================================= */
+
+.dashboard-right-sidebar,
+[data-theme="dark"] .dashboard-right-sidebar {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+  border: 1px solid #7f1d1d !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 30px -5px rgba(220, 38, 38, 0.25), 0 8px 20px -6px rgba(153, 27, 27, 0.15) !important;
+}
+
+/* Profile Section overrides */
+.dashboard-right-sidebar .sidebar-profile-box {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.dashboard-right-sidebar .sidebar-profile-avatar {
+  background: #ffffff !important;
+  color: #991b1b !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dashboard-right-sidebar .sidebar-profile-text h4 {
+  color: #ffffff !important;
+}
+
+.dashboard-right-sidebar .sidebar-profile-text span {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.dashboard-right-sidebar .sidebar-icon-btn {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dashboard-right-sidebar .sidebar-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+/* Calendar Section overrides */
+.dashboard-right-sidebar .sidebar-calendar-header h3 {
+  color: #ffffff !important;
+}
+
+.dashboard-right-sidebar .sidebar-calendar-header span {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dashboard-right-sidebar .calendar-arrow-btn {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dashboard-right-sidebar .calendar-arrow-btn:hover {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dashboard-right-sidebar .calendar-day-header {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.dashboard-right-sidebar .calendar-date-cell {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dashboard-right-sidebar .calendar-date-cell:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+/* Date Highlight variations to stand out inside the red wrapper */
+.dashboard-right-sidebar .calendar-date-cell.active-yellow {
+  background-color: #ffffff !important;
+  color: #991b1b !important;
+}
+
+.dashboard-right-sidebar .calendar-date-cell.active-green {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.dashboard-right-sidebar .calendar-date-cell.active-outline {
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Calendar dot indicators */
+.dashboard-right-sidebar .calendar-date-dot {
+  background-color: #ffffff !important;
+}
+
+/* Timeline & Daily Activities Planner overrides */
+.dashboard-right-sidebar .sidebar-timeline-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.dashboard-right-sidebar .sidebar-timeline-section h3 {
+  color: #ffffff !important;
+}
+
+.dashboard-right-sidebar .timeline-time-col {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dashboard-right-sidebar .timeline-line-segment {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dashboard-right-sidebar .timeline-pin-node {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+.dashboard-right-sidebar .timeline-pin-node.green { background-color: #4ade80 !important; }
+.dashboard-right-sidebar .timeline-pin-node.yellow { background-color: #fbbf24 !important; }
+.dashboard-right-sidebar .timeline-pin-node.red { background-color: #ffffff !important; }
+
+/* Timeline Event Cards */
+.dashboard-right-sidebar .timeline-event-card-new {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dashboard-right-sidebar .timeline-event-card-new.green {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #ffffff !important;
+  color: #166534 !important;
+}
+
+.dashboard-right-sidebar .timeline-event-card-new.yellow {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #ffffff !important;
+  color: #92400e !important;
+}
+
+.dashboard-right-sidebar .timeline-event-card-new.red {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #ffffff !important;
+  color: #9b1c1c !important;
+}
+
+/* Gradient Fog overlays matching the red background */
+.dashboard-right-sidebar .timeline-fog-overlay.top {
+  background: linear-gradient(to bottom, #dc2626 15%, rgba(220, 38, 38, 0) 100%) !important;
+}
+
+.dashboard-right-sidebar .timeline-fog-overlay.bottom {
+  background: linear-gradient(to top, #991b1b 15%, rgba(153, 27, 27, 0) 100%) !important;
+}
+
