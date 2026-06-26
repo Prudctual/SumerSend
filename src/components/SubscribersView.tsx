@@ -2121,12 +2121,12 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         .sch-search-input {
           width: 100%;
           height: 38px;
-          background: var(--panel-muted);
+          background: var(--panel-bg);
           border: 1px solid var(--border-color);
-          border-radius: 10px;
+          border-radius: 8px;
           font-size: 13px;
           color: var(--text-primary);
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           font-family: var(--font-family);
           padding-inline-start: 34px;
           padding-inline-end: 12px;
@@ -2136,9 +2136,8 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         .sch-search-input:focus {
           outline: none;
-          border-color: var(--accent-text);
-          box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.08);
-          background: var(--panel-bg);
+          border-color: var(--text-secondary);
+          box-shadow: 0 0 0 2px var(--border-color);
         }
 
         .sch-search-input::placeholder {
@@ -2148,10 +2147,10 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         /* ─── Filter Pills ─── */
         .sch-pills {
           display: flex;
-          gap: 4px;
+          gap: 2px;
           background: var(--panel-muted);
-          padding: 3px;
-          border-radius: 10px;
+          padding: 2px;
+          border-radius: 8px;
           border: 1px solid var(--border-color);
           height: 38px;
           align-items: center;
@@ -2161,12 +2160,12 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           border: none;
           background: transparent;
           color: var(--text-secondary);
-          padding: 0 12px;
-          border-radius: 8px;
+          padding: 0 14px;
+          border-radius: 6px;
           font-size: 12.5px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           font-family: var(--font-family);
           white-space: nowrap;
           height: 32px;
@@ -2177,11 +2176,6 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
 
         .sch-pill:hover {
           color: var(--text-primary);
-          background: rgba(0,0,0,0.03);
-        }
-
-        [data-theme="dark"] .sch-pill:hover {
-          background: rgba(255,255,255,0.05);
         }
 
         .sch-pill.active {
@@ -2208,7 +2202,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           gap: 6px;
           padding: 0 14px;
           height: 38px;
-          border-radius: 10px;
+          border-radius: 8px;
           font-size: 13px;
           font-weight: 600;
           cursor: pointer;
@@ -2279,78 +2273,65 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           border-color: var(--danger-color);
         }
 
-        /* ─── Subscriber List Rows (Activity Style) ─── */
-        .sch-subscriber-list {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
+        /* ─── Subscriber Table Styling ─── */
+        .sch-table-container {
+          width: 100%;
+          overflow-x: auto;
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.015);
+          margin-bottom: 20px;
         }
 
-        .sch-sub-row {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 14px 16px;
-          border-radius: 8px;
+        .sch-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .sch-table th {
+          padding: 12px 16px;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: var(--panel-muted);
+          border-bottom: 1px solid var(--border-color);
+          user-select: none;
+          white-space: nowrap;
+        }
+
+        .sch-table td {
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--border-color);
+          vertical-align: middle;
+          color: var(--text-primary);
+          font-size: 13.5px;
+        }
+
+        .sch-table-row {
           transition: background-color 0.15s ease;
-          cursor: default;
-          position: relative;
         }
 
-        .sch-sub-row:hover {
+        .sch-table-row:hover {
           background: var(--panel-muted);
         }
 
+        .sch-table-row:last-child td {
+          border-bottom: none;
+        }
+
         .sch-sub-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 8px;
+          width: 36px;
+          height: 36px;
+          border-radius: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 800;
           flex-shrink: 0;
           letter-spacing: -0.5px;
-        }
-
-        .sch-sub-info {
-          flex: 1;
-          min-width: 0;
-          padding-inline-end: 24px;
-        }
-
-        .sch-sub-name {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--text-primary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .sch-sub-email {
-          font-size: 12px;
-          color: var(--text-muted);
-          font-family: 'Menlo', 'Monaco', monospace;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .sch-sub-meta {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-shrink: 0;
-        }
-
-        .sch-sub-date {
-          font-size: 12px;
-          color: var(--text-muted);
-          white-space: nowrap;
-          min-width: 70px;
-          text-align: start;
         }
 
         /* ─── Status Badge ─── */
@@ -2410,14 +2391,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
         .sch-row-actions {
           display: flex;
           gap: 4px;
-          opacity: 0.35;
+          opacity: 0.8;
           transition: opacity 0.2s ease;
-          width: 68px;
           justify-content: flex-end;
-        }
-
-        .sch-sub-row:hover .sch-row-actions {
-          opacity: 1;
         }
 
         .sch-icon-btn {
@@ -3666,10 +3642,10 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                 </div>
               </div>
 
-              {/* Subscriber Rows */}
-              <div className="sch-subscriber-list">
+              {/* Subscriber Table */}
+              <div className="sch-table-container">
                 {paginatedSubscribers.length === 0 ? (
-                  <div className="sch-empty-state">
+                  <div className="sch-empty-state" style={{ padding: '40px 20px' }}>
                     <div className="sch-empty-icon">
                       <Users size={28} />
                     </div>
@@ -3681,63 +3657,105 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                     </span>
                   </div>
                 ) : (
-                  paginatedSubscribers.map((sub) => {
-                    const avColor = getAvatarColor(sub.id);
-                    return (
-                      <div key={sub.id} className="sch-sub-row">
-                        <label className="sch-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={selectedSubIds.includes(sub.id)}
-                            onChange={() => handleSelectSub(sub.id)}
-                          />
-                          <span className="sch-checkmark" />
-                        </label>
-
-                        <div className="sch-sub-avatar" style={{ backgroundColor: avColor.bg, color: avColor.text }}>
-                          {getInitials(sub.name, sub.email)}
-                        </div>
-
-                        <div className="sch-sub-info">
-                          <div className="sch-sub-name">
-                            {sub.name || <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontStyle: 'italic', fontSize: '13px' }}>{lang === 'ar' ? 'بدون اسم' : 'No Name'}</span>}
-                          </div>
-                          <div className="sch-sub-email">{sub.email}</div>
-                        </div>
-
-                        <div className="sch-sub-meta">
-                          <span className={`sch-badge ${sub.status === 'active' ? 'active' : 'unsubscribed'}`}>
-                            <span className="sch-badge-dot" />
-                            <span>{sub.status === 'active' ? t.statusActive : t.statusUnsubscribed}</span>
-                          </span>
-
-                          <span className="sch-sub-date">
-                            {new Date(sub.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-
-                          <div className="sch-row-actions">
-                            <button
-                              onClick={() => handleToggleStatus(sub.id, sub.status)}
-                              title={t.actionToggle}
-                              className={`sch-icon-btn ${sub.status === 'active' ? 'toggle-active' : ''}`}
-                            >
-                              {sub.status === 'active' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteSubscriber(sub.id)}
-                              title={t.actionDelete}
-                              className="sch-icon-btn danger"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  <table className="sch-table" style={{ direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '48px', textAlign: 'center', padding: '12px 8px' }}>
+                          <label className="sch-checkbox" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                            <input
+                              type="checkbox"
+                              checked={paginatedSubscribers.length > 0 && paginatedSubscribers.every((s) => selectedSubIds.includes(s.id))}
+                              onChange={() => handleSelectAllOnPage(paginatedSubscribers)}
+                            />
+                            <span className="sch-checkmark" />
+                          </label>
+                        </th>
+                        <th style={{ textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                          {lang === 'ar' ? 'الاسم والبريد الإلكتروني' : 'Subscriber'}
+                        </th>
+                        <th style={{ textAlign: 'center', width: '130px' }}>
+                          {lang === 'ar' ? 'الحالة' : 'Status'}
+                        </th>
+                        <th style={{ textAlign: lang === 'ar' ? 'right' : 'left', width: '150px' }}>
+                          {lang === 'ar' ? 'تاريخ الاشتراك' : 'Joined Date'}
+                        </th>
+                        <th style={{ width: '100px', textAlign: lang === 'ar' ? 'left' : 'right' }}>
+                          {lang === 'ar' ? 'العمليات' : 'Actions'}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedSubscribers.map((sub) => {
+                        const avColor = getAvatarColor(sub.id);
+                        return (
+                          <tr key={sub.id} className="sch-table-row">
+                            <td style={{ textAlign: 'center', padding: '12px 8px' }}>
+                              <label className="sch-checkbox" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSubIds.includes(sub.id)}
+                                  onChange={() => handleSelectSub(sub.id)}
+                                />
+                                <span className="sch-checkmark" />
+                              </label>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="sch-sub-avatar" style={{ backgroundColor: avColor.bg, color: avColor.text }}>
+                                  {getInitials(sub.name, sub.email)}
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {sub.name || <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontStyle: 'italic', fontSize: '12px' }}>{lang === 'ar' ? 'بدون اسم' : 'No Name'}</span>}
+                                  </div>
+                                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {sub.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <span className={`sch-badge ${sub.status === 'active' ? 'active' : 'unsubscribed'}`}>
+                                  <span className="sch-badge-dot" />
+                                  <span>{sub.status === 'active' ? t.statusActive : t.statusUnsubscribed}</span>
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                                {new Date(sub.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="sch-row-actions" style={{ justifyContent: lang === 'ar' ? 'flex-start' : 'flex-end' }}>
+                                <button
+                                  onClick={() => handleToggleStatus(sub.id, sub.status)}
+                                  title={t.actionToggle}
+                                  className={`sch-icon-btn ${sub.status === 'active' ? 'toggle-active' : ''}`}
+                                  style={{ width: '28px', height: '28px' }}
+                                >
+                                  {sub.status === 'active' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSubscriber(sub.id)}
+                                  title={t.actionDelete}
+                                  className="sch-icon-btn danger"
+                                  style={{ width: '28px', height: '28px' }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
 

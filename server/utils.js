@@ -40,7 +40,7 @@ export async function triggerWebhooks(userId, eventType, payload) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Sumer-Signature': wh.secret || 'whsec_default',
+              'X-Sumer-Signature': wh.secret || 'sumer_wh_default',
               'User-Agent': 'SumerSend-Webhook-Dispatcher/1.0'
             },
             body: JSON.stringify({

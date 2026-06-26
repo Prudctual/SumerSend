@@ -91,7 +91,7 @@ const INITIAL_API_KEYS = [
 ];
 
 const DEFAULT_WEBHOOKS = [
-  { id: '1', url: 'https://mystore.iq/api/sumer-receiver', events: ['email.failed', 'sms.delivered'], secret: 'whsec_8f0a2e5d9c7b1a2e3f4d5c6b7a8f9e0d', createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString() }
+  { id: '1', url: 'https://mystore.iq/api/sumer-receiver', events: ['email.failed', 'sms.delivered'], secret: 'sumer_wh_8f0a2e5d9c7b1a2e3f4d5c6b7a8f9e0d', createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString() }
 ];
 
 const INITIAL_LOGS = [

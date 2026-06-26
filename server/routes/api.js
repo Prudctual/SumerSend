@@ -327,7 +327,7 @@ apiRouter.post('/webhooks', async (req, res) => {
         id: Math.random().toString(36).substring(2, 15),
         url,
         events,
-        secret: secret || 'whsec_' + Math.random().toString(36).substring(2, 18),
+        secret: secret || 'sumer_wh_' + Math.random().toString(36).substring(2, 18),
         createdAt: new Date().toISOString()
       };
       webhooks.push(updatedWebhook);

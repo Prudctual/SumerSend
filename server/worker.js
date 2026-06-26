@@ -395,7 +395,7 @@ export async function processWebhookQueue() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Sumer-Signature': 'whsec_active',
+              'X-Sumer-Signature': 'sumer_wh_active',
               'User-Agent': 'SumerSend-Webhook-Dispatcher/2.0'
             },
             body: JSON.stringify({

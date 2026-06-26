@@ -650,7 +650,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     const body = {
       url: webhookUrl.trim(),
       events: [...webhookEvents],
-      secret: `whsec_${randomHex}`
+      secret: `sumer_wh_${randomHex}`
     };
 
     fetch('http://127.0.0.1:3000/api/webhooks', {
@@ -761,7 +761,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
 
   // Webhook Signature verification code snippets
   const getSignatureVerificationSnippet = () => {
-    const secret = webhooks[0]?.secret || 'whsec_your_secret_key';
+    const secret = webhooks[0]?.secret || 'sumer_wh_your_secret_key';
     if (lang === 'en') {
       return `// Node.js Express Webhook Receiver Example
 const express = require('express');
