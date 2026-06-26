@@ -49,6 +49,7 @@ import {
   activeSecurityOTPs,
   isValidEmail
 } from '../utils.js';
+import { queueMessageJob } from '../queue.js';
 
 const apiRouter = express.Router();
 
@@ -1174,12 +1175,16 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
             body: welcomeBody,
             status: 'pending',
             attempts: 0,
-            max_attempts: 3
+            max_attempts: 3,
+            metadata: { priority: 'normal' }
           });
 
           if (queueError) {
             console.error('[API] Failed to queue welcome email:', queueError);
             await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+          } else {
+            // Push to BullMQ immediately
+            await queueMessageJob(msgId, { priority: 'normal' }).catch(err => console.error(`[API] Failed to push welcome email to BullMQ:`, err.message));
           }
         }
       }

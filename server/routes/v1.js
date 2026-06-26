@@ -21,6 +21,7 @@ import {
   triggerWebhooks
 } from '../utils.js';
 import { getWhatsAppStatus } from '../whatsapp.js';
+import { queueMessageJob } from '../queue.js';
 
 const v1Router = express.Router();
 
@@ -124,6 +125,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     });
   }
 
+  const priority = req.body.priority || 'normal';
   const msgId = crypto.randomUUID();
   const { error: queueError } = await supabase.from('message_queue').insert({
     id: msgId,
@@ -134,7 +136,8 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     body: html,
     status: 'pending',
     attempts: 0,
-    max_attempts: 3
+    max_attempts: 3,
+    metadata: { priority }
   });
 
   if (queueError) {
@@ -142,6 +145,9 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     await refundWallet(userId, cost, `Refund: Queue failure for Email to ${to}`);
     return res.status(500).json({ error: 'Failed to queue email.' });
   }
+
+  // Push to BullMQ immediately
+  await queueMessageJob(msgId, { priority }).catch(err => console.error(`[API] Failed to push email to BullMQ:`, err.message));
 
   res.json({
     id: msgId,
@@ -193,6 +199,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
     });
   }
 
+  const priority = req.body.priority || 'normal';
   const msgId = crypto.randomUUID();
   const { error: queueError } = await supabase.from('message_queue').insert({
     id: msgId,
@@ -202,7 +209,8 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
     body,
     status: 'pending',
     attempts: 0,
-    max_attempts: 3
+    max_attempts: 3,
+    metadata: { priority }
   });
 
   if (queueError) {
@@ -210,6 +218,9 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
     await refundWallet(userId, cost, `Refund: Queue failure for SMS to ${to}`);
     return res.status(500).json({ error: 'Failed to queue SMS.' });
   }
+
+  // Push to BullMQ immediately
+  await queueMessageJob(msgId, { priority }).catch(err => console.error(`[API] Failed to push SMS to BullMQ:`, err.message));
 
   res.json({
     id: msgId,
@@ -236,7 +247,11 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
   }
 
   const waStatus = await getWhatsAppStatus(userId);
-  if (!waStatus.connected) {
+  const failoverToSms = !!(req.body.failover_to_sms || req.body.failover);
+  const priority = req.body.priority || 'normal';
+  const isOtp = !!(req.body.isOtp || req.body.otp);
+
+  if (!waStatus.connected && !failoverToSms) {
     const failedLog = {
       id: `wa_${Math.random().toString(36).substring(2, 15)}`,
       type: 'whatsapp',
@@ -286,7 +301,12 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
     body,
     status: 'pending',
     attempts: 0,
-    max_attempts: 3
+    max_attempts: 3,
+    metadata: {
+      failover_to_sms: failoverToSms,
+      priority,
+      isOtp
+    }
   });
 
   if (queueError) {
@@ -294,6 +314,9 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
     await refundWallet(userId, cost, `Refund: Queue failure for WhatsApp to ${to}`);
     return res.status(500).json({ error: 'Failed to queue WhatsApp message.' });
   }
+
+  // Push to BullMQ immediately
+  await queueMessageJob(msgId, { priority, isOtp }).catch(err => console.error(`[API] Failed to push WhatsApp message to BullMQ:`, err.message));
 
   res.json({
     id: msgId,
@@ -457,12 +480,16 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
             body: welcomeBody,
             status: 'pending',
             attempts: 0,
-            max_attempts: 3
+            max_attempts: 3,
+            metadata: { priority: 'normal' }
           });
 
           if (queueError) {
             console.error('[API] Failed to queue welcome email:', queueError);
             await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+          } else {
+            // Push to BullMQ immediately
+            await queueMessageJob(msgId, { priority: 'normal' }).catch(err => console.error(`[API] Failed to push welcome email to BullMQ:`, err.message));
           }
         }
       }
