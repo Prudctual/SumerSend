@@ -1121,11 +1121,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div className="dispatch-grid">
                   
                   {/* 1. Zain SMS Gateway */}
-                  <div className="dispatch-card-premium">
+                  <div className="dispatch-card-premium sms-channel">
                     <div className="dispatch-card-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>{t.zainSms}</span>
+                      <div className="dispatch-channel-info">
+                        <div className="channel-icon-wrapper sms">
+                          <Phone size={14} />
+                        </div>
+                        <div className="channel-title-group">
+                          <span className="channel-title-text">{t.zainSms}</span>
+                          <span className="channel-status-indicator active">
+                            <span className="status-ping"></span>
+                            {t.connected}
+                          </span>
+                        </div>
                       </div>
                       <label className="sumer-switch" style={{ width: '34px', height: '20px' }}>
                         <input type="checkbox" defaultChecked />
@@ -1152,11 +1160,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
 
                   {/* 2. SMTP Mailer */}
-                  <div className="dispatch-card-premium">
+                  <div className="dispatch-card-premium mail-channel">
                     <div className="dispatch-card-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>{t.smtpMailer}</span>
+                      <div className="dispatch-channel-info">
+                        <div className="channel-icon-wrapper mail">
+                          <Mail size={14} />
+                        </div>
+                        <div className="channel-title-group">
+                          <span className="channel-title-text">{t.smtpMailer}</span>
+                          <span className="channel-status-indicator active">
+                            <span className="status-ping"></span>
+                            {t.connected}
+                          </span>
+                        </div>
                       </div>
                       <label className="sumer-switch" style={{ width: '34px', height: '20px' }}>
                         <input type="checkbox" defaultChecked />
@@ -1183,11 +1199,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
 
                   {/* 3. WhatsApp Cloud API */}
-                  <div className="dispatch-card-premium">
+                  <div className="dispatch-card-premium whatsapp-channel">
                     <div className="dispatch-card-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>{t.waGateway}</span>
+                      <div className="dispatch-channel-info">
+                        <div className="channel-icon-wrapper whatsapp">
+                          <MessageSquare size={14} />
+                        </div>
+                        <div className="channel-title-group">
+                          <span className="channel-title-text">{t.waGateway}</span>
+                          <span className="channel-status-indicator active">
+                            <span className="status-ping"></span>
+                            {t.connected}
+                          </span>
+                        </div>
                       </div>
                       <label className="sumer-switch" style={{ width: '34px', height: '20px' }}>
                         <input type="checkbox" defaultChecked />
