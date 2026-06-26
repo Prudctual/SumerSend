@@ -78,12 +78,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [waLoading, setWaLoading] = useState(false);
   
   // SMTP settings state
-  const [host, setHost] = useState('');
-  const [port, setPort] = useState('587');
-  const [secure, setSecure] = useState(false);
-  const [user, setUser] = useState('');
-  const [pass, setPass] = useState('');
-  const [from, setFrom] = useState('');
+  const [host, setHost] = useState(() => localStorage.getItem('smtp_host') || '');
+  const [port, setPort] = useState(() => localStorage.getItem('smtp_port') || '587');
+  const [secure, setSecure] = useState(() => localStorage.getItem('smtp_secure') === 'true');
+  const [user, setUser] = useState(() => localStorage.getItem('smtp_user') || '');
+  const [pass, setPass] = useState(() => localStorage.getItem('smtp_pass') || '');
+  const [from, setFrom] = useState(() => localStorage.getItem('smtp_from') || '');
   
   // Test states
   const [testRecipient, setTestRecipient] = useState(() => localStorage.getItem('sumer_admin_test_email') || '');
@@ -488,11 +488,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       .then(res => res.json())
       .then(data => {
         clearTimeout(timeoutId);
-        setHost(data.host || '');
-        setPort(data.port ? data.port.toString() : '587');
+        if (data.host) {
+          setHost(data.host);
+          localStorage.setItem('smtp_host', data.host);
+        }
+        if (data.port) {
+          setPort(data.port.toString());
+          localStorage.setItem('smtp_port', data.port.toString());
+        }
         setSecure(!!data.secure);
-        setUser(data.user || '');
-        setFrom(data.from || '');
+        localStorage.setItem('smtp_secure', String(!!data.secure));
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('smtp_user', data.user);
+        }
+        if (data.from) {
+          setFrom(data.from);
+          localStorage.setItem('smtp_from', data.from);
+        }
       })
       .catch(err => {
         clearTimeout(timeoutId);
@@ -527,6 +540,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         setIsSaving(false);
         if (data.success) {
           setStatusMsg({ type: 'success', text: t.successSave });
+          localStorage.setItem('smtp_host', host);
+          localStorage.setItem('smtp_port', port);
+          localStorage.setItem('smtp_secure', String(secure));
+          localStorage.setItem('smtp_user', user);
+          localStorage.setItem('smtp_from', from);
+          if (pass) {
+            localStorage.setItem('smtp_pass', pass);
+          }
         } else {
           setStatusMsg({ type: 'error', text: data.error || t.errorFail });
         }
@@ -581,6 +602,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         setIsTesting(false);
         if (data.success) {
           setStatusMsg({ type: 'success', text: t.successTest });
+          localStorage.setItem('smtp_host', host);
+          localStorage.setItem('smtp_port', port);
+          localStorage.setItem('smtp_secure', String(secure));
+          localStorage.setItem('smtp_user', user);
+          localStorage.setItem('smtp_from', from);
+          if (pass) {
+            localStorage.setItem('smtp_pass', pass);
+          }
         }
         // Sync logs from server (test dispatch is saved in server logs)
         fetch('http://127.0.0.1:3000/api/logs')
