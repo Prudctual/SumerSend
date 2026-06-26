@@ -36,7 +36,8 @@ import {
   Smartphone,
   Laptop,
   FileText,
-  Play
+  Play,
+  Globe
 } from 'lucide-react';
 import { ScrollReveal } from './LandingView';
 import * as XLSX from 'xlsx';
@@ -44,7 +45,8 @@ import { templatesDb } from '../data/templates';
 
 interface SubscribersViewProps {
   lang: 'en' | 'ar';
-  apiKeys: any[];
+  apiKeys?: any[];
+  user?: any;
   initialSubTab?: 'list' | 'settings';
   hideHeader?: boolean;
   walletBalance?: number;
@@ -58,6 +60,8 @@ interface Subscriber {
   id: string;
   email: string;
   name?: string;
+  phone?: string;
+  metadata?: any;
   status: 'active' | 'unsubscribed';
   createdAt: string;
   updatedAt: string;
@@ -72,6 +76,7 @@ interface SubscriberSettings {
 export const SubscribersView: React.FC<SubscribersViewProps> = ({ 
   lang, 
   apiKeys = [], 
+  user,
   initialSubTab = 'list',
   hideHeader = false,
   walletBalance = 50000,
@@ -121,6 +126,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSubEmail, setNewSubEmail] = useState('');
   const [newSubName, setNewSubName] = useState('');
+  const [newSubPhone, setNewSubPhone] = useState('');
   const [addError, setAddError] = useState('');
   const [addLoading, setAddLoading] = useState(false);
 
@@ -133,6 +139,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const [fileName, setFileName] = useState('');
   const [emailColumn, setEmailColumn] = useState('');
   const [nameColumn, setNameColumn] = useState('');
+  const [phoneColumn, setPhoneColumn] = useState('');
   const [sendWelcomeToImported, setSendWelcomeToImported] = useState(false);
   const [importProgress, setImportProgress] = useState(false);
   const [importResult, setImportResult] = useState<{ success: boolean; imported: number; welcomed: number; walletShortage: boolean } | null>(null);
@@ -142,7 +149,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
   // Settings Save State
   const [saveLoading, setSaveLoading] = useState(false);
-  const [settingsCopied, setSettingsCopied] = useState<'html' | 'js' | null>(null);
+  const [settingsCopied, setSettingsCopied] = useState<'html' | 'js' | 'link' | null>(null);
 
   // Settings Wizard Step State
   const [settingsStep, setSettingsStep] = useState<1 | 2 | 3>(1);
@@ -202,6 +209,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   // Retrieve active API key for embed code
   const activeApiKey = apiKeys.length > 0 ? apiKeys[0].key : 'YOUR_API_KEY';
   const apiEndpoint = `${window.location.protocol}//${window.location.host}/v1/subscribers/subscribe`;
+  const publicJoinEndpoint = `${window.location.protocol}//${window.location.host}/api/public/subscribers/join/${user?.id || 'USER_ID'}`;
+  const publicShareableLink = `${window.location.protocol}//${window.location.host}/subscribe/${user?.id || 'USER_ID'}`;
 
   const translations = {
     en: {
@@ -247,8 +256,10 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       modalAddTitle: 'Add New Subscriber',
       labelName: 'Subscriber Name',
       labelEmail: 'Email Address',
+      labelPhone: 'Phone Number (Optional)',
       inputNamePlaceholder: 'e.g. Ali Ahmed',
       inputEmailPlaceholder: 'e.g. ali@example.com',
+      inputPhonePlaceholder: 'e.g. 078xxxxxxxx',
       addBtn: 'Add Subscriber',
       
       // Import Wizard Modal
@@ -367,8 +378,10 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       modalAddTitle: 'إضافة مشترك جديد',
       labelName: 'اسم المشترك',
       labelEmail: 'البريد الإلكتروني',
+      labelPhone: 'رقم الهاتف (اختياري)',
       inputNamePlaceholder: 'مثال: علي أحمد',
       inputEmailPlaceholder: 'مثال: ali@example.com',
+      inputPhonePlaceholder: 'مثال: 078xxxxxxxx',
       addBtn: 'إضافة مشترك',
       
       // Import Wizard Modal
@@ -495,7 +508,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       const res = await fetch('http://127.0.0.1:3000/api/subscribers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newSubEmail, name: newSubName })
+        body: JSON.stringify({ email: newSubEmail, name: newSubName, phone: newSubPhone })
       });
 
       if (!res.ok) {
@@ -508,6 +521,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       setIsAddModalOpen(false);
       setNewSubEmail('');
       setNewSubName('');
+      setNewSubPhone('');
       
       window.dispatchEvent(new CustomEvent('sumer-toast', {
         detail: { message: t.addSuccess, type: 'success' }
@@ -1574,7 +1588,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  const handleCopyCode = (type: 'html' | 'js', code: string) => {
+  const handleCopyCode = (type: 'html' | 'js' | 'link', code: string) => {
     navigator.clipboard.writeText(code);
     setSettingsCopied(type);
     setTimeout(() => setSettingsCopied(null), 3000);
@@ -1619,8 +1633,9 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 <div class="sumersend-optin-card">
   <h3>Subscribe to our newsletter</h3>
   <form id="sumersend-optin-form">
-    <input type="text" id="sumersend-optin-name" placeholder="Your Name" required />
+    <input type="text" id="sumersend-optin-name" placeholder="Your Name" />
     <input type="email" id="sumersend-optin-email" placeholder="email@example.com" required />
+    <input type="tel" id="sumersend-optin-phone" placeholder="Phone (Optional)" />
     <button type="submit">Subscribe</button>
     <div id="sumersend-optin-message" style="display:none; margin-top:10px; font-size:13px;"></div>
   </form>
@@ -1675,18 +1690,19 @@ document.getElementById('sumersend-optin-form').addEventListener('submit', async
   e.preventDefault();
   const name = document.getElementById('sumersend-optin-name').value;
   const email = document.getElementById('sumersend-optin-email').value;
+  const phone = document.getElementById('sumersend-optin-phone').value;
   const msgDiv = document.getElementById('sumersend-optin-message');
   
   try {
-    const res = await fetch('${apiEndpoint}', {
+    const res = await fetch('${publicJoinEndpoint}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        apiKey: '${activeApiKey}',
         email: email,
-        name: name
+        name: name,
+        phone: phone
       })
     });
     
@@ -1697,7 +1713,7 @@ document.getElementById('sumersend-optin-form').addEventListener('submit', async
       msgDiv.style.display = 'block';
       document.getElementById('sumersend-optin-form').reset();
     } else {
-      throw new Error(data.error?.message || 'Subscription failed');
+      throw new Error(data.error || 'Subscription failed');
     }
   } catch (err) {
     msgDiv.style.color = '#ef4444';
@@ -1707,24 +1723,24 @@ document.getElementById('sumersend-optin-form').addEventListener('submit', async
 });
 </script>`;
 
-  const formJsCode = `// Standard JS integration code
-const subscribeCustomer = async (email, name) => {
-  const response = await fetch('${apiEndpoint}', {
+  const formJsCode = `// Standard JS integration code (using secure public endpoint)
+const subscribeCustomer = async (email, name, phone = '') => {
+  const response = await fetch('${publicJoinEndpoint}', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      apiKey: '${activeApiKey}',
       email: email,
-      name: name
+      name: name,
+      phone: phone
     })
   });
   return await response.json();
 };
 
 // Example usage:
-subscribeCustomer('customer@domain.com', 'Jasim Kareem')
+subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
   .then(data => console.log('Subscriber added:', data))
   .catch(err => console.error(err));`;
 
@@ -3673,6 +3689,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                         <th style={{ textAlign: lang === 'ar' ? 'right' : 'left' }}>
                           {lang === 'ar' ? 'الاسم والبريد الإلكتروني' : 'Subscriber'}
                         </th>
+                        <th style={{ textAlign: lang === 'ar' ? 'right' : 'left', width: '150px' }}>
+                          {lang === 'ar' ? 'رقم الهاتف' : 'Phone'}
+                        </th>
                         <th style={{ textAlign: 'center', width: '130px' }}>
                           {lang === 'ar' ? 'الحالة' : 'Status'}
                         </th>
@@ -3713,6 +3732,11 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                                   </div>
                                 </div>
                               </div>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                                {sub.phone || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '12px' }}>—</span>}
+                              </span>
                             </td>
                             <td>
                               <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -4718,6 +4742,10 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
                     <label className="sch-label">{t.labelEmail}</label>
                     <input type="email" className="sch-input" placeholder={t.inputEmailPlaceholder} value={newSubEmail} onChange={(e) => setNewSubEmail(e.target.value)} required />
                   </div>
+                  <div>
+                    <label className="sch-label">{t.labelPhone}</label>
+                    <input type="tel" className="sch-input" placeholder={t.inputPhonePlaceholder} value={newSubPhone} onChange={(e) => setNewSubPhone(e.target.value)} />
+                  </div>
 
                   {addError && (
                     <div style={{ fontSize: '12px', color: 'var(--danger-text)', backgroundColor: 'var(--danger-bg)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(238,0,0,0.1)', fontWeight: 600 }}>
@@ -5471,6 +5499,47 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem')
           {settingsStep === 3 && (
             <div className="sch-settings-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Hosted Shareable Link Panel */}
+                <div className="sch-panel">
+                  <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
+                    <Globe size={18} style={{ color: 'var(--success-color)' }} />
+                    <span>{lang === 'ar' ? 'رابط الاشتراك المباشر' : 'Hosted Subscription Link'}</span>
+                  </h2>
+                  <p className="sch-panel-desc" style={{ fontSize: '12px' }}>
+                    {lang === 'ar' 
+                      ? 'شارك هذا الرابط مباشرة مع زبائنك لجمع بياناتهم في قاعدة بياناتك.' 
+                      : 'Share this link directly with your audience to capture subscriber info.'}
+                  </p>
+                  
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={publicShareableLink} 
+                      className="sch-input" 
+                      style={{ flex: 1, fontFamily: 'monospace', fontSize: '12px', height: '36px', minWidth: 0, backgroundColor: 'var(--panel-muted)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0 10px' }} 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => handleCopyCode('link', publicShareableLink)} 
+                      className="sch-btn sch-btn-primary" 
+                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {settingsCopied === 'link' ? <Check size={14} style={{ color: '#ffffff' }} /> : <Copy size={14} />}
+                      <span>{settingsCopied === 'link' ? t.copied : (lang === 'ar' ? 'نسخ الرابط' : 'Copy Link')}</span>
+                    </button>
+                    <a 
+                      href={publicShareableLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="sch-btn" 
+                      style={{ height: '36px', borderRadius: '6px', padding: '0 12px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <ExternalLink size={14} style={{ color: 'var(--text-secondary)' }} />
+                    </a>
+                  </div>
+                </div>
+
                 {/* Embed Code Panel */}
                 <div className="sch-panel">
                   <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>

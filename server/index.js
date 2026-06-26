@@ -49,7 +49,7 @@ app.get('/health', (req, res) => {
 // Secure Dashboard APIs (Require Session JWT)
 // ----------------------------------------------------
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth') || req.path === '/health') {
+  if (req.path.startsWith('/auth') || req.path.startsWith('/public') || req.path === '/health') {
     return next();
   }
   return authMiddleware(req, res, next);

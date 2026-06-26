@@ -155,7 +155,7 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearTimeout(loadingTimerRef.current);
       }
       
-      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'admin-portal'].includes(targetTab);
+      const isConsoleTab = !['landing', 'auth-signin', 'auth-signup', 'admin-portal', 'public-subscribe'].includes(targetTab);
       
       if (isConsoleTab) {
         setViewLoading(true);

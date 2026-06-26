@@ -824,6 +824,8 @@ export async function loadSubscribers(userId) {
     email: s.email,
     name: s.name,
     status: s.status,
+    phone: s.phone || '',
+    metadata: s.metadata || {},
     createdAt: s.created_at,
     updatedAt: s.updated_at
   }));
@@ -836,6 +838,8 @@ export async function addSubscriber(userId, subscriber) {
     email: subscriber.email.toLowerCase().trim(),
     name: subscriber.name,
     status: subscriber.status || 'active',
+    phone: subscriber.phone || null,
+    metadata: subscriber.metadata || {},
     created_at: subscriber.createdAt || new Date().toISOString(),
     updated_at: new Date().toISOString()
   });
@@ -942,6 +946,8 @@ export async function bulkAddSubscribers(userId, subscribers) {
     email: s.email.toLowerCase().trim(),
     name: s.name || null,
     status: s.status || 'active',
+    phone: s.phone || null,
+    metadata: s.metadata || {},
     created_at: s.createdAt || new Date().toISOString(),
     updated_at: new Date().toISOString()
   }));

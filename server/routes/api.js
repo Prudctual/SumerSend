@@ -654,7 +654,7 @@ apiRouter.get('/subscribers', async (req, res) => {
 
 // POST /api/subscribers
 apiRouter.post('/subscribers', async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, phone, metadata } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Email address is required.' });
   }
@@ -678,6 +678,8 @@ apiRouter.post('/subscribers', async (req, res) => {
       id: `sub_${Math.random().toString(36).substring(2, 15)}`,
       email,
       name,
+      phone: phone || null,
+      metadata: metadata || {},
       status: 'active',
       createdAt: new Date().toISOString()
     };
@@ -912,6 +914,180 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
   } catch (err) {
     console.error('Bulk import API error:', err);
     res.status(500).json({ error: 'Failed to bulk import subscribers.' });
+  }
+});
+
+// =========================================================================
+// Public Subscriber Opt-In and Profile Routes
+// =========================================================================
+
+// Rate limiter for public join requests (to prevent spam)
+import rateLimit from 'express-rate-limit';
+const publicJoinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 submissions per window
+  message: { error: 'Too many subscription attempts. Please try again later.' }
+});
+
+// GET /api/public/users/:userId/profile -> Public route to load owner's name/branding
+apiRouter.get('/public/users/:userId/profile', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !user) {
+      return res.status(404).json({ error: 'Publisher not found.' });
+    }
+
+    res.json({ name: user.name });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve profile.' });
+  }
+});
+
+// POST /api/public/subscribers/join/:userId -> Public opt-in endpoint
+apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req, res) => {
+  const { userId } = req.params;
+  const { email, name, phone, metadata } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email address format.' });
+  }
+
+  try {
+    // Verify user exists
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'Publisher not found.' });
+    }
+
+    // 1. Check if subscriber already exists
+    const { data: existingSub, error: checkError } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    let subId = '';
+    let isNewSubscription = false;
+
+    if (existingSub) {
+      subId = existingSub.id;
+      if (existingSub.status !== 'active') {
+        // Reactivate subscription
+        await supabase
+          .from('subscribers')
+          .update({
+            status: 'active',
+            name: name || existingSub.name,
+            phone: phone || existingSub.phone,
+            metadata: { ...(existingSub.metadata || {}), ...(metadata || {}) },
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId)
+          .eq('id', subId);
+        isNewSubscription = true;
+      }
+    } else {
+      subId = `sub_${Math.random().toString(36).substring(2, 15)}`;
+      await addSubscriber(userId, {
+        id: subId,
+        email: email,
+        name: name,
+        phone: phone,
+        metadata: metadata || {}
+      });
+      isNewSubscription = true;
+    }
+
+    // Trigger webhook notification
+    triggerWebhooks(userId, 'subscriber.subscribed', {
+      id: subId,
+      email: email.toLowerCase().trim(),
+      name: name || '',
+      phone: phone || '',
+      status: 'active',
+      timestamp: new Date().toISOString()
+    });
+
+    // 2. Queue Welcome Email if enabled
+    if (isNewSubscription) {
+      const settings = await loadSubscriberSettings(userId);
+      if (settings.welcomeEnabled) {
+        const cost = 10;
+        const charged = await chargeWallet(userId, cost, `Welcome Email to ${email}`);
+        
+        const welcomeSubject = settings.welcomeSubject;
+        let welcomeBody = settings.welcomeBody;
+        welcomeBody = welcomeBody.replace(/{name}/g, name || 'there').replace(/{email}/g, email);
+
+        if (!charged) {
+          const failedLog = {
+            id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+            type: 'email',
+            from: 'Sumer Send <onboarding@sumersend.com>',
+            to: email,
+            subject: welcomeSubject,
+            body: welcomeBody,
+            status: 'failed',
+            error: 'Insufficient wallet balance for automatic welcome email. Please top up.',
+            timestamp: new Date().toISOString()
+          };
+          await appendLog(userId, failedLog);
+          triggerWebhooks(userId, 'email.failed', failedLog);
+        } else {
+          const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+          const smtpConfig = await loadSmtpConfig(userId);
+          
+          const { error: queueError } = await supabase.from('message_queue').insert({
+            id: msgId,
+            user_id: userId,
+            type: 'email',
+            recipient: email,
+            subject: welcomeSubject,
+            body: welcomeBody,
+            status: 'pending',
+            attempts: 0,
+            max_attempts: 3
+          });
+
+          if (queueError) {
+            console.error('[API] Failed to queue welcome email:', queueError);
+            await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscribed successfully.',
+      subscriber: {
+        id: subId,
+        email: email.toLowerCase().trim(),
+        name: name || '',
+        phone: phone || ''
+      }
+    });
+
+  } catch (err) {
+    console.error('Public subscription opt-in error:', err);
+    res.status(500).json({ error: 'Failed to complete subscription request.' });
   }
 });
 

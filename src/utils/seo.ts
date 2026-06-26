@@ -12,6 +12,10 @@ export interface SeoSettings {
 
 export const getTabFromPath = (path: string): { tab: string; subTab?: any } => {
   const cleanPath = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
+  if (cleanPath.startsWith('/subscribe/')) {
+    const parts = cleanPath.split('/');
+    return { tab: 'public-subscribe', subTab: parts[2] || '' };
+  }
   switch (cleanPath) {
     case '':
     case '/':
@@ -66,6 +70,9 @@ export const getTabFromPath = (path: string): { tab: string; subTab?: any } => {
 };
 
 export const getPathFromTab = (tab: string, subTab?: string): string => {
+  if (tab === 'public-subscribe') {
+    return `/subscribe/${subTab || ''}`;
+  }
   if (tab === 'dashboard') {
     if (subTab === 'channels') return '/dashboard';
     if (subTab === 'wallet') return '/wallet';
@@ -182,8 +189,8 @@ export const updateSEOMetadata = (tab: string, lang: 'ar' | 'en') => {
     case 'system':
       pageTitle = lang === 'ar' ? 'حالة النظام والأسعار' : 'System Status';
       break;
-    case 'admin-portal':
-      pageTitle = lang === 'ar' ? 'لوحة الإدارة المخفية' : 'Hidden Admin Portal';
+    case 'public-subscribe':
+      pageTitle = lang === 'ar' ? 'انضم للقائمة البريدية' : 'Join the Mailing List';
       break;
     default:
       pageTitle = lang === 'ar' ? 'منصة الإرسال' : 'Send Platform';

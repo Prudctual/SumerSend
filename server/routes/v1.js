@@ -343,7 +343,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
     return res.status(500).json({ error: 'Authentication processing error.' });
   }
 
-  const { email, name } = req.body;
+  const { email, name, phone, metadata } = req.body;
   if (!email) {
     return res.status(400).json({
       error: {
@@ -384,7 +384,13 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
         // Reactivate subscription
         await supabase
           .from('subscribers')
-          .update({ status: 'active', name: name || existingSub.name, updated_at: new Date().toISOString() })
+          .update({
+            status: 'active',
+            name: name || existingSub.name,
+            phone: phone || existingSub.phone,
+            metadata: { ...(existingSub.metadata || {}), ...(metadata || {}) },
+            updated_at: new Date().toISOString()
+          })
           .eq('user_id', userId)
           .eq('id', subId);
         isNewSubscription = true;
@@ -395,7 +401,8 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
         id: subId,
         email: email,
         name: name,
-        status: 'active'
+        phone: phone,
+        metadata: metadata || {}
       });
       isNewSubscription = true;
     }
@@ -405,6 +412,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
       id: subId,
       email: email.toLowerCase().trim(),
       name: name || '',
+      phone: phone || '',
       status: 'active',
       timestamp: new Date().toISOString()
     });

@@ -17,6 +17,7 @@ import { LandingView } from './components/LandingView';
 import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
 import { SubscribersView } from './components/SubscribersView';
+import { PublicSubscribeView } from './components/PublicSubscribeView';
 import { SendConsoleView } from './components/SendConsoleView';
 import { ChannelsView } from './components/ChannelsView';
 import { AnalyticsLogsView } from './components/AnalyticsLogsView';
@@ -191,6 +192,7 @@ export default function App() {
         <SubscribersView 
           lang={lang} 
           apiKeys={apiKeys} 
+          user={user}
           initialSubTab={subTab}
           walletBalance={walletBalance}
           setWalletBalance={setWalletBalance}
@@ -396,6 +398,15 @@ export default function App() {
         }}
         onBackToLanding={() => setCurrentTab('landing')}
       />
+    );
+  }
+
+  // Public Subscriber Opt-In Page Routing
+  if (currentTab === 'public-subscribe') {
+    const pathParts = window.location.pathname.split('/');
+    const subUserId = pathParts[2] || '';
+    return (
+      <PublicSubscribeView userId={subUserId} />
     );
   }
 
