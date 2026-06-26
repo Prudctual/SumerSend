@@ -1322,13 +1322,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--panel-muted)', fontSize: '12px' }}>
                           <h4 style={{ fontWeight: 800, marginBottom: '10px', fontSize: '12px' }}>{t.dnsSettings}</h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: 'monospace' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--border-color)', paddingBottom: '6px' }}>
-                              <span style={{ color: 'var(--text-secondary)' }}>TXT (SPF)</span>
-                              <span style={{ color: 'var(--text-primary)' }}>v=spf1 include:sumer.send ~all</span>
+                            <div style={{ borderBottom: '1px dashed var(--border-color)', paddingBottom: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold' }}>TXT (SPF):</span>
+                                <span style={{ color: 'var(--text-primary)' }}>Name: @</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Value:</span>
+                                <span style={{ color: 'var(--text-primary)', wordBreak: 'break-all' }}>v=spf1 include:sumer.send ~all</span>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--border-color)', paddingBottom: '6px' }}>
-                              <span style={{ color: 'var(--text-secondary)' }}>CNAME (DKIM)</span>
-                              <span style={{ color: 'var(--text-primary)' }}>sumer._domainkey.domain.iq</span>
+                            <div style={{ paddingBottom: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold' }}>CNAME (DKIM):</span>
+                                <span style={{ color: 'var(--text-primary)' }}>Name: sumer._domainkey</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Target:</span>
+                                <span style={{ color: 'var(--text-primary)' }}>dkim.sumersend.com</span>
+                              </div>
                             </div>
                           </div>
                         </div>
