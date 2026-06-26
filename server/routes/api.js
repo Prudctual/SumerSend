@@ -1168,26 +1168,112 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
         } else {
           const msgId = crypto.randomUUID();
           const smtpConfig = await loadSmtpConfig(userId);
-          
-          const { error: queueError } = await supabase.from('message_queue').insert({
-            id: msgId,
-            user_id: userId,
-            type: 'email',
-            recipient: email,
-            subject: compiledSubject,
-            body: compiledBody,
-            status: 'pending',
-            attempts: 0,
-            max_attempts: 3,
-            metadata: { priority: 'normal' }
-          });
+          const useQueue = process.env.USE_QUEUE !== 'false' && !process.env.VERCEL;
 
-          if (queueError) {
-            console.error('[API] Failed to queue welcome email:', queueError);
-            await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+          if (!useQueue) {
+            try {
+              if (!smtpConfig || !smtpConfig.host) {
+                throw new Error('SMTP configurations are not set for this user.');
+              }
+              
+              const transporter = createTransporter({
+                host: smtpConfig.host,
+                port: smtpConfig.port,
+                secure: smtpConfig.secure,
+                user: smtpConfig.user,
+                pass: smtpConfig.pass
+              });
+              
+              if (!transporter) {
+                throw new Error('Could not create SMTP transporter. Invalid config.');
+              }
+              
+              const fromSender = smtpConfig.from || `Sumer Send <${smtpConfig.user}>`;
+              await transporter.sendMail({
+                from: fromSender,
+                to: email,
+                subject: compiledSubject || 'Welcome',
+                html: compiledBody
+              });
+              
+              const deliveredLog = {
+                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                type: 'email',
+                sender: fromSender,
+                recipient: email,
+                subject: compiledSubject || '',
+                body: compiledBody,
+                status: 'delivered',
+                timestamp: new Date().toISOString()
+              };
+              await appendLog(userId, deliveredLog);
+              triggerWebhooks(userId, 'email.delivered', deliveredLog);
+
+              await supabase.from('message_queue').insert({
+                id: msgId,
+                user_id: userId,
+                type: 'email',
+                recipient: email,
+                subject: compiledSubject,
+                body: compiledBody,
+                status: 'completed',
+                attempts: 1,
+                max_attempts: 3,
+                metadata: { priority: 'normal', direct_send: true }
+              });
+
+            } catch (sendErr) {
+              console.error('[API] Direct send welcome email failed:', sendErr);
+              await refundWallet(userId, cost, `Refund: Welcome Email delivery failure to ${email}`);
+              
+              const failedLog = {
+                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                type: 'email',
+                sender: smtpConfig?.from || 'Sumer Send <onboarding@sumersend.com>',
+                recipient: email,
+                subject: compiledSubject,
+                body: compiledBody,
+                status: 'failed',
+                error: sendErr.message || 'Delivery failed',
+                timestamp: new Date().toISOString()
+              };
+              await appendLog(userId, failedLog);
+              triggerWebhooks(userId, 'email.failed', failedLog);
+
+              await supabase.from('message_queue').insert({
+                id: msgId,
+                user_id: userId,
+                type: 'email',
+                recipient: email,
+                subject: compiledSubject,
+                body: compiledBody,
+                status: 'failed',
+                attempts: 1,
+                max_attempts: 3,
+                last_error: sendErr.message,
+                metadata: { priority: 'normal', direct_send: true }
+              });
+            }
           } else {
-            // Push to BullMQ immediately
-            await queueMessageJob(msgId, { priority: 'normal' }).catch(err => console.error(`[API] Failed to push welcome email to BullMQ:`, err.message));
+            const { error: queueError } = await supabase.from('message_queue').insert({
+              id: msgId,
+              user_id: userId,
+              type: 'email',
+              recipient: email,
+              subject: compiledSubject,
+              body: compiledBody,
+              status: 'pending',
+              attempts: 0,
+              max_attempts: 3,
+              metadata: { priority: 'normal' }
+            });
+
+            if (queueError) {
+              console.error('[API] Failed to queue welcome email:', queueError);
+              await refundWallet(userId, cost, `Refund: Queue failure for Welcome Email to ${email}`);
+            } else {
+              await queueMessageJob(msgId, { priority: 'normal' }).catch(err => console.error(`[API] Failed to push welcome email to BullMQ:`, err.message));
+            }
           }
         }
       }
