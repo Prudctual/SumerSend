@@ -23,7 +23,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Key,
-  FileText
+  FileText,
+  Send,
+  FlaskConical
 } from 'lucide-react';
 import { getPathFromTab } from '../utils/seo';
 
@@ -149,14 +151,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
     {
-      id: 'send-console',
-      labelAr: 'منصة الإرسال',
-      labelEn: 'Send Console',
-      icon: MessageSquare,
+      id: 'campaigns-group',
+      labelAr: 'حملات البث الجماعي',
+      labelEn: 'Broadcast Campaigns',
+      icon: Send,
       subItems: [
-        { id: 'send', labelAr: 'الإرسال السريع', labelEn: 'Quick Send' },
-        { id: 'campaigns', labelAr: 'حملات الإرسال', labelEn: 'Campaigns Manager' },
-        { id: 'playground', labelAr: 'حقل التجربة', labelEn: 'API Playground' },
+        { id: 'campaigns', labelAr: 'حملات البث الجماعي', labelEn: 'Broadcast Campaigns' },
+      ]
+    },
+    {
+      id: 'playground-group',
+      labelAr: 'المختبر التجريبي',
+      labelEn: 'Composer Playground',
+      icon: FlaskConical,
+      subItems: [
+        { id: 'playground', labelAr: 'المختبر التجريبي', labelEn: 'Composer Playground' },
       ]
     },
     {

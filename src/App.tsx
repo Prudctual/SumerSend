@@ -18,7 +18,6 @@ import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
 import { SubscribersView } from './components/SubscribersView';
 import { PublicSubscribeView } from './components/PublicSubscribeView';
-import { SendConsoleView } from './components/SendConsoleView';
 import { ChannelsView } from './components/ChannelsView';
 import { AnalyticsLogsView } from './components/AnalyticsLogsView';
 import { PlatformSettingsView } from './components/PlatformSettingsView';
@@ -159,13 +158,11 @@ export default function App() {
       );
     }
     
-    // 1. Send Console: includes 'send', 'playground', 'campaigns'
-    if (['send', 'playground', 'campaigns'].includes(currentTab)) {
-      const initialSubTab = currentTab === 'send' ? 'playground' : (currentTab as any);
+    // 1. Composer Playground (المختبر التجريبي)
+    if (['send', 'playground'].includes(currentTab)) {
       return (
-        <SendConsoleView
+        <PlaygroundView
           lang={lang}
-          theme={theme}
           setLogs={setLogs}
           walletBalance={walletBalance}
           setWalletBalance={setWalletBalance}
@@ -178,10 +175,23 @@ export default function App() {
           setEmailSubject={setEmailSubject}
           msgBody={msgBody}
           setMsgBody={setMsgBody}
-          playgroundChannel={playgroundChannel}
-          setPlaygroundChannel={setPlaygroundChannel}
-          setCurrentTab={setCurrentTab}
-          initialTab={initialSubTab}
+          activeTab={playgroundChannel}
+          setActiveTab={setPlaygroundChannel}
+          hideHeader={false}
+        />
+      );
+    }
+
+    // 1.5 Broadcast Campaigns (حملات البث الجماعي)
+    if (currentTab === 'campaigns') {
+      return (
+        <CampaignsView
+          lang={lang}
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+          setLogs={setLogs}
+          setPhoneNotifications={setPhoneNotifications}
+          hideHeader={false}
         />
       );
     }
