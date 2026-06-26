@@ -119,6 +119,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'unsubscribed'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'hosted_page' | 'embed_form' | 'manual' | 'import' | 'api'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -1573,9 +1574,16 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     const matchesSearch = s.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
       (s.name && s.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    if (statusFilter === 'active') return matchesSearch && s.status === 'active';
-    if (statusFilter === 'unsubscribed') return matchesSearch && s.status === 'unsubscribed';
-    return matchesSearch;
+    let matchesStatus = true;
+    if (statusFilter === 'active') matchesStatus = s.status === 'active';
+    if (statusFilter === 'unsubscribed') matchesStatus = s.status === 'unsubscribed';
+
+    let matchesSource = true;
+    if (sourceFilter !== 'all') {
+      matchesSource = s.metadata?.source === sourceFilter;
+    }
+    
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   // Pagination
@@ -1587,7 +1595,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, sourceFilter]);
 
   const handleCopyCode = (type: 'html' | 'js' | 'link', code: string) => {
     navigator.clipboard.writeText(code);
@@ -2239,6 +2247,51 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
 
         [data-theme="dark"] .sch-pill.active {
           background: var(--panel-elevated);
+        }
+
+        .source-pill.active.source-hosted_page {
+          background: #d1fae5;
+          color: #065f46;
+          box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
+        }
+        [data-theme="dark"] .source-pill.active.source-hosted_page {
+          background: rgba(16, 185, 129, 0.15);
+          color: #6ee7b7;
+        }
+
+        .source-pill.active.source-embed_form {
+          background: #dbeafe;
+          color: #1e40af;
+          box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1);
+        }
+        [data-theme="dark"] .source-pill.active.source-embed_form {
+          background: rgba(59, 130, 246, 0.15);
+          color: #93c5fd;
+        }
+
+        .source-pill.active.source-manual {
+          background: var(--panel-elevated);
+          color: var(--text-primary);
+        }
+
+        .source-pill.active.source-import {
+          background: #ffedd5;
+          color: #854d0e;
+          box-shadow: 0 1px 2px rgba(249, 115, 22, 0.1);
+        }
+        [data-theme="dark"] .source-pill.active.source-import {
+          background: rgba(249, 115, 22, 0.15);
+          color: #fdba74;
+        }
+
+        .source-pill.active.source-api {
+          background: #f3e8ff;
+          color: #6b21a8;
+          box-shadow: 0 1px 2px rgba(168, 85, 247, 0.1);
+        }
+        [data-theme="dark"] .source-pill.active.source-api {
+          background: rgba(168, 85, 247, 0.15);
+          color: #d8b4fe;
         }
 
         /* ─── Action Buttons Row ─── */
@@ -3712,6 +3765,28 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                         {filter === 'unsubscribed' && t.filterUnsubscribed}
                       </button>
                     ))}
+                  </div>
+
+                  <div className="sch-pills source-filter-pills" style={{ display: 'flex', gap: '2px' }}>
+                    {(['all', 'hosted_page', 'embed_form', 'manual', 'import', 'api'] as const).map((src) => {
+                      let label = '';
+                      if (src === 'all') label = lang === 'ar' ? 'كل المصادر' : 'All Sources';
+                      else if (src === 'hosted_page') label = lang === 'ar' ? 'صفحة الاشتراك' : 'Page';
+                      else if (src === 'embed_form') label = lang === 'ar' ? 'نموذج مضمن' : 'Widget';
+                      else if (src === 'manual') label = lang === 'ar' ? 'يدوي' : 'Manual';
+                      else if (src === 'import') label = lang === 'ar' ? 'استيراد' : 'Import';
+                      else if (src === 'api') label = lang === 'ar' ? 'API' : 'API';
+
+                      return (
+                        <button
+                          key={src}
+                          onClick={() => setSourceFilter(src)}
+                          className={`sch-pill source-pill ${sourceFilter === src ? 'active' : ''} source-${src}`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
