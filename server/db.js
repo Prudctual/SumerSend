@@ -940,14 +940,16 @@ export async function loadSubscriberSettings(userId) {
     return {
       welcomeEnabled: false,
       welcomeSubject: 'Welcome to our newsletter!',
-      welcomeBody: 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.'
+      welcomeBody: 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.',
+      welcomeTemplateId: ''
     };
   }
 
   return {
     welcomeEnabled: !!data.welcome_enabled,
     welcomeSubject: data.welcome_subject || 'Welcome to our newsletter!',
-    welcomeBody: data.welcome_body || 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.'
+    welcomeBody: data.welcome_body || 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.',
+    welcomeTemplateId: data.welcome_template_id || ''
   };
 }
 
@@ -957,6 +959,7 @@ export async function saveSubscriberSettings(userId, settings) {
     welcome_enabled: settings.welcomeEnabled,
     welcome_subject: settings.welcomeSubject,
     welcome_body: settings.welcomeBody,
+    welcome_template_id: settings.welcomeTemplateId || null,
     updated_at: new Date().toISOString()
   });
 

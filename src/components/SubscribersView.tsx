@@ -53,7 +53,7 @@ interface SubscribersViewProps {
   setWalletBalance?: React.Dispatch<React.SetStateAction<number>>;
   setPhoneNotifications?: React.Dispatch<React.SetStateAction<any[]>>;
   setLogs?: React.Dispatch<React.SetStateAction<any[]>>;
-  setCurrentTab?: (newTab: string) => void;
+  setCurrentTab?: (newTab: string, newSubTab?: any) => void;
 }
 
 interface Subscriber {
@@ -71,6 +71,7 @@ interface SubscriberSettings {
   welcomeEnabled: boolean;
   welcomeSubject: string;
   welcomeBody: string;
+  welcomeTemplateId?: string;
 }
 
 export const SubscribersView: React.FC<SubscribersViewProps> = ({ 
@@ -93,12 +94,16 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const [settings, setSettings] = useState<SubscriberSettings>({
     welcomeEnabled: false,
     welcomeSubject: 'Welcome to our newsletter!',
-    welcomeBody: 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.'
+    welcomeBody: 'Hello {name},\n\nThank you for subscribing to our newsletter!\n\nBest regards.',
+    welcomeTemplateId: ''
   });
   const [loading, setLoading] = useState(true);
   
   // Selection
   const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
+
+  // Welcome Mode (manual text vs linked template)
+  const [welcomeMode, setWelcomeMode] = useState<'text' | 'template'>('text');
 
   // Widget Settings
   const [widgetTheme, setWidgetTheme] = useState<'light' | 'dark' | 'glass'>('light');
@@ -466,9 +471,10 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [subsRes, settingsRes] = await Promise.all([
+      const [subsRes, settingsRes, templatesRes] = await Promise.all([
         fetch('http://127.0.0.1:3000/api/subscribers'),
-        fetch('http://127.0.0.1:3000/api/subscribers/settings')
+        fetch('http://127.0.0.1:3000/api/subscribers/settings'),
+        fetch('http://127.0.0.1:3000/api/templates/custom').catch(() => null)
       ]);
 
       if (subsRes.ok) {
@@ -478,6 +484,17 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         setSettings(settingsData);
+        if (settingsData.welcomeTemplateId) {
+          setWelcomeMode('template');
+        } else {
+          setWelcomeMode('text');
+        }
+      }
+      if (templatesRes && templatesRes.ok) {
+        const templatesData = await templatesRes.json();
+        if (Array.isArray(templatesData)) {
+          setCustomTemplates(templatesData);
+        }
       }
     } catch (err) {
       console.error('Error fetching subscribers view data:', err);
@@ -1801,7 +1818,45 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
     }));
   };
 
+  const getActiveWelcomeEmailContent = () => {
+    if (!settings.welcomeEnabled) return null;
+    
+    // If a template is selected, resolve it
+    if (settings.welcomeTemplateId) {
+      const template = 
+        customTemplates.find(t => t.id === settings.welcomeTemplateId) || 
+        templatesDb.email.find(t => t.id === settings.welcomeTemplateId);
+        
+      if (template) {
+        let subject = lang === 'ar' ? (template.subjectAr || template.nameAr) : (template.subjectEn || template.nameEn);
+        let body = template.body || '';
+        
+        // Compile/replace variables for high-fidelity preview
+        const nameVal = lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem';
+        body = body
+          .replace(/\{\{user_name\}\}/g, nameVal)
+          .replace(/\{\{name\}\}/g, nameVal)
+          .replace(/\{name\}/g, nameVal)
+          .replace(/\{\{platform_name\}\}/g, lang === 'ar' ? 'سومر سيند' : 'SumerSend')
+          .replace(/\{\{platform_desc\}\}/g, lang === 'ar' ? 'بوابتك الذكية للنمو والتواصل الرقمي' : 'Your smart partner in digital growth')
+          .replace(/\{\{email\}\}/g, 'client@domain.com')
+          .replace(/\{email\}/g, 'client@domain.com');
+          
+        return { subject, body, isHtml: true };
+      }
+    }
+    
+    // Fallback to manual subject & body
+    return { 
+      subject: settings.welcomeSubject, 
+      body: settings.welcomeBody, 
+      isHtml: false 
+    };
+  };
+
   const renderPreviewBrowserMockup = () => {
+    const previewContent = getActiveWelcomeEmailContent();
+
     return (
       <div className="premium-browser-mockup">
         {/* Mock Window Header */}
@@ -1866,11 +1921,15 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                   </div>
                 </div>
                 <div style={{ borderBottom: '1px solid #e4e4e7', paddingBottom: '8px', marginBottom: '12px', fontSize: '11px', color: '#71717a', direction: 'ltr', textAlign: 'start' }}>
-                  <div><strong style={{ color: '#000000' }}>Subject:</strong> {settings.welcomeSubject}</div>
+                  <div><strong style={{ color: '#000000' }}>Subject:</strong> {previewContent ? previewContent.subject : settings.welcomeSubject}</div>
                 </div>
                 <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#27272a', direction: 'ltr', textAlign: 'start', overflowY: 'auto', maxHeight: '280px', paddingInlineEnd: '4px' }} className="custom-code-scroll">
-                  {settings.welcomeEnabled ? (
-                    <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                  {previewContent ? (
+                    previewContent.isHtml ? (
+                      <div dangerouslySetInnerHTML={{ __html: previewContent.body }} />
+                    ) : (
+                      <div dangerouslySetInnerHTML={{ __html: previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                    )
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', gap: '8px', color: '#a1a1aa' }}>
                       <Mail size={24} style={{ color: '#d4d4d8' }} />
@@ -1894,14 +1953,18 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
               </div>
               <div>
                 <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{t.previewSubject}: </span>
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{settings.welcomeSubject}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{previewContent ? previewContent.subject : settings.welcomeSubject}</span>
               </div>
             </div>
 
             <div style={{ padding: '32px 24px', backgroundColor: '#ffffff', color: '#111111', minHeight: '260px', maxHeight: '360px', overflowY: 'auto', direction: 'ltr', fontFamily: 'system-ui, -apple-system, sans-serif' }} className="custom-code-scroll">
               <div style={{ maxWidth: '500px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6', color: '#333333', textAlign: 'start' }}>
-                {settings.welcomeEnabled ? (
-                  <div dangerouslySetInnerHTML={{ __html: settings.welcomeBody.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                {previewContent ? (
+                  previewContent.isHtml ? (
+                    <div dangerouslySetInnerHTML={{ __html: previewContent.body }} />
+                  ) : (
+                    <div dangerouslySetInnerHTML={{ __html: previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                  )
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '10px', color: '#999999' }}>
                     <Mail size={32} style={{ color: '#cccccc' }} />
@@ -5552,81 +5615,247 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
 
                   {settings.welcomeEnabled && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {/* Smart Generator Block */}
-                      <div className="ai-copilot-card">
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Sparkles size={13} style={{ color: 'var(--accent-text)' }} />
-                          {lang === 'ar' ? 'صانع المحتوى الترحيبي الذكي والآلي' : 'Smart Campaign Welcome Copy Generator'}
-                        </span>
-                        
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                          <div>
-                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'أسلوب ونبرة المحتوى' : 'Tone / Style'}</label>
-                            <select className="sch-input" value={generatorStyle} onChange={(e) => setGeneratorStyle(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
-                              <option value="philosophical">
-                                {lang === 'ar' ? 'فلسفي وعميق (لمدونتك)' : 'Deep Philosophical (For your blog)'}
-                              </option>
-                              <option value="saas">{lang === 'ar' ? 'عملي وتقني' : 'Technical & Professional'}</option>
-                              <option value="casual">{lang === 'ar' ? 'بسيط وودي' : 'Friendly & Casual'}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'الغرض من الرسالة' : 'Campaign Objective'}</label>
-                            <select className="sch-input" value={generatorOffer} onChange={(e) => setGeneratorOffer(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
-                              <option value="welcome">{lang === 'ar' ? 'ترحيب كلاسيكي بالمشتركين' : 'Classic Subscriber Welcome'}</option>
-                              <option value="vision">{lang === 'ar' ? 'شرح رؤية ورسالة المدونة' : 'Blog Vision & Philosophy'}</option>
-                              <option value="gift">{lang === 'ar' ? 'تقديم دليل قراءة كهدية مجانية' : 'Gift Free Reading Guide'}</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <button 
-                          type="button" 
-                          onClick={handleGenerateCampaign}
-                          className="ai-generate-btn" 
+                      {/* Campaign Type Selector Segmented Tabs */}
+                      <div className="premium-wizard-nav" style={{ margin: '0 0 8px 0', padding: '4px', borderRadius: '8px', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className={`premium-wizard-step ${welcomeMode === 'text' ? 'active' : ''}`}
+                          onClick={() => {
+                            setWelcomeMode('text');
+                            setSettings(prev => ({ ...prev, welcomeTemplateId: '' }));
+                          }}
+                          style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
                         >
-                          <Sparkles size={13} />
-                          <span>{lang === 'ar' ? 'توليد الرسالة وصياغتها فورياً ✨' : 'Generate Welcome Copy Instantly ✨'}</span>
+                          <Sparkles size={12} />
+                          <span>{lang === 'ar' ? 'صياغة يدوية أو ذكية (AI)' : 'Manual / AI Copywriter'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`premium-wizard-step ${welcomeMode === 'template' ? 'active' : ''}`}
+                          onClick={() => {
+                            setWelcomeMode('template');
+                            // If no template is selected yet, select the first available one as default
+                            if (!settings.welcomeTemplateId) {
+                              const firstTemplate = customTemplates[0] || templatesDb.email[0];
+                              if (firstTemplate) {
+                                setSettings(prev => ({
+                                  ...prev,
+                                  welcomeTemplateId: firstTemplate.id,
+                                  welcomeSubject: lang === 'ar' ? (firstTemplate.subjectAr || firstTemplate.nameAr) : (firstTemplate.subjectEn || firstTemplate.nameEn),
+                                  welcomeBody: firstTemplate.body
+                                }));
+                              }
+                            }
+                          }}
+                          style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                        >
+                          <FileText size={12} />
+                          <span>{lang === 'ar' ? 'الربط بقالب (Template Builder)' : 'Link to Message Template'}</span>
                         </button>
                       </div>
 
-                      {/* Manual Edit Fields */}
-                      <div>
-                        <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{t.welcomeSubjectLabel}</label>
-                        <input 
-                          type="text" 
-                          className="sch-input" 
-                          placeholder={t.welcomeSubjectPlaceholder} 
-                          value={settings.welcomeSubject} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, welcomeSubject: e.target.value }))} 
-                          required 
-                        />
-                      </div>
+                      {welcomeMode === 'text' ? (
+                        <>
+                          {/* Smart Generator Block */}
+                          <div className="ai-copilot-card">
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Sparkles size={13} style={{ color: 'var(--accent-text)' }} />
+                              {lang === 'ar' ? 'صانع المحتوى الترحيبي الذكي والآلي' : 'Smart Campaign Welcome Copy Generator'}
+                            </span>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                              <div>
+                                <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'أسلوب ونبرة المحتوى' : 'Tone / Style'}</label>
+                                <select className="sch-input" value={generatorStyle} onChange={(e) => setGeneratorStyle(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
+                                  <option value="philosophical">
+                                    {lang === 'ar' ? 'فلسفي وعميق (لمدونتك)' : 'Deep Philosophical (For your blog)'}
+                                  </option>
+                                  <option value="saas">{lang === 'ar' ? 'عملي وتقني' : 'Technical & Professional'}</option>
+                                  <option value="casual">{lang === 'ar' ? 'بسيط وودي' : 'Friendly & Casual'}</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{lang === 'ar' ? 'الغرض من الرسالة' : 'Campaign Objective'}</label>
+                                <select className="sch-input" value={generatorOffer} onChange={(e) => setGeneratorOffer(e.target.value as any)} style={{ height: '36px', fontSize: '12px', padding: '0 8px' }}>
+                                  <option value="welcome">{lang === 'ar' ? 'ترحيب كلاسيكي بالمشتركين' : 'Classic Subscriber Welcome'}</option>
+                                  <option value="vision">{lang === 'ar' ? 'شرح رؤية ورسالة المدونة' : 'Blog Vision & Philosophy'}</option>
+                                  <option value="gift">{lang === 'ar' ? 'تقديم دليل قراءة كهدية مجانية' : 'Gift Free Reading Guide'}</option>
+                                </select>
+                              </div>
+                            </div>
 
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <label className="sch-label" style={{ marginBottom: 0, fontSize: '11px' }}>{t.welcomeBodyLabel}</label>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.insertTokenLabel}</span>
-                            <button type="button" onClick={() => handleInsertToken('{name}')} className="premium-token-badge">
-                              {"{name}"}
+                            <button 
+                              type="button" 
+                              onClick={handleGenerateCampaign}
+                              className="ai-generate-btn" 
+                            >
+                              <Sparkles size={13} />
+                              <span>{lang === 'ar' ? 'توليد الرسالة وصياغتها فورياً ✨' : 'Generate Welcome Copy Instantly ✨'}</span>
                             </button>
-                            <button type="button" onClick={() => handleInsertToken('{email}')} className="premium-token-badge">
-                              {"{email}"}
+                          </div>
+
+                          {/* Manual Edit Fields */}
+                          <div>
+                            <label className="sch-label" style={{ fontSize: '11px', marginBottom: '6px' }}>{t.welcomeSubjectLabel}</label>
+                            <input 
+                              type="text" 
+                              className="sch-input" 
+                              placeholder={t.welcomeSubjectPlaceholder} 
+                              value={settings.welcomeSubject} 
+                              onChange={(e) => setSettings(prev => ({ ...prev, welcomeSubject: e.target.value }))} 
+                              required 
+                            />
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <label className="sch-label" style={{ marginBottom: 0, fontSize: '11px' }}>{t.welcomeBodyLabel}</label>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.insertTokenLabel}</span>
+                                <button type="button" onClick={() => handleInsertToken('{name}')} className="premium-token-badge">
+                                  {"{name}"}
+                                </button>
+                                <button type="button" onClick={() => handleInsertToken('{email}')} className="premium-token-badge">
+                                  {"{email}"}
+                                </button>
+                              </div>
+                            </div>
+                            <textarea 
+                              ref={textareaRef} 
+                              className="sch-textarea" 
+                              rows={6} 
+                              value={settings.welcomeBody} 
+                              onChange={(e) => setSettings(prev => ({ ...prev, welcomeBody: e.target.value }))} 
+                              required 
+                              style={{ fontSize: '12px', lineHeight: 1.6 }}
+                            />
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px', display: 'block', lineHeight: 1.4 }}>{t.welcomeBodyDesc}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <label className="sch-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                            {lang === 'ar' ? 'اختر القالب البريدي لربطه بحملة الترحيب:' : 'Select email template to link with welcome campaign:'}
+                          </label>
+
+                          {/* Template Grid List */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px', maxHeight: '220px', overflowY: 'auto', padding: '2px' }} className="custom-code-scroll">
+                            {/* Custom templates */}
+                            {customTemplates.length > 0 && (
+                              <div style={{ gridColumn: '1 / -1', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px', marginBottom: '2px' }}>
+                                {lang === 'ar' ? 'قوالبك الخاصة (مصنع القوالب):' : 'Your Custom Templates:'}
+                              </div>
+                            )}
+                            {customTemplates.map((t: any) => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  setSettings(prev => ({ 
+                                    ...prev, 
+                                    welcomeTemplateId: t.id, 
+                                    welcomeSubject: t.subject || t.name, 
+                                    welcomeBody: t.body 
+                                  }));
+                                }}
+                                className={`theme-card-btn ${settings.welcomeTemplateId === t.id ? 'active' : ''}`}
+                                style={{ padding: '12px', alignItems: 'flex-start', textAlign: 'start', height: 'auto', minHeight: '80px', justifyContent: 'space-between' }}
+                              >
+                                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-text)', flexShrink: 0 }}>
+                                    <FileText size={12} />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{t.name}</span>
+                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>{t.subject || (lang === 'ar' ? 'بدون عنوان' : 'No Subject')}</span>
+                                  </div>
+                                </div>
+                                {settings.welcomeTemplateId === t.id && (
+                                  <span style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, marginTop: '4px' }}>
+                                    <Check size={10} style={{ strokeWidth: 3 }} />
+                                    <span>{lang === 'ar' ? 'مرتبط' : 'Linked'}</span>
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+
+                            {/* System templates */}
+                            <div style={{ gridColumn: '1 / -1', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '8px', marginBottom: '2px' }}>
+                              {lang === 'ar' ? 'القوالب الجاهزة المتاحة بالنظام:' : 'System Templates:'}
+                            </div>
+                            {templatesDb.email.map((t: any) => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  setSettings(prev => ({ 
+                                    ...prev, 
+                                    welcomeTemplateId: t.id, 
+                                    welcomeSubject: lang === 'ar' ? (t.subjectAr || t.nameAr) : (t.subjectEn || t.nameEn), 
+                                    welcomeBody: t.body 
+                                  }));
+                                }}
+                                className={`theme-card-btn ${settings.welcomeTemplateId === t.id ? 'active' : ''}`}
+                                style={{ padding: '12px', alignItems: 'flex-start', textAlign: 'start', height: 'auto', minHeight: '80px', justifyContent: 'space-between' }}
+                              >
+                                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: 'var(--panel-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                    <Mail size={12} />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                                      {lang === 'ar' ? t.nameAr : t.nameEn}
+                                    </span>
+                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>
+                                      {lang === 'ar' ? t.descAr : t.descEn}
+                                    </span>
+                                  </div>
+                                </div>
+                                {settings.welcomeTemplateId === t.id && (
+                                  <span style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, marginTop: '4px' }}>
+                                    <Check size={10} style={{ strokeWidth: 3 }} />
+                                    <span>{lang === 'ar' ? 'مرتبط' : 'Linked'}</span>
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Cohesive Link to Template Builder */}
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            padding: '12px 16px', 
+                            backgroundColor: 'var(--panel-muted)', 
+                            borderRadius: '8px', 
+                            border: '1px solid var(--border-color)',
+                            marginTop: '8px',
+                            gap: '16px',
+                            direction: lang === 'ar' ? 'rtl' : 'ltr'
+                          }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <Settings size={16} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'start' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                  {lang === 'ar' ? 'هل تود ابتكار قالب جديد أو تعديله؟' : 'Want to design custom templates?'}
+                                </span>
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                                  {lang === 'ar' ? 'يمكنك تصميم وتنسيق قوالب بريدية كاملة ومذهلة بلمساتك في مصنع القوالب.' : 'Create and customize gorgeous email layouts using our full Template Builder.'}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setCurrentTab && setCurrentTab('dashboard', 'templates')}
+                              className="sch-btn sch-btn-primary"
+                              style={{ height: '32px', fontSize: '11px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                            >
+                              <span>{lang === 'ar' ? 'مصنع القوالب 🛠️' : 'Template Builder 🛠️'}</span>
                             </button>
                           </div>
                         </div>
-                        <textarea 
-                          ref={textareaRef} 
-                          className="sch-textarea" 
-                          rows={6} 
-                          value={settings.welcomeBody} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, welcomeBody: e.target.value }))} 
-                          required 
-                          style={{ fontSize: '12px', lineHeight: 1.6 }}
-                        />
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px', display: 'block', lineHeight: 1.4 }}>{t.welcomeBodyDesc}</span>
-                      </div>
+                      )}
                     </div>
                   )}
 

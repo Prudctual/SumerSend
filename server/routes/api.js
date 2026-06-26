@@ -852,12 +852,13 @@ apiRouter.get('/subscribers/settings', async (req, res) => {
 
 // POST /api/subscribers/settings
 apiRouter.post('/subscribers/settings', async (req, res) => {
-  const { welcomeEnabled, welcomeSubject, welcomeBody } = req.body;
+  const { welcomeEnabled, welcomeSubject, welcomeBody, welcomeTemplateId } = req.body;
   try {
     const success = await saveSubscriberSettings(req.user.id, {
       welcomeEnabled: !!welcomeEnabled,
       welcomeSubject: welcomeSubject || 'Welcome to our newsletter!',
-      welcomeBody: welcomeBody || 'Hello {name},\n\nThank you for subscribing!\n\nBest regards.'
+      welcomeBody: welcomeBody || 'Hello {name},\n\nThank you for subscribing!\n\nBest regards.',
+      welcomeTemplateId: welcomeTemplateId || ''
     });
     if (!success) {
       return res.status(400).json({ error: 'Failed to save settings.' });
