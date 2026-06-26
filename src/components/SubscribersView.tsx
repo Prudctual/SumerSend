@@ -5741,43 +5741,110 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                           {/* Template Grid List */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px', maxHeight: '220px', overflowY: 'auto', padding: '2px' }} className="custom-code-scroll">
                             {/* Custom templates */}
-                            {customTemplates.length > 0 && (
-                              <div style={{ gridColumn: '1 / -1', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px', marginBottom: '2px' }}>
-                                {lang === 'ar' ? 'قوالبك الخاصة (مصنع القوالب):' : 'Your Custom Templates:'}
-                              </div>
-                            )}
-                            {customTemplates.map((t: any) => (
-                              <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => {
-                                  setSettings(prev => ({ 
-                                    ...prev, 
-                                    welcomeTemplateId: t.id, 
-                                    welcomeSubject: t.subject || t.name, 
-                                    welcomeBody: t.body 
-                                  }));
-                                }}
-                                className={`theme-card-btn ${settings.welcomeTemplateId === t.id ? 'active' : ''}`}
-                                style={{ padding: '12px', alignItems: 'flex-start', textAlign: 'start', height: 'auto', minHeight: '80px', justifyContent: 'space-between' }}
-                              >
-                                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-text)', flexShrink: 0 }}>
-                                    <FileText size={12} />
+                            {customTemplates.length > 0 ? (
+                              <>
+                                <div style={{ gridColumn: '1 / -1', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px', marginBottom: '2px' }}>
+                                  {lang === 'ar' ? 'قوالبك الخاصة (مصنع القوالب):' : 'Your Custom Templates:'}
+                                </div>
+                                {customTemplates.map((t: any) => (
+                                  <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSettings(prev => ({ 
+                                        ...prev, 
+                                        welcomeTemplateId: t.id, 
+                                        welcomeSubject: t.subject || t.name, 
+                                        welcomeBody: t.body 
+                                      }));
+                                    }}
+                                    className={`theme-card-btn ${settings.welcomeTemplateId === t.id ? 'active' : ''}`}
+                                    style={{ padding: '12px', alignItems: 'flex-start', textAlign: 'start', height: 'auto', minHeight: '80px', justifyContent: 'space-between' }}
+                                  >
+                                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                      <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-text)', flexShrink: 0 }}>
+                                        <FileText size={12} />
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{t.name}</span>
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>{t.subject || (lang === 'ar' ? 'بدون عنوان' : 'No Subject')}</span>
+                                      </div>
+                                    </div>
+                                    {settings.welcomeTemplateId === t.id && (
+                                      <span style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, marginTop: '4px' }}>
+                                        <Check size={10} style={{ strokeWidth: 3 }} />
+                                        <span>{lang === 'ar' ? 'مرتبط' : 'Linked'}</span>
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
+                              </>
+                            ) : (
+                              <div style={{ 
+                                gridColumn: '1 / -1', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '12px', 
+                                padding: '18px', 
+                                border: '1px dashed var(--border-color)', 
+                                borderRadius: '12px', 
+                                backgroundColor: 'var(--panel-muted)',
+                                backgroundImage: 'linear-gradient(to bottom right, var(--panel-muted), rgba(99, 102, 241, 0.03))',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxSizing: 'border-box',
+                                margin: '4px 0'
+                              }}>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+                                  <div style={{ 
+                                    width: '36px', 
+                                    height: '36px', 
+                                    borderRadius: '8px', 
+                                    backgroundColor: 'rgba(99, 102, 241, 0.1)', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    color: '#6366f1', 
+                                    flexShrink: 0 
+                                  }}>
+                                    <Sparkles size={18} />
                                   </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{t.name}</span>
-                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>{t.subject || (lang === 'ar' ? 'بدون عنوان' : 'No Subject')}</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'start' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                      {lang === 'ar' ? 'ابتكر هويتك البصرية والفريدة ✨' : 'Design Your Unique Brand Identity ✨'}
+                                    </span>
+                                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                      {lang === 'ar' 
+                                        ? 'أنت لا تمتلك أي قوالب بريد مخصصة حالياً. ابتكار قالب خاص لرسائل الترحيب التلقائية في مصنع القوالب يمنح جمهورك انطباعاً أولياً مذهلاً ويجعل رسائلك تبدو كعمل فني احترافي يعبر عن هويتك وجوهر كتاباتك.' 
+                                        : 'You do not have any custom templates yet. Creating a customized email in the Template Builder gives your subscribers a gorgeous first impression and represents your brand with pure professionalism.'}
+                                    </span>
                                   </div>
                                 </div>
-                                {settings.welcomeTemplateId === t.id && (
-                                  <span style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--success-color)', fontWeight: 700, marginTop: '4px' }}>
-                                    <Check size={10} style={{ strokeWidth: 3 }} />
-                                    <span>{lang === 'ar' ? 'مرتبط' : 'Linked'}</span>
-                                  </span>
-                                )}
-                              </button>
-                            ))}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setCurrentTab && setCurrentTab('dashboard', 'templates')}
+                                    className="sch-btn sch-btn-primary"
+                                    style={{ 
+                                      height: '32px', 
+                                      fontSize: '11.5px', 
+                                      borderRadius: '6px', 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '6px', 
+                                      cursor: 'pointer',
+                                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)',
+                                      backgroundColor: '#6366f1',
+                                      border: 'none',
+                                      color: '#ffffff'
+                                    }}
+                                  >
+                                    <Sparkles size={12} />
+                                    <span>{lang === 'ar' ? 'تصميم قالبك الأول الآن 🚀' : 'Design Your First Template Now 🚀'}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
 
                             {/* System templates */}
                             <div style={{ gridColumn: '1 / -1', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '8px', marginBottom: '2px' }}>
