@@ -322,18 +322,107 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
       return res.status(500).json({ error: sendErr.message || 'Failed to send email.' });
     }
   } else {
-    await queueMessageJob(msgId, { priority }).catch(err => console.error(`[API] Failed to push email to BullMQ:`, err.message));
-
-    return res.json({
-      id: msgId,
-      type: 'email',
-      from: from || 'Sumer Send <onboarding@sumersend.com>',
-      to,
-      subject,
-      body: html,
-      status: 'queued',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await queueMessageJob(msgId, { priority });
+      return res.json({
+        id: msgId,
+        type: 'email',
+        from: from || 'Sumer Send <onboarding@sumersend.com>',
+        to,
+        subject,
+        body: html,
+        status: 'queued',
+        timestamp: new Date().toISOString()
+      });
+    } catch (queueErr) {
+      console.warn(`[API] Failed to queue email to BullMQ: ${queueErr.message}. Falling back to direct SMTP dispatch...`);
+      try {
+        if (!smtpConfig || !smtpConfig.host) {
+          throw new Error('SMTP configurations are not set for this user.');
+        }
+        
+        const transporter = createTransporter({
+          host: smtpConfig.host,
+          port: smtpConfig.port,
+          secure: smtpConfig.secure,
+          user: smtpConfig.user,
+          pass: smtpConfig.pass
+        });
+        
+        if (!transporter) {
+          throw new Error('Could not create SMTP transporter. Invalid config.');
+        }
+        
+        const fromSender = smtpConfig.from || `Sumer Send <${smtpConfig.user}>`;
+        await transporter.sendMail({
+          from: fromSender,
+          to,
+          subject: subject || 'No Subject',
+          html
+        });
+        
+        await supabase
+          .from('message_queue')
+          .update({ 
+            status: 'completed', 
+            attempts: 1, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', msgId);
+          
+        const deliveredLog = {
+          id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+          type: 'email',
+          sender: fromSender,
+          recipient: to,
+          subject: subject || '',
+          body: html,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        };
+        await appendLog(userId, deliveredLog);
+        triggerWebhooks(userId, 'email.delivered', deliveredLog);
+        
+        return res.json({
+          id: msgId,
+          type: 'email',
+          from: fromSender,
+          to,
+          subject,
+          body: html,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        });
+      } catch (sendErr) {
+        console.error('[API Fallback] Direct send email failed:', sendErr);
+        await supabase
+          .from('message_queue')
+          .update({ 
+            status: 'failed', 
+            attempts: 1, 
+            last_error: `Email Delivery Failed (Queue & Fallback): ${sendErr.message}`,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', msgId);
+          
+        await refundWallet(userId, cost, `Refund: Fallback delivery failure for Email to ${to}`);
+        
+        const failedLog = {
+          id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+          type: 'email',
+          sender: smtpConfig?.from || 'Sumer Send <onboarding@sumersend.com>',
+          recipient: to,
+          subject,
+          body: html,
+          status: 'failed',
+          error: sendErr.message || 'Delivery failed',
+          timestamp: new Date().toISOString()
+        };
+        await appendLog(userId, failedLog);
+        triggerWebhooks(userId, 'email.failed', failedLog);
+        return res.status(500).json({ error: sendErr.message || 'Failed to send email.' });
+      }
+    }
   }
 });
 
@@ -469,17 +558,87 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
       return res.status(500).json({ error: sendErr.message || 'Failed to send SMS.' });
     }
   } else {
-    await queueMessageJob(msgId, { priority }).catch(err => console.error(`[API] Failed to push SMS to BullMQ:`, err.message));
-
-    return res.json({
-      id: msgId,
-      type: 'sms',
-      from: 'Sumer Send API',
-      to,
-      body,
-      status: 'queued',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await queueMessageJob(msgId, { priority });
+      return res.json({
+        id: msgId,
+        type: 'sms',
+        from: 'Sumer Send API',
+        to,
+        body,
+        status: 'queued',
+        timestamp: new Date().toISOString()
+      });
+    } catch (queueErr) {
+      console.warn(`[API] Failed to queue SMS to BullMQ: ${queueErr.message}. Falling back to direct dispatch...`);
+      try {
+        await sendSmsMessage(userId, to, body);
+        await supabase
+          .from('message_queue')
+          .update({ 
+            status: 'completed', 
+            attempts: 1, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', msgId);
+          
+        const deliveredLog = {
+          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          type: 'sms',
+          sender: 'Sumer Send API',
+          recipient: to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        };
+        await appendLog(userId, deliveredLog);
+        triggerWebhooks(userId, 'sms.delivered', {
+          id: msgId,
+          type: 'sms',
+          recipient: to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        });
+        
+        return res.json({
+          id: msgId,
+          type: 'sms',
+          from: 'Sumer Send API',
+          to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        });
+      } catch (sendErr) {
+        console.error('[API Fallback] Direct send SMS failed:', sendErr);
+        await supabase
+          .from('message_queue')
+          .update({ 
+            status: 'failed', 
+            attempts: 1, 
+            last_error: `SMS Delivery Failed (Queue & Fallback): ${sendErr.message}`,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', msgId);
+          
+        await refundWallet(userId, cost, `Refund: Fallback delivery failure for SMS to ${to}`);
+        
+        const failedLog = {
+          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          type: 'sms',
+          sender: 'Sumer Send API',
+          recipient: to,
+          body,
+          status: 'failed',
+          error: sendErr.message || 'Delivery failed',
+          timestamp: new Date().toISOString()
+        };
+        await appendLog(userId, failedLog);
+        triggerWebhooks(userId, 'sms.failed', failedLog);
+        return res.status(500).json({ error: sendErr.message || 'Failed to send SMS.' });
+      }
+    }
   }
 });
 
@@ -865,16 +1024,206 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
       }
     }
   } else {
-    await queueMessageJob(msgId, { priority, isOtp }).catch(err => console.error(`[API] Failed to push WhatsApp message to BullMQ:`, err.message));
-    return res.json({
-      id: msgId,
-      type: 'whatsapp',
-      from: 'Sumer Send API',
-      to,
-      body,
-      status: 'queued',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await queueMessageJob(msgId, { priority, isOtp });
+      return res.json({
+        id: msgId,
+        type: 'whatsapp',
+        from: 'Sumer Send API',
+        to,
+        body,
+        status: 'queued',
+        timestamp: new Date().toISOString()
+      });
+    } catch (queueErr) {
+      console.warn(`[API] Failed to queue WhatsApp message to BullMQ: ${queueErr.message}. Falling back to direct dispatch...`);
+      
+      try {
+        await sendWhatsAppMessage(userId, to, body);
+        
+        await supabase
+          .from('message_queue')
+          .update({ 
+            status: 'completed', 
+            attempts: 1, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', msgId);
+          
+        const deliveredLog = {
+          id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+          type: 'whatsapp',
+          sender: 'Sumer Send API',
+          recipient: to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        };
+        await appendLog(userId, deliveredLog);
+        triggerWebhooks(userId, 'whatsapp.delivered', {
+          id: msgId,
+          type: 'whatsapp',
+          recipient: to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        });
+        
+        return res.json({
+          id: msgId,
+          type: 'whatsapp',
+          from: 'Sumer Send API',
+          to,
+          body,
+          status: 'delivered',
+          timestamp: new Date().toISOString()
+        });
+      } catch (waErr) {
+        console.error('[API Fallback] Direct send WhatsApp failed:', waErr);
+        
+        if (failoverToSms) {
+          console.log(`[API Fallback Failover] WhatsApp direct send failed. Failing over to SMS...`);
+          
+          await supabase
+            .from('message_queue')
+            .update({
+              status: 'failed',
+              attempts: 1,
+              last_error: `WhatsApp Delivery Failed (Queue & Fallback): ${waErr.message}. Automatically failed over to SMS.`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', msgId);
+            
+          await refundWallet(userId, cost, `Refund: WhatsApp direct send failed (fallback failover).`);
+          
+          const smsMsgId = crypto.randomUUID();
+          const smsCost = 120;
+          const chargedSms = await chargeWallet(userId, smsCost, `SMS Failover to ${to}`);
+          if (!chargedSms) {
+            const failedWaLog = {
+              id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+              type: 'whatsapp',
+              from: 'Sumer Send API',
+              to,
+              body,
+              status: 'failed',
+              error: `WhatsApp Delivery Failed (Fallback): ${waErr.message}. Failover SMS failed due to insufficient funds.`,
+              timestamp: new Date().toISOString()
+            };
+            await appendLog(userId, failedWaLog);
+            triggerWebhooks(userId, 'whatsapp.failed', failedWaLog);
+            return res.status(500).json({ error: `WhatsApp send failed (fallback): ${waErr.message}. SMS Failover failed due to insufficient funds.` });
+          }
+          
+          await supabase.from('message_queue').insert({
+            id: smsMsgId,
+            user_id: userId,
+            type: 'sms',
+            recipient: to,
+            body,
+            status: 'pending',
+            attempts: 0,
+            max_attempts: 3,
+            metadata: { parent_whatsapp_id: msgId, is_failover: true }
+          });
+          
+          try {
+            await sendSmsMessage(userId, to, body);
+            await supabase
+              .from('message_queue')
+              .update({ 
+                status: 'completed', 
+                attempts: 1, 
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', smsMsgId);
+              
+            const deliveredLog = {
+              id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+              type: 'sms',
+              sender: 'Sumer Send API (Failover)',
+              recipient: to,
+              body,
+              status: 'delivered',
+              timestamp: new Date().toISOString()
+            };
+            await appendLog(userId, deliveredLog);
+            triggerWebhooks(userId, 'sms.delivered', {
+              id: smsMsgId,
+              type: 'sms',
+              recipient: to,
+              body,
+              status: 'delivered',
+              timestamp: new Date().toISOString()
+            });
+            
+            return res.json({
+              id: smsMsgId,
+              type: 'sms',
+              from: 'Sumer Send API (Failover)',
+              to,
+              body,
+              status: 'delivered',
+              timestamp: new Date().toISOString(),
+              failover_from: msgId
+            });
+          } catch (smsErr) {
+            console.error('[API Fallback Failover] SMS direct send failed:', smsErr);
+            await supabase
+              .from('message_queue')
+              .update({ 
+                status: 'failed', 
+                attempts: 1, 
+                last_error: smsErr.message,
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', smsMsgId);
+              
+            await refundWallet(userId, smsCost, `Refund: Failover SMS delivery failure to ${to}`);
+            
+            const failedSmsLog = {
+              id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+              type: 'sms',
+              sender: 'Sumer Send API (Failover)',
+              recipient: to,
+              body,
+              status: 'failed',
+              error: smsErr.message || 'Delivery failed',
+              timestamp: new Date().toISOString()
+            };
+            await appendLog(userId, failedSmsLog);
+            triggerWebhooks(userId, 'sms.failed', failedSmsLog);
+            return res.status(500).json({ error: `WhatsApp send failed (fallback): ${waErr.message}. SMS Failover failed: ${smsErr.message}` });
+          }
+        } else {
+          await supabase
+            .from('message_queue')
+            .update({ 
+              status: 'failed', 
+              attempts: 1, 
+              last_error: waErr.message,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', msgId);
+            
+          await refundWallet(userId, cost, `Refund: Delivery failure for WhatsApp to ${to}`);
+          
+          const failedWaLog = {
+            id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+            type: 'whatsapp',
+            sender: 'Sumer Send API',
+            recipient: to,
+            body,
+            status: 'failed',
+            error: waErr.message || 'Delivery failed',
+            timestamp: new Date().toISOString()
+          };
+          await appendLog(userId, failedWaLog);
+          triggerWebhooks(userId, 'whatsapp.failed', failedWaLog);
+          return res.status(500).json({ error: waErr.message || 'Failed to send WhatsApp message.' });
+        }
+      }
+    }
   }
 });
 
