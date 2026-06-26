@@ -482,9 +482,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Fetch current config on load
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/smtp/config')
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    fetch('http://127.0.0.1:3000/api/smtp/config', { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
+        clearTimeout(timeoutId);
         setHost(data.host || '');
         setPort(data.port ? data.port.toString() : '587');
         setSecure(!!data.secure);
@@ -492,8 +495,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         setFrom(data.from || '');
       })
       .catch(err => {
+        clearTimeout(timeoutId);
         console.error('Failed to connect to backend server:', err);
       });
+    return () => { clearTimeout(timeoutId); controller.abort(); };
   }, []);
 
   const handleSave = (e: React.FormEvent) => {
@@ -501,9 +506,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setIsSaving(true);
     setStatusMsg(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     fetch('http://127.0.0.1:3000/api/smtp/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         host,
         port,
@@ -513,7 +522,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         from
       })
     })
-      .then(res => res.json())
+      .then(res => { clearTimeout(timeoutId); return res.json(); })
       .then(data => {
         setIsSaving(false);
         if (data.success) {
@@ -523,9 +532,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         }
       })
       .catch(err => {
+        clearTimeout(timeoutId);
         console.error(err);
         setIsSaving(false);
-        setStatusMsg({ type: 'error', text: lang === 'en' ? 'Could not connect to Sumer Send backend server.' : 'تعذر الاتصال بخادم سومر سيند الخلفي.' });
+        if (err.name === 'AbortError') {
+          setStatusMsg({ type: 'error', text: lang === 'ar' ? 'انتهت مهلة الاتصال بالخادم الخلفي. تأكد من تشغيله.' : 'Backend server connection timed out. Ensure it is running.' });
+        } else {
+          setStatusMsg({ type: 'error', text: lang === 'en' ? 'Could not connect to Sumer Send backend server.' : 'تعذر الاتصال بخادم سومر سيند الخلفي.' });
+        }
       });
   };
 
@@ -539,9 +553,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setIsTesting(true);
     setStatusMsg(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     fetch('http://127.0.0.1:3000/api/smtp/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         host,
         port,
@@ -553,6 +571,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       })
     })
       .then(res => {
+        clearTimeout(timeoutId);
         if (!res.ok) {
           return res.json().then(err => { throw new Error(err.error || t.errorFail); });
         }
@@ -574,8 +593,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           .catch(err => console.error('Failed to sync logs:', err));
       })
       .catch(err => {
+        clearTimeout(timeoutId);
         setIsTesting(false);
-        setStatusMsg({ type: 'error', text: err.message });
+        if (err.name === 'AbortError') {
+          setStatusMsg({ type: 'error', text: lang === 'ar' 
+            ? 'انتهت مهلة الاتصال. تأكد من تشغيل الخادم الخلفي محلياً (node server/index.js) أو تحقق من إعدادات SMTP.' 
+            : 'Connection timed out. Ensure the backend server is running locally (node server/index.js) or verify your SMTP settings.' });
+        } else {
+          setStatusMsg({ type: 'error', text: err.message || (lang === 'ar' ? 'تعذر الاتصال بالخادم الخلفي.' : 'Could not connect to the backend server.') });
+        }
         
         // Sync logs from server (failed test dispatch is also saved in server logs)
         fetch('http://127.0.0.1:3000/api/logs')
