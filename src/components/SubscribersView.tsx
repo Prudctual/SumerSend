@@ -156,6 +156,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   // Settings Save State
   const [saveLoading, setSaveLoading] = useState(false);
   const [settingsCopied, setSettingsCopied] = useState<'html' | 'js' | 'link' | null>(null);
+  const [smtpConfigured, setSmtpConfigured] = useState<boolean>(false);
+  const [showSmtpWarning, setShowSmtpWarning] = useState<boolean>(false);
 
   // Settings Wizard Step State
   const [settingsStep, setSettingsStep] = useState<1 | 2>(1);
@@ -486,10 +488,11 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [subsRes, settingsRes, templatesRes] = await Promise.all([
+      const [subsRes, settingsRes, templatesRes, smtpRes] = await Promise.all([
         fetch('http://127.0.0.1:3000/api/subscribers'),
         fetch('http://127.0.0.1:3000/api/subscribers/settings'),
-        fetch('http://127.0.0.1:3000/api/templates/custom').catch(() => null)
+        fetch('http://127.0.0.1:3000/api/templates/custom').catch(() => null),
+        fetch('http://127.0.0.1:3000/api/smtp/config').catch(() => null)
       ]);
 
       if (subsRes.ok) {
@@ -510,6 +513,13 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         if (Array.isArray(templatesData)) {
           setCustomTemplates(templatesData);
         }
+      }
+      if (smtpRes && smtpRes.ok) {
+        const smtpData = await smtpRes.json();
+        const isConfigured = !!(smtpData.host && smtpData.user && smtpData.hasPassword);
+        setSmtpConfigured(isConfigured);
+      } else {
+        setSmtpConfigured(false);
       }
     } catch (err) {
       console.error('Error fetching subscribers view data:', err);
@@ -5637,7 +5647,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
             <div className="sch-settings-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div className="sch-panel">
-                  <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
+                   <h2 className="sch-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
                     <Sparkles size={18} style={{ color: 'var(--accent-text)' }} />
                     <span>{lang === 'ar' ? 'الخطوة الأولى: إعداد حملة البريد الترحيبية التلقائية' : 'Step 1: Set Up Automatic Welcome Email'}</span>
                   </h2>
@@ -5647,12 +5657,58 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       : 'Draft a welcome email that gets sent automatically to every new subscriber as soon as they opt-in.'}
                   </p>
 
+                  {/* Active SMTP server missing warning alert */}
+                  {settings.welcomeEnabled && !smtpConfigured && (
+                    <div style={{
+                      background: 'rgba(245, 158, 11, 0.05)',
+                      border: '1px solid rgba(245, 158, 11, 0.2)',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      direction: lang === 'ar' ? 'rtl' : 'ltr',
+                      textAlign: lang === 'ar' ? 'right' : 'left'
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <AlertCircle size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                          {lang === 'ar'
+                            ? 'تنبيه: رسالة الترحيب مفعلة ولكن لم يتم إعداد خادم الـ SMTP الخاص بك بعد. لن تصل الرسائل للممشتركين.'
+                            : 'Warning: Welcome email is active but your SMTP mail server is not configured yet.'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentTab && setCurrentTab('smtp')}
+                        className="sch-btn"
+                        style={{ height: '28px', fontSize: '10.5px', borderRadius: '6px', padding: '0 10px', color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                      >
+                        <Settings size={12} />
+                        <span>{lang === 'ar' ? 'إعداد SMTP ⚙️' : 'Setup SMTP ⚙️'}</span>
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', backgroundColor: 'var(--panel-muted)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingInlineEnd: '16px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.enableWelcome}</span>
                       <span style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3 }}>{t.enableWelcomeDesc}</span>
                     </div>
-                    <button type="button" onClick={() => setSettings(prev => ({ ...prev, welcomeEnabled: !prev.welcomeEnabled }))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (!settings.welcomeEnabled && !smtpConfigured) {
+                          setShowSmtpWarning(true);
+                          return;
+                        }
+                        setSettings(prev => ({ ...prev, welcomeEnabled: !prev.welcomeEnabled }));
+                        setShowSmtpWarning(false);
+                      }} 
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}
+                    >
                       {settings.welcomeEnabled ? (
                         <ToggleRight size={34} style={{ color: 'var(--success-color)' }} />
                       ) : (
@@ -5660,6 +5716,55 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       )}
                     </button>
                   </div>
+
+                  {/* Dynamic popup warning if SMTP is not configured */}
+                  {showSmtpWarning && !smtpConfigured && (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.05)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      direction: lang === 'ar' ? 'rtl' : 'ltr',
+                      textAlign: lang === 'ar' ? 'right' : 'left'
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            {lang === 'ar' ? 'إعداد خادم البريد (SMTP) مطلوب' : 'SMTP Server Configuration Required'}
+                          </span>
+                          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            {lang === 'ar'
+                              ? 'لتفعيل رسالة الترحيب التلقائية وإرسالها بنجاح للمشتركين الجدد، يجب عليك أولاً ربط وإعداد خادم الـ SMTP الخاص بك في الإعدادات.'
+                              : 'To enable automatic welcome emails, you must first connect and configure your SMTP mail server in settings.'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpWarning(false)}
+                          className="sch-btn"
+                          style={{ height: '32px', fontSize: '11px', borderRadius: '6px', padding: '0 12px' }}
+                        >
+                          {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentTab && setCurrentTab('smtp')}
+                          className="sch-btn sch-btn-primary"
+                          style={{ height: '32px', fontSize: '11px', borderRadius: '6px', padding: '0 14px', backgroundColor: '#3b82f6', border: 'none', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                        >
+                          <Settings size={12} />
+                          <span>{lang === 'ar' ? 'إعداد خادم الـ SMTP الآن ⚙️' : 'Configure SMTP Now ⚙️'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {settings.welcomeEnabled && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
