@@ -100,6 +100,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Domains Form
   const [newDomainInput, setNewDomainInput] = useState('');
   const [expandedDomainId, setExpandedDomainId] = useState<any>(null);
+  const [showDomainsGuide, setShowDomainsGuide] = useState(() => localStorage.getItem('sumer_show_domains_guide') !== 'false');
   
   // API Keys Form
   const [newKeyName, setNewKeyName] = useState('');
@@ -1257,6 +1258,82 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>{t.domainsTitle}</h2>
                 </div>
               </div>
+
+              {showDomainsGuide && (
+                <div 
+                  style={{ 
+                    marginBottom: '20px', 
+                    padding: '16px 20px', 
+                    backgroundColor: 'var(--panel-muted)', 
+                    borderRadius: '16px', 
+                    border: '1px solid var(--border-color)', 
+                    position: 'relative',
+                    fontSize: '12px'
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDomainsGuide(false);
+                      localStorage.setItem('sumer_show_domains_guide', 'false');
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: lang === 'ar' ? '12px' : 'auto',
+                      right: lang === 'ar' ? 'auto' : '12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <X size={12} />
+                  </button>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '14px' }}>💡</span>
+                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                        {lang === 'ar' ? 'دليل توثيق النطاقات (DNS Guide)' : 'Domain Authentication Guide'}
+                      </strong>
+                    </div>
+
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      {lang === 'ar'
+                        ? 'توثيق النطاق الخاص بك يضمن إرسال رسائل البريد باسمك الرسمي (مثل support@company.com) ويحمي علامتك التجارية من الانتحال، كما يمنع ذهاب رسائلك إلى الـ Spam.'
+                        : 'Authenticating your domain ensures emails are sent from your official address (e.g. support@company.com), protects your brand, and prevents emails from going to spam.'}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
+                          {lang === 'ar' ? '1. سجل الـ CNAME (DKIM)' : '1. CNAME Record (DKIM)'}
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          {lang === 'ar' ? 'أضف سجل CNAME الموضح أدناه في إعدادات DNS لنطاقك (مثل Cloudflare) واجعل خيار Proxy معطلاً (DNS Only).' : 'Add the CNAME record below to your DNS provider (e.g. Cloudflare) with Proxy status set to DNS Only.'}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
+                          {lang === 'ar' ? '2. سجل الـ TXT (SPF)' : '2. TXT Record (SPF)'}
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          {lang === 'ar' ? 'إذا كان لديك سجل SPF سابق، ادمجه معه (مثال: v=spf1 include:_spf.mail.hostinger.com include:sumer.send ~all) لتفادي التعارض.' : 'If you have an existing SPF record, merge them into one to prevent conflicts (e.g. merge Hostinger and Sumer SPF values).'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Add Domain Inline Form */}
               <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '10px', marginBottom: '24px', width: '100%', flexWrap: 'wrap' }}>
