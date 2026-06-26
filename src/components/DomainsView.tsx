@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Plus, CheckCircle, Clock, Trash2, AlertCircle, Copy, Info } from 'lucide-react';
+import { Globe, Plus, CheckCircle, Clock, Trash2, AlertCircle, Copy, Info, X } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { GuideBanner } from './GuideBanner';
 
@@ -126,7 +126,105 @@ export const DomainsView: React.FC<DomainsViewProps> = ({ lang, domains, setDoma
         </div>
       )}
 
+      {showGuide && (
+        <BentoCard 
+          className="card" 
+          style={{ 
+            marginBottom: '24px', 
+            padding: '24px', 
+            backgroundColor: 'var(--panel-bg)', 
+            borderRadius: '24px', 
+            border: '1px solid var(--border-color)', 
+            boxShadow: 'var(--card-shadow)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <button
+            onClick={() => setShowGuide(false)}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              left: lang === 'ar' ? '16px' : 'auto',
+              right: lang === 'ar' ? 'auto' : '16px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <X size={14} />
+          </button>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '12px', backgroundColor: 'var(--accent-bg)', color: 'var(--accent-color)', display: 'flex', alignItems: 'center' }}>
+                <Info size={18} />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                {lang === 'ar' ? 'دليل توثيق وربط النطاق الخاص بك' : 'Domain & DNS Authentication Guide'}
+              </h3>
+            </div>
+
+            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {lang === 'ar' 
+                ? 'ربط نطاقك الخاص يتيح لك إرسال رسائل البريد الإلكتروني باسم شركتك (مثل support@company.com) بشكل مباشر وموثوق، بدلاً من استخدام نطاقات عامة. هذا التوثيق يزيد الموثوقية ويحمي هويتك الرقمية.'
+                : 'Connecting your custom domain lets you send emails directly from your brand (e.g. support@company.com). This authentication boosts credibility and protects your digital identity.'}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '8px' }}>
+              {/* Box 1: Benefits */}
+              <div style={{ padding: '16px', borderRadius: '16px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ fontSize: '13.5px', fontWeight: 700, margin: '0 0 10px 0', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent-color)' }}>🌟</span>
+                  {lang === 'ar' ? 'ما الفائدة من هذه الميزة؟' : 'Why use this feature?'}
+                </h4>
+                <ul style={{ margin: 0, paddingInlineStart: '18px', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <li>
+                    <strong>{lang === 'ar' ? 'الاحترافية وكسب الثقة:' : 'Professionalism:'}</strong> {lang === 'ar' ? 'إرسال الرسائل بهوية شركتك الرسمية أمام عملائك.' : 'Send emails with your brand identity to build instant customer trust.'}
+                  </li>
+                  <li>
+                    <strong>{lang === 'ar' ? 'تجنب الـ Spam:' : 'Avoid Spam:'}</strong> {lang === 'ar' ? 'تخطي مجلد الرسائل المزعجة والوصول للـ Inbox مباشرة عبر توثيقات SPF/DKIM.' : 'Deliver straight to Inbox by verifying SPF and DKIM signatures.'}
+                  </li>
+                  <li>
+                    <strong>{lang === 'ar' ? 'حماية العلامة التجارية:' : 'Brand Protection:'}</strong> {lang === 'ar' ? 'منع أي شخص أو مخترق من إرسال رسائل وهمية باسم نطاقك.' : 'Prevent spoofers and phishers from impersonating your domain.'}
+                  </li>
+                </ul>
+              </div>
+
+              {/* Box 2: How to connect */}
+              <div style={{ padding: '16px', borderRadius: '16px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ fontSize: '13.5px', fontWeight: 700, margin: '0 0 10px 0', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent-color)' }}>⚙️</span>
+                  {lang === 'ar' ? 'كيف يعمل الربط؟' : 'How to connect?'}
+                </h4>
+                <ol style={{ margin: 0, paddingInlineStart: '18px', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <li>
+                    <strong>{lang === 'ar' ? 'أضف الدومين:' : 'Add Domain:'}</strong> {lang === 'ar' ? 'أدخل اسم نطاقك في الحقل أدناه لإضافته لقائمة الانتظار.' : 'Enter your domain name in the form below to register it.'}
+                  </li>
+                  <li>
+                    <strong>{lang === 'ar' ? 'انسخ سجلات الـ DNS:' : 'Configure DNS:'}</strong> {lang === 'ar' ? 'انسخ سجلات CNAME الموضحة، وأضفها في لوحة تحكم نطاقك (مثل Cloudflare).' : 'Copy the generated CNAME records and add them in your DNS provider (e.g. Cloudflare).'}
+                  </li>
+                  <li>
+                    <strong>{lang === 'ar' ? 'تجنب تكرار SPF:' : 'Prevent Duplicate SPF:'}</strong> {lang === 'ar' ? 'إذا كان لديك سجل SPF سابق، ادمجه في سجل واحد مدمج لمنع التعارض.' : 'If you have an existing SPF record, merge them into one to prevent duplicates.'}
+                  </li>
+                  <li>
+                    <strong>{lang === 'ar' ? 'التحقق والتفعيل:' : 'Verify & Activate:'}</strong> {lang === 'ar' ? 'اضغط على "تحقق من الـ DNS" لتفعيل نطاقك والبدء بالإرسال.' : 'Click "Verify DNS" to scan your settings and activate the domain.'}
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </BentoCard>
+      )}
 
       <BentoCard className="card" style={{ marginBottom: '24px', padding: '24px', backgroundColor: 'var(--panel-bg)', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
         <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
