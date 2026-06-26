@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import {
   findUserByApiKey,
   chargeWallet,
@@ -123,7 +124,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     });
   }
 
-  const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+  const msgId = crypto.randomUUID();
   const { error: queueError } = await supabase.from('message_queue').insert({
     id: msgId,
     user_id: userId,
@@ -192,7 +193,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
     });
   }
 
-  const msgId = `sms_${Math.random().toString(36).substring(2, 15)}`;
+  const msgId = crypto.randomUUID();
   const { error: queueError } = await supabase.from('message_queue').insert({
     id: msgId,
     user_id: userId,
@@ -276,7 +277,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
     });
   }
 
-  const msgId = `wa_${Math.random().toString(36).substring(2, 15)}`;
+  const msgId = crypto.randomUUID();
   const { error: queueError } = await supabase.from('message_queue').insert({
     id: msgId,
     user_id: userId,
@@ -443,7 +444,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
           await appendLog(userId, failedLog);
           triggerWebhooks(userId, 'email.failed', failedLog);
         } else {
-          const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+          const msgId = crypto.randomUUID();
           const smtpConfig = await loadSmtpConfig(userId);
           const fromSender = smtpConfig.from || 'Sumer Send <onboarding@sumersend.com>';
 

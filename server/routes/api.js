@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { 
   getWhatsAppStatus, 
   logoutWhatsApp 
@@ -942,11 +943,10 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
           const charged = await chargeWallet(userId, totalChargeAmount, `Bulk Welcome Emails charge for ${subsToWelcome.length} subscribers`);
           
           if (charged) {
-            // Build queue items
             const queueItems = subsToWelcome.map(sub => {
               const welcomeBody = welcomeBodyTemplate.replace(/{name}/g, sub.name || 'there').replace(/{email}/g, sub.email);
               return {
-                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                id: crypto.randomUUID(),
                 user_id: userId,
                 type: 'email',
                 recipient: sub.email,
@@ -1162,7 +1162,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
           await appendLog(userId, failedLog);
           triggerWebhooks(userId, 'email.failed', failedLog);
         } else {
-          const msgId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+          const msgId = crypto.randomUUID();
           const smtpConfig = await loadSmtpConfig(userId);
           
           const { error: queueError } = await supabase.from('message_queue').insert({

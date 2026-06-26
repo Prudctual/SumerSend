@@ -198,9 +198,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const list = mockNotifications[lang];
     const interval = setInterval(() => {
       setActiveNotifIndex(prevIndex => {
+        const nextNotif = list[prevIndex % list.length];
+        const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const updatedNotif = { ...nextNotif, uniqueId };
+
         setVisibleNotifs(prevNotifs => {
-          const nextNotif = list[prevIndex % list.length];
-          const updatedNotif = { ...nextNotif, uniqueId: Date.now() };
           const nextList = [...prevNotifs, updatedNotif];
           if (nextList.length > 3) {
             nextList.shift();
