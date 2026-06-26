@@ -6605,7 +6605,7 @@ textarea.auth-input {
 /* Infinite Scrolling Timeline with top & bottom fog overlays */
 .timeline-schedule-container {
   position: relative;
-  height: 250px; /* fixed height to show ~3 rows cleanly */
+  height: 180px; /* reduced height to hug content perfectly and eliminate empty space */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -7566,10 +7566,14 @@ textarea.auth-input {
 
 .dashboard-right-sidebar,
 [data-theme="dark"] .dashboard-right-sidebar {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-  border: 1px solid #7f1d1d !important;
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.78) 0%, rgba(69, 10, 10, 0.85) 100%) !important; /* Frosted Wine Glassmorphism */
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* Sleek light-catching glass border */
   color: #ffffff !important;
-  box-shadow: 0 10px 30px -5px rgba(220, 38, 38, 0.25), 0 8px 20px -6px rgba(153, 27, 27, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(153, 27, 27, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12) !important; /* Combined shadow + internal reflection */
+  padding: 20px 20px 16px 20px !important;
+  gap: 18px !important;
 }
 
 /* Profile Section overrides */
@@ -7672,7 +7676,7 @@ textarea.auth-input {
 }
 
 .dashboard-right-sidebar .timeline-pin-node {
-  border-color: #dc2626 !important;
+  border-color: #991b1b !important;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
 }
 
@@ -7712,10 +7716,10 @@ textarea.auth-input {
 
 /* Gradient Fog overlays matching the red background */
 .dashboard-right-sidebar .timeline-fog-overlay.top {
-  background: linear-gradient(to bottom, #dc2626 15%, rgba(220, 38, 38, 0) 100%) !important;
+  background: linear-gradient(to bottom, #991b1b 15%, rgba(153, 27, 27, 0) 100%) !important;
 }
 
 .dashboard-right-sidebar .timeline-fog-overlay.bottom {
-  background: linear-gradient(to top, #991b1b 15%, rgba(153, 27, 27, 0) 100%) !important;
+  background: linear-gradient(to top, #450a0a 15%, rgba(69, 10, 10, 0) 100%) !important;
 }
 
