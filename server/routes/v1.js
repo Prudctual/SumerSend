@@ -192,7 +192,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
     return res.status(500).json({ error: 'Failed to queue email.' });
   }
 
-  const useQueue = process.env.USE_QUEUE !== 'false';
+  const useQueue = process.env.USE_QUEUE !== 'false' && !process.env.VERCEL;
   if (!useQueue) {
     try {
       const smtpConfig = await loadSmtpConfig(userId);
