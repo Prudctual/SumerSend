@@ -17,12 +17,16 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://sumersend.com'];
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://sumersend.com', 'https://sumer-send.vercel.app'];
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    
+    const isVercel = origin.endsWith('.vercel.app');
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel || process.env.NODE_ENV !== 'production';
+
+    if (isAllowed) {
       return callback(null, true);
     } else {
       return callback(new Error('Not allowed by CORS'));
