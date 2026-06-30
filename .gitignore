@@ -31,4 +31,6 @@ server/.env
 # Scratch scripts
 scratch/
 
-
+# Agent internal state
+.agents/
+supabase/.temp/

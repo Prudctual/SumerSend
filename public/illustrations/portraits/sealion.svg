@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    @keyframes blink {
+      0%, 90%, 100% { transform: scaleY(1); }
+      95% { transform: scaleY(0.15); }
+    }
+    .eyes {
+      animation: blink 5s infinite;
+      transform-origin: 50% 50%;
+    }
+  </style>
+  <rect x="26" y="10" width="8" height="8" fill="#0f172a" />
+  <rect x="34" y="10" width="8" height="8" fill="#0f172a" />
+  <rect x="58" y="10" width="8" height="8" fill="#0f172a" />
+  <rect x="66" y="10" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="18" width="8" height="8" fill="#0f172a" />
+  <rect x="26" y="18" width="8" height="8" fill="#0d9488" />
+  <rect x="34" y="18" width="8" height="8" fill="#12cfbe" />
+  <rect x="42" y="18" width="8" height="8" fill="#0f172a" />
+  <rect x="50" y="18" width="8" height="8" fill="#0f172a" />
+  <rect x="58" y="18" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="18" width="8" height="8" fill="#12cfbe" />
+  <rect x="74" y="18" width="8" height="8" fill="#0f172a" />
+  <rect x="10" y="26" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="26" y="26" width="8" height="8" fill="#12cfbe" />
+  <rect x="34" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="50" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="58" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="26" width="8" height="8" fill="#12cfbe" />
+  <rect x="74" y="26" width="8" height="8" fill="#0d9488" />
+  <rect x="82" y="26" width="8" height="8" fill="#0f172a" />
+  <rect x="10" y="34" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="26" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="34" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="50" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="58" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="74" y="34" width="8" height="8" fill="#0d9488" />
+  <rect x="82" y="34" width="8" height="8" fill="#0f172a" />
+  <rect x="10" y="42" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="42" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="42" width="8" height="8" fill="#0d9488" />
+  <rect x="50" y="42" width="8" height="8" fill="#0d9488" />
+  <rect x="74" y="42" width="8" height="8" fill="#0d9488" />
+  <rect x="82" y="42" width="8" height="8" fill="#0f172a" />
+  <rect x="10" y="50" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="26" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="34" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="50" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="58" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="74" y="50" width="8" height="8" fill="#0d9488" />
+  <rect x="82" y="50" width="8" height="8" fill="#0f172a" />
+  <rect x="10" y="58" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="26" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="34" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="58" width="8" height="8" fill="#09675f" />
+  <rect x="50" y="58" width="8" height="8" fill="#09675f" />
+  <rect x="58" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="74" y="58" width="8" height="8" fill="#0d9488" />
+  <rect x="82" y="58" width="8" height="8" fill="#0f172a" />
+  <rect x="18" y="66" width="8" height="8" fill="#0f172a" />
+  <rect x="26" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="34" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="42" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="50" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="58" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="66" y="66" width="8" height="8" fill="#0d9488" />
+  <rect x="74" y="66" width="8" height="8" fill="#0f172a" />
+  <rect x="26" y="74" width="8" height="8" fill="#0f172a" />
+  <rect x="34" y="74" width="8" height="8" fill="#0f172a" />
+  <rect x="42" y="74" width="8" height="8" fill="#0f172a" />
+  <rect x="50" y="74" width="8" height="8" fill="#0f172a" />
+  <rect x="58" y="74" width="8" height="8" fill="#0f172a" />
+  <rect x="66" y="74" width="8" height="8" fill="#0f172a" />
+  <g class="eyes">
+  <rect x="26" y="42" width="8" height="8" fill="#ffffff" />
+  <rect x="34" y="42" width="8" height="8" fill="#0f172a" />
+  <rect x="58" y="42" width="8" height="8" fill="#ffffff" />
+  <rect x="66" y="42" width="8" height="8" fill="#0f172a" />
+  </g>
+</svg>

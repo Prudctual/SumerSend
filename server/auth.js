@@ -1,14 +1,24 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { connectToWhatsApp } from './whatsapp.js';
 import { 
   loadUsers, 
   getUserByEmail, 
   getUserById, 
-  addUser 
+  addUser,
+  saveApiKeys
 } from './db.js';
 
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error("FATAL ERROR: JWT_SECRET environment variable is not defined in production!");
+    process.exit(1);
+  } else {
+    console.warn("⚠️ WARNING: JWT_SECRET is not defined. Using insecure development fallback key.");
+  }
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'sumer-send-default-jwt-secret-key-12345';
 
 const authRouter = express.Router();
@@ -28,7 +38,7 @@ authRouter.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email is already registered.' });
     }
 
-    const userId = 'usr_' + Math.random().toString(36).substring(2, 15);
+    const userId = 'usr_' + crypto.randomUUID();
     const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = {
@@ -40,6 +50,23 @@ authRouter.post('/signup', async (req, res) => {
     };
 
     await addUser(newUser);
+
+    // Generate initial secure API key
+    const randomHex = crypto.randomBytes(32).toString('hex');
+    const generatedKey = `sm_live_${randomHex}`;
+    const hashedKey = crypto.createHash('sha256').update(generatedKey).digest('hex');
+    const maskedKey = `sm_live_${generatedKey.slice(8, 12)}...${generatedKey.slice(-6)}`;
+    const storedKeyValue = `${hashedKey}:${maskedKey}`;
+
+    const newKey = {
+      id: userId + '_key_1',
+      name: 'Main Application Key',
+      key: storedKeyValue,
+      scope: 'full',
+      createdAt: new Date().toISOString()
+    };
+
+    await saveApiKeys(userId, [newKey]);
     
     // Note: Database trigger automatically populates defaults (SMTP config, wallet balance, security config, etc.)
     // Initialize WhatsApp socket connection for the new user
@@ -47,6 +74,14 @@ authRouter.post('/signup', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set HTTP-Only Cookie
+    res.cookie('sumer_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
 
     res.status(201).json({
       token,
@@ -81,6 +116,14 @@ authRouter.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
+    // Set HTTP-Only Cookie
+    res.cookie('sumer_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.json({
       token,
       user: {
@@ -96,14 +139,37 @@ authRouter.post('/login', async (req, res) => {
   }
 });
 
+// Logout API
+authRouter.post('/logout', (req, res) => {
+  res.clearCookie('sumer_token');
+  res.json({ success: true, message: 'Logged out successfully.' });
+});
+
 // Auth middleware to secure routing
 export async function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Read token from Cookie first, then Authorization Header
+  const cookieToken = req.headers.cookie
+    ? req.headers.cookie.match(/(?:^|;)\s*sumer_token\s*=\s*([^;]+)/)?.[1]
+    : null;
+
+  let token = cookieToken;
+  let authHeader = req.headers.authorization;
+
+  if (!token) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'Unauthorized access. No session token provided.' });
   }
 
-  const token = authHeader.split(' ')[1];
+  // Build fallback authHeader if needed
+  if (!authHeader) {
+    authHeader = `Bearer ${token}`;
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await getUserById(decoded.userId);
@@ -119,25 +185,6 @@ export async function authMiddleware(req, res, next) {
     };
     next();
   } catch (err) {
-    // Fallback: If verification fails, try to verify token by calling the Render backend directly.
-    // This resolves token validation failures due to JWT_SECRET mismatch between Vercel and Render.
-    try {
-      const renderBackendUrl = 'https://sumersend-backend.onrender.com';
-      const verifyRes = await fetch(`${renderBackendUrl}/api/auth/me`, {
-        headers: {
-          'Authorization': authHeader
-        }
-      });
-      if (verifyRes.ok) {
-        const verifyData = await verifyRes.json();
-        if (verifyData && verifyData.user) {
-          req.user = verifyData.user;
-          return next();
-        }
-      }
-    } catch (fetchErr) {
-      console.error('Failed to verify token via Render fallback:', fetchErr);
-    }
     return res.status(401).json({ error: 'Session expired or token invalid.' });
   }
 }

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import { loadWebhooks, saveWebhookLogs, loadWebhookLogs } from './db.js';
 
 export function createTransporter(config) {
@@ -67,7 +68,7 @@ export async function triggerWebhooks(userId, eventType, payload) {
         
         const logs = await loadWebhookLogs(userId);
         logs.unshift({
-          id: 'whlog_' + Math.random().toString(36).substring(2, 15),
+          id: 'whlog_' + crypto.randomUUID(),
           webhookId: wh.id,
           url: wh.url,
           event: eventType,
@@ -144,4 +145,61 @@ export function compileWelcomeMessage(body, name, email) {
     .replace(/Valued Member/g, subNameEn)
     .replace(/\{\{email\}\}/g, email || '')
     .replace(/\{email\}/g, email || '');
+}
+
+export function htmlToText(html) {
+  if (!html) return '';
+  return html
+    .replace(/<style([\s\S]*?)<\/style>/gi, '')
+    .replace(/<script([\s\S]*?)<\/script>/gi, '')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+const ENCRYPTION_KEY = crypto.scryptSync(process.env.JWT_SECRET || 'sumer-send-default-jwt-secret-key-12345', 'salt', 32);
+
+export function encryptText(text) {
+  if (!text) return '';
+  try {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  } catch (err) {
+    console.error('Encryption failed:', err);
+    return text;
+  }
+}
+
+export function decryptText(encryptedText) {
+  if (!encryptedText) return '';
+  const parts = encryptedText.split(':');
+  if (parts.length !== 3) {
+    // Return as is for legacy plaintext passwords
+    return encryptedText;
+  }
+  try {
+    const [ivHex, authTagHex, encryptedHex] = parts;
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (err) {
+    console.error('Decryption failed, falling back to original:', err.message);
+    return encryptedText;
+  }
 }

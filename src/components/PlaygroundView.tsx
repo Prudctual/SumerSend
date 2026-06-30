@@ -8,6 +8,31 @@ import { ScrollReveal, BentoCard } from './LandingView';
 import { GuideBanner } from './GuideBanner';
 import { renderTemplateIcon } from './IconHelper';
 import { useSumer } from '../context/SumerContext';
+import { apiFetch, API_BASE } from '../config';
+
+const extractVerificationCode = (text: string): string | null => {
+  if (!text) return null;
+  
+  // Look for keywords indicating a code/coupon/OTP
+  const hasOtpKeyword = /otp|verification|تحقق|رمز|كود|coupon|الكوبون|تفعيل/i.test(text);
+  if (hasOtpKeyword) {
+    // Look for numbers of length 4 to 8
+    const match = text.match(/\b\d{4,8}\b/);
+    if (match) return match[0];
+    
+    // Look for typical coupon/promo code patterns (e.g. UPPERCASE letters + numbers)
+    const couponMatch = text.match(/\b[A-Z0-9-]{4,12}\b/);
+    if (couponMatch && /coupon|كوبون|خصم|كود/i.test(text)) {
+      return couponMatch[0];
+    }
+  }
+  
+  // Fallback to simple 4-6 digit code detection if keywords aren't there but there is a clear numeric code
+  const codeMatch = text.match(/\b\d{4,6}\b/);
+  if (codeMatch) return codeMatch[0];
+  
+  return null;
+};
 
 interface PlaygroundViewProps {
   lang: 'en' | 'ar';
@@ -17,14 +42,14 @@ interface PlaygroundViewProps {
   domains: any[];
   phoneNotifications: any[];
   setPhoneNotifications: React.Dispatch<React.SetStateAction<any[]>>;
-  emailBody: string;
-  setEmailBody: (body: string) => void;
-  emailSubject: string;
-  setEmailSubject: (sub: string) => void;
-  msgBody: string;
-  setMsgBody: (body: string) => void;
-  activeTab: 'email' | 'sms' | 'whatsapp';
-  setActiveTab: (tab: 'email' | 'sms' | 'whatsapp') => void;
+  emailBody?: string;
+  setEmailBody?: (body: string) => void;
+  emailSubject?: string;
+  setEmailSubject?: (sub: string) => void;
+  msgBody?: string;
+  setMsgBody?: (body: string) => void;
+  activeTab?: 'email' | 'sms' | 'whatsapp';
+  setActiveTab?: (tab: 'email' | 'sms' | 'whatsapp') => void;
   hideHeader?: boolean;
 }
 
@@ -37,17 +62,70 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   domains,
   phoneNotifications,
   setPhoneNotifications,
-  emailBody,
-  setEmailBody,
-  emailSubject,
-  setEmailSubject,
-  msgBody,
-  setMsgBody,
-  activeTab,
-  setActiveTab,
 }) => {
   const [isSending, setIsSending] = useState(false);
-  const { user } = useSumer();
+  const { 
+    user, 
+    behaviorProfile,
+    emailSubject: ctxEmailSubject,
+    setEmailSubject: ctxSetEmailSubject,
+    emailBody: ctxEmailBody,
+    setEmailBody: ctxSetEmailBody,
+    msgBody: ctxMsgBody,
+    setMsgBody: ctxSetMsgBody,
+    playgroundChannel: ctxActiveTab,
+    setPlaygroundChannel: ctxSetActiveTab
+  } = useSumer();
+  
+  // Local states for fast typing and rendering
+  const [emailSubject, setEmailSubject] = useState(ctxEmailSubject);
+  const [emailBody, setEmailBody] = useState(ctxEmailBody);
+  const [msgBody, setMsgBody] = useState(ctxMsgBody);
+  const [activeTab, setActiveTab] = useState(ctxActiveTab);
+  const [localCopiedId, setLocalCopiedId] = useState<any>(null);
+
+  // Sync from context when context changes (e.g. template clicked)
+  useEffect(() => {
+    setEmailSubject(ctxEmailSubject);
+  }, [ctxEmailSubject]);
+
+  useEffect(() => {
+    setEmailBody(ctxEmailBody);
+  }, [ctxEmailBody]);
+
+  useEffect(() => {
+    setMsgBody(ctxMsgBody);
+  }, [ctxMsgBody]);
+
+  useEffect(() => {
+    setActiveTab(ctxActiveTab);
+  }, [ctxActiveTab]);
+
+  // Sync back to context with debounce to prevent typing lag
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (emailSubject !== ctxEmailSubject) ctxSetEmailSubject(emailSubject);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [emailSubject, ctxEmailSubject, ctxSetEmailSubject]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (emailBody !== ctxEmailBody) ctxSetEmailBody(emailBody);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [emailBody, ctxEmailBody, ctxSetEmailBody]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (msgBody !== ctxMsgBody) ctxSetMsgBody(msgBody);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [msgBody, ctxMsgBody, ctxSetMsgBody]);
+
+  useEffect(() => {
+    if (activeTab !== ctxActiveTab) ctxSetActiveTab(activeTab);
+  }, [activeTab, ctxActiveTab, ctxSetActiveTab]);
   
   // Email Form State
   const [emailFrom, setEmailFrom] = useState('');
@@ -90,7 +168,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [customTemplates, setCustomTemplates] = useState<TemplateItem[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/templates/custom')
+    apiFetch('/api/templates/custom')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCustomTemplates(data);
@@ -190,7 +268,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
 
   // Set SMTP configuration username/sender as emailFrom, fallback to verified domains
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/smtp/config')
+    apiFetch('/api/smtp/config')
       .then(res => res.json())
       .then(data => {
         if (data.user) {
@@ -393,10 +471,10 @@ rs.whatsapp.send(
     setStatusMsg(null);
 
     const apiEndpoint = activeTab === 'email' 
-      ? 'http://127.0.0.1:3000/v1/emails' 
+      ? API_BASE + '/v1/emails' 
       : activeTab === 'sms' 
-        ? 'http://127.0.0.1:3000/v1/sms' 
-        : 'http://127.0.0.1:3000/v1/whatsapp';
+        ? API_BASE + '/v1/sms' 
+        : API_BASE + '/v1/whatsapp';
 
     const apiBody = activeTab === 'email' 
       ? { from: emailFrom, to: emailTo, subject: emailSubject, html: emailBody }
@@ -422,7 +500,7 @@ rs.whatsapp.send(
         setWalletBalance(prev => prev - cost);
 
         // Fetch latest logs from backend to ensure perfect sync
-        fetch('http://127.0.0.1:3000/api/logs')
+        apiFetch('/api/logs')
           .then(res => res.json())
           .then(serverLogs => {
             if (Array.isArray(serverLogs)) {
@@ -521,7 +599,7 @@ rs.whatsapp.send(
           });
 
           // Sync logs from server (since the failed dispatch was logged on the server)
-          fetch('http://127.0.0.1:3000/api/logs')
+          apiFetch('/api/logs')
             .then(res => res.json())
             .then(serverLogs => {
               if (Array.isArray(serverLogs)) {
@@ -593,6 +671,55 @@ rs.whatsapp.send(
                 <span>{t.waTab}</span>
               </button>
             </div>
+
+            {/* Contextual Intelligence Insight */}
+            {behaviorProfile?.insights.filter(i => i.section === 'playground' || i.section === 'developer').map(insight => {
+              const isWeakness = insight.type === 'weakness';
+              const isPrediction = insight.type === 'prediction';
+              const accentColor = isWeakness ? 'var(--danger-color)' : isPrediction ? '#a855f7' : 'var(--success-color)';
+              const badgeBg = isWeakness ? 'rgba(239, 68, 68, 0.04)' : isPrediction ? 'rgba(168, 85, 247, 0.04)' : 'rgba(16, 185, 129, 0.04)';
+              const badgeBorder = isWeakness ? 'rgba(239, 68, 68, 0.15)' : isPrediction ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+
+              return (
+                <div key={insight.id} className="context-insight-banner" style={{
+                  marginBottom: '20px',
+                  padding: '16px 20px',
+                  background: 'var(--panel-muted)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '11.5px',
+                  textAlign: 'start'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      fontSize: '8px',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '99px',
+                      textTransform: 'uppercase',
+                      border: `1px solid ${badgeBorder}`,
+                      backgroundColor: badgeBg,
+                      color: accentColor,
+                      letterSpacing: '0.3px'
+                    }}>
+                      {isWeakness ? (lang === 'ar' ? 'تنبيه مطلوب' : 'Action Required') : isPrediction ? (lang === 'ar' ? 'تحليل القنوات' : 'Diversification') : (lang === 'ar' ? 'ميزة نشطة' : 'Strength')}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '2px' }}>
+                      {lang === 'ar' ? insight.titleAr : insight.titleEn}
+                    </strong>
+                    <span style={{ color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      {lang === 'ar' ? insight.descAr : insight.descEn}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
             {statusMsg && (
               <div style={{ 
                 padding: '12px 16px', 
@@ -1179,7 +1306,76 @@ rs.whatsapp.send(
                                       background: rgba(0,0,0,0.15);
                                       border-radius: 2px;
                                     }
+                                    /* Smart OTP hover & active styles */
+                                    .otp-code-box {
+                                      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                                      cursor: pointer !important;
+                                    }
+                                    .otp-code-box:hover {
+                                      background-color: #e4e4e7 !important;
+                                      border-color: #a1a1aa !important;
+                                      transform: scale(1.04);
+                                      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+                                    }
+                                    .otp-code-box:active {
+                                      transform: scale(0.97);
+                                    }
                                   </style>
+                                  <script>
+                                    document.addEventListener('DOMContentLoaded', () => {
+                                      const otpBox = document.querySelector('.otp-code-box');
+                                      if (otpBox) {
+                                        otpBox.addEventListener('click', () => {
+                                          const codeText = otpBox.innerText.trim();
+                                          navigator.clipboard.writeText(codeText).then(() => {
+                                            showTooltip(otpBox, '${lang === 'ar' ? 'تم نسخ الرمز! 📋' : 'Code copied! 📋'}');
+                                          }).catch(err => {
+                                            console.error('Could not copy OTP: ', err);
+                                          });
+                                        });
+                                      }
+                                    });
+
+                                    function showTooltip(element, message) {
+                                      let tooltip = document.getElementById('otp-success-tooltip');
+                                      if (!tooltip) {
+                                        tooltip = document.createElement('div');
+                                        tooltip.id = 'otp-success-tooltip';
+                                        tooltip.style.position = 'fixed';
+                                        tooltip.style.bottom = '20px';
+                                        tooltip.style.left = '50%';
+                                        tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+                                        tooltip.style.backgroundColor = '#09090b';
+                                        tooltip.style.color = '#ffffff';
+                                        tooltip.style.padding = '8px 16px';
+                                        tooltip.style.borderRadius = '30px';
+                                        tooltip.style.fontSize = '11.5px';
+                                        tooltip.style.fontWeight = '600';
+                                        tooltip.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                                        tooltip.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                                        tooltip.style.zIndex = '99999';
+                                        tooltip.style.opacity = '0';
+                                        tooltip.style.fontFamily = "'Cairo', -apple-system, sans-serif";
+                                        tooltip.style.display = 'flex';
+                                        tooltip.style.alignItems = 'center';
+                                        tooltip.style.gap = '6px';
+                                        tooltip.style.whiteSpace = 'nowrap';
+                                        tooltip.innerHTML = '<span style="color:#22c55e;font-weight:bold;">✓</span> ' + message;
+                                        document.body.appendChild(tooltip);
+                                      }
+                                      
+                                      // Force reflow
+                                      tooltip.offsetHeight;
+                                      
+                                      tooltip.style.opacity = '1';
+                                      tooltip.style.transform = 'translateX(-50%) translateY(0)';
+                                      
+                                      setTimeout(() => {
+                                        tooltip.style.opacity = '0';
+                                        tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+                                      }, 2200);
+                                    }
+                                  </script>
                                 </head>
                                 <body>
                                   ${activeNotificationDetail.rawBody}
@@ -1263,6 +1459,53 @@ rs.whatsapp.send(
                         }}>
                           {activeNotificationDetail.body}
                         </div>
+
+                        {extractVerificationCode(activeNotificationDetail.body) && (
+                          <div style={{
+                            alignSelf: 'flex-start',
+                            marginLeft: '8px',
+                            marginTop: '-4px',
+                            animation: 'slideIn 0.2s ease-out'
+                          }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const code = extractVerificationCode(activeNotificationDetail.body)!;
+                                navigator.clipboard.writeText(code);
+                                setLocalCopiedId('sms_detail');
+                                setTimeout(() => setLocalCopiedId(null), 2000);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '11px',
+                                padding: '5px 12px',
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #d1d1d6',
+                                borderRadius: '18px',
+                                color: '#007aff',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                transition: 'all 0.2s',
+                                outline: 'none'
+                              }}
+                            >
+                              {localCopiedId === 'sms_detail' ? (
+                                <>
+                                  <Check size={11} color="#34c759" />
+                                  <span>{lang === 'ar' ? 'تم نسخ الرمز' : 'Code Copied'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={11} />
+                                  <span>{lang === 'ar' ? `نسخ رمز التحقق: ${extractVerificationCode(activeNotificationDetail.body)}` : `Copy Verification Code: ${extractVerificationCode(activeNotificationDetail.body)}`}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
                       
                       <div style={{ padding: '8px 12px 25px 12px', borderTop: '1px solid #eaeaea', backgroundColor: '#f8f8f8', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1396,6 +1639,54 @@ rs.whatsapp.send(
                           </div>
                         </div>
 
+                        {extractVerificationCode(activeNotificationDetail.body) && (
+                          <div style={{
+                            alignSelf: 'flex-start',
+                            marginLeft: '4px',
+                            marginTop: '2px',
+                            marginBottom: '2px',
+                            animation: 'slideIn 0.2s ease-out'
+                          }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const code = extractVerificationCode(activeNotificationDetail.body)!;
+                                navigator.clipboard.writeText(code);
+                                setLocalCopiedId('wa_detail');
+                                setTimeout(() => setLocalCopiedId(null), 2000);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '11px',
+                                padding: '5px 12px',
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '18px',
+                                color: '#128c7e',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                boxShadow: '0 1.5px 3px rgba(0,0,0,0.06)',
+                                transition: 'all 0.2s',
+                                outline: 'none'
+                              }}
+                            >
+                              {localCopiedId === 'wa_detail' ? (
+                                <>
+                                  <Check size={11} color="#25d366" />
+                                  <span>{lang === 'ar' ? 'تم نسخ الرمز' : 'Code Copied'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={11} />
+                                  <span>{lang === 'ar' ? `نسخ رمز التحقق: ${extractVerificationCode(activeNotificationDetail.body)}` : `Copy Verification Code: ${extractVerificationCode(activeNotificationDetail.body)}`}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
                         <div style={{
                           alignSelf: 'flex-start',
                           width: '85%',
@@ -1452,54 +1743,99 @@ rs.whatsapp.send(
                         </p>
                       </div>
                     ) : (
-                      phoneNotifications.map((noti) => (
-                        <div 
-                          key={noti.id} 
-                          className="phone-notification"
-                          onClick={() => {
-                            setNotificationDetailWithTransition(noti);
-                          }}
-                          style={{ 
-                            cursor: 'pointer',
-                            transition: 'transform 0.1s ease',
-                          }}
-                        >
-                          <div className="noti-header">
-                            <span className="noti-app">
-                              <span className={`noti-app-icon ${noti.type}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {noti.type === 'email' && <Mail size={9} />}
-                                {noti.type === 'sms' && <MessageSquare size={9} />}
-                                {noti.type === 'whatsapp' && <Phone size={9} />}
+                      phoneNotifications.map((noti) => {
+                        const code = extractVerificationCode(noti.body || noti.rawBody || '');
+                        return (
+                          <div 
+                            key={noti.id} 
+                            className="phone-notification"
+                            onClick={() => {
+                              setNotificationDetailWithTransition(noti);
+                            }}
+                            style={{ 
+                              cursor: 'pointer',
+                              transition: 'transform 0.1s ease',
+                            }}
+                          >
+                            <div className="noti-header">
+                              <span className="noti-app">
+                                <span className={`noti-app-icon ${noti.type}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {noti.type === 'email' && <Mail size={9} />}
+                                  {noti.type === 'sms' && <MessageSquare size={9} />}
+                                  {noti.type === 'whatsapp' && <Phone size={9} />}
+                                </span>
+                                <span>{noti.type.toUpperCase()}</span>
                               </span>
-                              <span>{noti.type.toUpperCase()}</span>
-                            </span>
-                            <span>{noti.time}</span>
+                              <span>{noti.time}</span>
+                            </div>
+                            <div className="noti-title">{noti.title}</div>
+                            <div className="noti-body">{noti.body}</div>
+
+                            {code && (
+                              <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-start' }} onClick={e => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(code);
+                                    setLocalCopiedId(noti.id);
+                                    setTimeout(() => setLocalCopiedId(null), 2000);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '10px',
+                                    padding: '3px 10px',
+                                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                                    border: '1px solid rgba(37, 99, 235, 0.15)',
+                                    borderRadius: '99px',
+                                    color: '#2563eb',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    outline: 'none'
+                                  }}
+                                >
+                                  {localCopiedId === noti.id ? (
+                                    <>
+                                      <Check size={9} color="#10b981" />
+                                      <span>{lang === 'ar' ? 'تم نسخ الرمز!' : 'Copied!'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={9} />
+                                      <span>{lang === 'ar' ? `نسخ الرمز: ${code}` : `Copy Code: ${code}`}</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+
+                            <div style={{ 
+                              fontSize: '10px', 
+                              color: 'var(--accent-color)', 
+                              marginTop: '6px', 
+                              fontWeight: 500,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              {noti.type === 'email' && <Mail size={10} />}
+                              {noti.type === 'sms' && <MessageSquare size={10} />}
+                              {noti.type === 'whatsapp' && <Phone size={10} />}
+                              <span>
+                                {noti.type === 'email' 
+                                  ? (lang === 'ar' ? 'اضغط لعرض البريد بالكامل' : 'Click to read full email')
+                                  : noti.type === 'sms'
+                                    ? (lang === 'ar' ? 'اضغط لفتح الرسالة' : 'Click to view message')
+                                    : (lang === 'ar' ? 'اضغط لفتح محادثة الواتساب' : 'Click to open WhatsApp chat')
+                                }
+                              </span>
+                            </div>
                           </div>
-                          <div className="noti-title">{noti.title}</div>
-                          <div className="noti-body">{noti.body}</div>
-                          <div style={{ 
-                            fontSize: '10px', 
-                            color: 'var(--accent-color)', 
-                            marginTop: '6px', 
-                            fontWeight: 500,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            {noti.type === 'email' && <Mail size={10} />}
-                            {noti.type === 'sms' && <MessageSquare size={10} />}
-                            {noti.type === 'whatsapp' && <Phone size={10} />}
-                            <span>
-                              {noti.type === 'email' 
-                                ? (lang === 'ar' ? 'اضغط لعرض البريد بالكامل' : 'Click to read full email')
-                                : noti.type === 'sms'
-                                  ? (lang === 'ar' ? 'اضغط لفتح الرسالة' : 'Click to view message')
-                                  : (lang === 'ar' ? 'اضغط لفتح محادثة الواتساب' : 'Click to open WhatsApp chat')
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </>

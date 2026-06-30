@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Globe, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { backgroundData } from '../data/background_data';
+import { API_BASE } from '../config';
 
 interface AuthViewProps {
   lang: 'en' | 'ar';
@@ -30,21 +32,21 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
   const t = {
     en: {
-      brand: 'Sumer Send',
-      tagline: 'Transactional Messaging Infrastructure',
+      brand: 'sumer send',
+      tagline: 'Transactional messaging infrastructure',
       signInTitle: 'Sign in to Sumer Send',
       signUpTitle: 'Create your developer account',
-      signInDesc: 'Enter your credentials to access your dispatch dashboard',
-      signUpDesc: 'Start sending SMS, WhatsApp, and Emails in minutes',
+      signInDesc: 'People and agents sending messages in the same rooms.',
+      signUpDesc: 'Start sending SMS, WhatsApp, and Emails in minutes.',
       fullName: 'Full Name',
       fullNamePlaceholder: 'Jasim Kareem',
-      emailAddress: 'Email Address',
-      emailPlaceholder: 'name@company.com',
+      emailAddress: 'Email',
+      emailPlaceholder: 'you@company.com',
       password: 'Password',
       passwordPlaceholder: '••••••••',
-      signInBtn: 'Sign In',
+      signInBtn: 'Continue with email',
       signUpBtn: 'Create Account',
-      loadingSignIn: 'Signing in...',
+      loadingSignIn: 'Continuing...',
       loadingSignUp: 'Creating account...',
       noAccount: "Don't have an account?",
       haveAccount: 'Already have an account?',
@@ -54,25 +56,27 @@ export const AuthView: React.FC<AuthViewProps> = ({
       invalidEmail: 'Please enter a valid email address.',
       passwordLength: 'Password must be at least 6 characters.',
       nameRequired: 'Name is required.',
-      or: 'or'
+      or: 'or',
+      githubLogin: 'Continue with GitHub',
+      oauthNotice: 'OAuth is disabled. Please sign in using your email and password.'
     },
     ar: {
       brand: 'سومر سيند',
       tagline: 'البنية التحتية لإرسال الإشعارات والمعاملات',
       signInTitle: 'تسجيل الدخول إلى سومر سيند',
       signUpTitle: 'إنشاء حساب مطور جديد',
-      signInDesc: 'أدخل بيانات الاعتماد للوصول إلى لوحة التحكم والإرسال الخاصة بك',
-      signUpDesc: 'ابدأ بإرسال رسائل الـ SMS، الواتساب، والبريد الإلكتروني خلال دقائق',
+      signInDesc: 'الأشخاص والعملاء البرمجيون يرسلون الرسائل في نفس الغرف.',
+      signUpDesc: 'ابدأ بإرسال رسائل الـ SMS، الواتساب، والبريد الإلكتروني خلال دقائق.',
       fullName: 'الاسم الكامل',
       fullNamePlaceholder: 'جاسم كريم',
       emailAddress: 'البريد الإلكتروني',
-      emailPlaceholder: 'name@company.com',
+      emailPlaceholder: 'you@company.com',
       password: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
-      signInBtn: 'تسجيل الدخول',
+      signInBtn: 'المتابعة بالبريد الإلكتروني',
       signUpBtn: 'إنشاء حساب جديد',
-      loadingSignIn: 'جاري التحقق من البيانات...',
-      loadingSignUp: 'جاري تهيئة بيئة المطور...',
+      loadingSignIn: 'جاري تسجيل الدخول...',
+      loadingSignUp: 'جاري إنشاء الحساب...',
       noAccount: 'ليس لديك حساب مطور؟',
       haveAccount: 'لديك حساب مطور بالفعل؟',
       signUpLink: 'سجل مجاناً الآن',
@@ -81,7 +85,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
       invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
       passwordLength: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.',
       nameRequired: 'الاسم الكامل مطلوب.',
-      or: 'أو'
+      or: 'أو',
+      githubLogin: 'المتابعة باستخدام GitHub',
+      oauthNotice: 'تسجيل الدخول عبر الحسابات الخارجية غير مفعل حالياً. يرجى استخدام البريد الإلكتروني وكلمة المرور.'
     }
   }[lang];
 
@@ -114,7 +120,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
       : { email, password, name };
 
     try {
-      const response = await fetch(`http://127.0.0.1:3000${endpoint}`, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -133,13 +139,16 @@ export const AuthView: React.FC<AuthViewProps> = ({
         throw new Error(data.error || (lang === 'ar' ? 'فشلت العملية. يرجى المحاولة مرة أخرى.' : 'Operation failed. Please try again.'));
       }
       
-      // Notify parent app of success
       onAuthSuccess(data.token, data.user);
     } catch (err: any) {
       setErrorMsg(err.message || 'Network error, please ensure server is running.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOAuthClick = () => {
+    setErrorMsg(t.oauthNotice);
   };
 
   const toggleMode = () => {
@@ -157,6 +166,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
       backgroundColor: 'var(--bg-color)',
       padding: '24px',
       position: 'relative',
+      overflow: 'hidden',
       fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'var(--font-family)',
       transition: 'background-color 0.3s ease'
     }}>
@@ -171,6 +181,39 @@ export const AuthView: React.FC<AuthViewProps> = ({
         pointerEvents: 'none'
       }} />
 
+      {/* Behind Card Crowd (z_0) */}
+      <div style={{
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        width: 0,
+        height: 0,
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}>
+        {backgroundData.z_0.map((img: any, i: number) => (
+          <img
+            key={`bg-z0-${i}`}
+            src={`${img.src}?v=4`}
+            alt=""
+            className="hilos-crowd-img"
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              left: img.style.left,
+              top: img.style.top,
+              width: img.style.width || 'var(--login-crowd-size)',
+              transform: img.style.transform,
+              transformOrigin: img.style['transform-origin'] || '50% 72%',
+              transition: img.style.transition || 'transform 90ms cubic-bezier(0.2, 0, 0, 1)',
+              zIndex: parseInt(img.style['z-index'] || '0'),
+              animationDelay: `${(i * -0.17).toFixed(2)}s`
+            }}
+          />
+        ))}
+      </div>
+
       {/* Top controls (Back, Language, Theme) */}
       <div style={{
         position: 'absolute',
@@ -184,7 +227,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
       }}>
         <button 
           onClick={onBackToLanding}
-          className="auth-back-btn"
+          className="hilos-secondary-btn"
+          style={{ width: 'auto', height: '32px', padding: '0 12px', fontSize: '13px' }}
         >
           {t.backToHome}
         </button>
@@ -193,103 +237,94 @@ export const AuthView: React.FC<AuthViewProps> = ({
           {/* Language Switcher */}
           <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="auth-nav-btn"
+            className="hilos-secondary-btn"
+            style={{ width: 'auto', height: '32px', padding: '0 12px', fontSize: '13px', gap: '6px' }}
           >
-            <Globe size={15} />
+            <Globe size={14} />
             <span>{lang === 'en' ? 'العربية' : 'English'}</span>
           </button>
 
           {/* Theme switcher */}
           <button
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            className="auth-nav-btn"
+            className="hilos-secondary-btn"
+            style={{ width: 'auto', height: '32px', padding: '0 10px', fontSize: '13px' }}
           >
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
       </div>
 
-      {/* Card wrapper */}
-      <div style={{
+      {/* Brutalist Form Card matching hilos.sh */}
+      <div className="hilos-card" style={{
         width: '100%',
-        maxWidth: '430px',
-        background: 'var(--panel-bg)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '24px',
-        padding: '36px 32px',
-        boxShadow: theme === 'dark' 
-          ? '0 1px 1px rgba(0,0,0,0.02), 0 8px 16px -4px rgba(0,0,0,0.3), 0 24px 32px -8px rgba(0,0,0,0.4)' 
-          : '0 1px 1px rgba(0,0,0,0.02), 0 8px 16px -4px rgba(0,0,0,0.04), 0 24px 32px -8px rgba(0,0,0,0.06)',
+        maxWidth: '300px',
         zIndex: 1,
         transition: 'all 0.3s ease'
       }}>
         
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            backgroundColor: 'var(--text-primary)',
-            color: 'var(--panel-bg)',
-            marginBottom: '16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--panel-bg)' }}>
-              <path d="M12 3L3 12H7V20H17V12H21L12 3Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 8V16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M9 11L12 8L15 11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+        {/* Header containing Sumer Send Logo */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '12px' }}>
+          <img 
+            src="/artboard2.svg" 
+            alt="Sumer Send Logo" 
+            style={{
+              width: '48px',
+              height: '48px',
+              objectFit: 'contain',
+              marginBottom: '8px',
+              filter: 'drop-shadow(0 4px 12px rgba(114, 38, 255, 0.2))'
+            }}
+          />
           <h1 style={{
             fontSize: '22px',
-            fontWeight: '700',
+            fontWeight: '600',
             color: 'var(--text-primary)',
-            margin: '0 0 6px 0',
-            letterSpacing: '-0.3px'
+            margin: '0 0 4px 0',
+            letterSpacing: '-0.8px',
+            lineHeight: '1'
           }}>
-            {mode === 'signin' ? t.signInTitle : t.signUpTitle}
+            {t.brand}
           </h1>
           <p style={{
-            fontSize: '13px',
-            color: 'var(--text-muted)',
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
             margin: 0,
-            lineHeight: '1.5'
+            lineHeight: '1.5',
+            maxWidth: '240px'
           }}>
             {mode === 'signin' ? t.signInDesc : t.signUpDesc}
           </p>
         </div>
 
-        {/* Error Message */}
+        {/* Error Message styled brutalist */}
         {errorMsg && (
           <div style={{
             backgroundColor: 'var(--danger-bg)',
-            border: '1px solid var(--danger-color)',
+            border: '2px solid var(--danger-color)',
             color: 'var(--danger-text)',
             borderRadius: '8px',
-            padding: '10px 14px',
-            fontSize: '13px',
-            marginBottom: '20px',
-            textAlign: lang === 'ar' ? 'right' : 'left'
+            padding: '10px 12px',
+            fontSize: '12px',
+            fontWeight: '500',
+            marginBottom: '14px',
+            textAlign: lang === 'ar' ? 'right' : 'left',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.05)'
           }}>
             {errorMsg}
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Name Field (Sign Up Only) */}
+        {/* Auth Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          
+          {/* Full Name Field (Sign Up Only) */}
           {mode === 'signup' && (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label htmlFor="name-input" style={{
-                display: 'block',
                 fontSize: '12px',
                 fontWeight: '600',
                 color: 'var(--text-secondary)',
-                marginBottom: '6px',
                 textAlign: lang === 'ar' ? 'right' : 'left'
               }}>
                 {t.fullName}
@@ -302,32 +337,21 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={isLoading}
-                  className="auth-input"
+                  className="hilos-input"
                   style={{
                     textAlign: lang === 'ar' ? 'right' : 'left'
                   }}
                 />
-                <User size={16} style={{
-                  position: 'absolute',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  left: lang === 'ar' ? 'auto' : '12px',
-                  right: lang === 'ar' ? '12px' : 'auto',
-                  color: 'var(--text-muted)',
-                  pointerEvents: 'none'
-                }} />
               </div>
             </div>
           )}
 
-          {/* Email Field */}
-          <div>
+          {/* Email Address Field */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label htmlFor="email-input" style={{
-              display: 'block',
               fontSize: '12px',
               fontWeight: '600',
               color: 'var(--text-secondary)',
-              marginBottom: '6px',
               textAlign: lang === 'ar' ? 'right' : 'left'
             }}>
               {t.emailAddress}
@@ -341,39 +365,24 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 dir="ltr"
-                className="auth-input auth-input-mono"
+                className="hilos-input"
                 style={{
                   textAlign: 'left'
                 }}
               />
-              <Mail size={16} style={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                left: lang === 'ar' ? 'auto' : '12px',
-                right: lang === 'ar' ? '12px' : 'auto',
-                color: 'var(--text-muted)',
-                pointerEvents: 'none'
-              }} />
             </div>
           </div>
 
           {/* Password Field */}
-          <div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '6px'
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label htmlFor="password-input" style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              textAlign: lang === 'ar' ? 'right' : 'left'
             }}>
-              <label htmlFor="password-input" style={{
-                fontSize: '12px',
-                fontWeight: '600',
-                color: 'var(--text-secondary)'
-              }}>
-                {t.password}
-              </label>
-            </div>
+              {t.password}
+            </label>
             <div style={{ position: 'relative' }}>
               <input
                 id="password-input"
@@ -383,21 +392,15 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 dir="ltr"
-                className="auth-input auth-input-mono"
+                className="hilos-input"
                 style={{
-                  textAlign: 'left'
+                  textAlign: 'left',
+                  paddingRight: lang === 'ar' ? '12px' : '40px',
+                  paddingLeft: lang === 'ar' ? '40px' : '12px'
                 }}
               />
-              <Lock size={16} style={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                left: lang === 'ar' ? 'auto' : '12px',
-                right: lang === 'ar' ? '12px' : 'auto',
-                color: 'var(--text-muted)',
-                pointerEvents: 'none'
-              }} />
               
+              {/* Show/Hide Password Toggle */}
               <button
                 type="button"
                 onClick={() => setShowPassword(prev => !prev)}
@@ -421,11 +424,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* Email Continue Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="auth-submit-btn"
+            className="hilos-primary-btn"
+            style={{ marginTop: '4px' }}
           >
             {isLoading ? (
               <>
@@ -444,13 +448,38 @@ export const AuthView: React.FC<AuthViewProps> = ({
           </button>
         </form>
 
-        {/* Separator / Switch Mode */}
+        {/* Separator block matching Hilos */}
         <div style={{
-          marginTop: '28px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          margin: '12px 0'
+        }}>
+          <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-color)' }}></div>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.or}</span>
+          <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-color)' }}></div>
+        </div>
+
+        {/* GitHub OAuth secondary button */}
+        <button
+          type="button"
+          onClick={handleOAuthClick}
+          className="hilos-secondary-btn"
+          style={{ width: '100%' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" style={{ marginRight: lang === 'ar' ? '0' : '4px', marginLeft: lang === 'ar' ? '4px' : '0' }}>
+            <path d="M216,104v8a56.06,56.06,0,0,1-48.44,55.47A39.8,39.8,0,0,1,176,192v40a8,8,0,0,1-8,8H104a8,8,0,0,1-8-8V216H72a40,40,0,0,1-40-40A24,24,0,0,0,8,152a8,8,0,0,1,0-16,40,40,0,0,1,40,40,24,24,0,0,0,24,24H96v-8a39.8,39.8,0,0,1,8.44-24.53A56.06,56.06,0,0,1,56,112v-8a58.14,58.14,0,0,1,7.69-28.32A59.78,59.78,0,0,1,69.07,28,8,8,0,0,1,76,24a59.75,59.75,0,0,1,48,24h24a59.75,59.75,0,0,1,48-24,8,8,0,0,1,6.93,4,59.74,59.74,0,0,1,5.37,47.68A58,58,0,0,1,216,104Z"></path>
+          </svg>
+          <span>{t.githubLogin}</span>
+        </button>
+
+        {/* Switch mode trigger link */}
+        <div style={{
+          marginTop: '16px',
           borderTop: '1px solid var(--border-color)',
-          paddingTop: '20px',
+          paddingTop: '12px',
           textAlign: 'center',
-          fontSize: '13px',
+          fontSize: '12.5px',
           color: 'var(--text-secondary)',
           display: 'flex',
           justifyContent: 'center',
@@ -467,7 +496,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--accent-color)',
+              color: 'var(--accent-text)',
               fontWeight: '600',
               padding: 0,
               fontSize: '13px'
@@ -477,6 +506,39 @@ export const AuthView: React.FC<AuthViewProps> = ({
           </button>
         </div>
 
+      </div>
+
+      {/* In front of Card Crowd (z_20) */}
+      <div style={{
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        width: 0,
+        height: 0,
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}>
+        {backgroundData.z_20.map((img: any, i: number) => (
+          <img
+            key={`bg-z20-${i}`}
+            src={`${img.src}?v=4`}
+            alt=""
+            className="hilos-crowd-img"
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              left: img.style.left,
+              top: img.style.top,
+              width: img.style.width || 'var(--login-crowd-size)',
+              transform: img.style.transform,
+              transformOrigin: img.style['transform-origin'] || '50% 72%',
+              transition: img.style.transition || 'transform 90ms cubic-bezier(0.2, 0, 0, 1)',
+              zIndex: parseInt(img.style['z-index'] || '10'),
+              animationDelay: `${((i + 12) * -0.19).toFixed(2)}s`
+            }}
+          />
+        ))}
       </div>
     </div>
   );

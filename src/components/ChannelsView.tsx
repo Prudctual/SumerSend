@@ -5,22 +5,23 @@ import { ScrollReveal } from './LandingView';
 import { 
   MessageSquare, 
   Mail, 
-  Globe 
+  Globe,
+  Phone
 } from 'lucide-react';
 
 interface ChannelsViewProps {
   lang: 'en' | 'ar';
   theme: 'light' | 'dark';
   domains: any[];
-  setDomains: any;
-  setEmailBody: any;
-  setEmailSubject: any;
-  setMsgBody: any;
-  setPlaygroundChannel: any;
+  setDomains?: any;
+  setEmailBody?: any;
+  setEmailSubject?: any;
+  setMsgBody?: any;
+  setPlaygroundChannel?: any;
   setCurrentTab: any;
   setLogs: any;
   setPhoneNotifications: any;
-  initialTab?: 'whatsapp' | 'smtp' | 'domains';
+  initialTab?: 'whatsapp' | 'sms' | 'smtp' | 'domains';
 }
 
 export const ChannelsView: React.FC<ChannelsViewProps> = (props) => {
@@ -28,7 +29,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = (props) => {
 
   const getFlatTabFromInitial = (tab?: string) => {
     if (!tab) return 'whatsapp';
-    if (['whatsapp', 'smtp', 'domains'].includes(tab)) return tab;
+    if (['whatsapp', 'sms', 'smtp', 'domains'].includes(tab)) return tab;
     return 'whatsapp';
   };
 
@@ -47,6 +48,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = (props) => {
 
   const tabs = [
     { id: 'whatsapp', labelAr: 'ربط بوابة WhatsApp', labelEn: 'WhatsApp Sync', icon: MessageSquare },
+    { id: 'sms', labelAr: 'بوابة الـ SMS (httpSMS)', labelEn: 'SMS Gateway', icon: Phone },
     { id: 'smtp', labelAr: 'خادم الـ SMTP الخاص', labelEn: 'SMTP Server', icon: Mail },
     { id: 'domains', labelAr: 'توثيق النطاقات والـ DNS', labelEn: 'Verified Domains', icon: Globe },
   ];
@@ -58,6 +60,12 @@ export const ChannelsView: React.FC<ChannelsViewProps> = (props) => {
         titleEn: 'WhatsApp Gateway Sync',
         descAr: 'قم بمسح رمز الـ QR لربط حساب واتساب وتفعيل الإرسال الفوري لعملائك.',
         descEn: 'Scan the QR code to sync your WhatsApp device and initiate instant dispatches.'
+      },
+      sms: {
+        titleAr: 'تهيئة بوابة الـ SMS (httpSMS)',
+        titleEn: 'SMS Gateway Configuration',
+        descAr: 'قم بتهيئة بيانات بوابة httpSMS لإرسال رسائل نصية قصيرة (SMS) باستخدام هاتفك الأندرويد.',
+        descEn: 'Configure your httpSMS credentials to dispatch local SMS messages using your own Android phone.'
       },
       smtp: {
         titleAr: 'إعدادات خادم الـ SMTP الخاص',
@@ -134,6 +142,20 @@ export const ChannelsView: React.FC<ChannelsViewProps> = (props) => {
             setLogs={props.setLogs}
             setPhoneNotifications={props.setPhoneNotifications}
             controlledSubTab="whatsapp"
+          />
+        )}
+        {activeTab === 'sms' && (
+          <SettingsView
+            lang={props.lang}
+            theme={props.theme}
+            setEmailBody={props.setEmailBody}
+            setEmailSubject={props.setEmailSubject}
+            setMsgBody={props.setMsgBody}
+            setPlaygroundChannel={props.setPlaygroundChannel}
+            setCurrentTab={props.setCurrentTab}
+            setLogs={props.setLogs}
+            setPhoneNotifications={props.setPhoneNotifications}
+            controlledSubTab="sms"
           />
         )}
         {activeTab === 'smtp' && (

@@ -30,37 +30,38 @@ export const webhookQueue = new Queue('webhookQueue', {
 export async function calculateWhatsAppDelay(userId, isOtp = false) {
   const now = Date.now();
   const redisKey = `wa_queue:next_available_time:${userId}`;
-  
+  const jitter = Math.floor(Math.random() * 5001) + 5000; // 5000ms to 10000ms
+
+  const luaScript = `
+    local next_time = tonumber(redis.call('GET', KEYS[1])) or 0
+    local now = tonumber(ARGV[1])
+    local jitter = tonumber(ARGV[2])
+    local is_otp = ARGV[3] == 'true'
+
+    if is_otp then
+      local new_next = math.max(next_time, now) + jitter
+      redis.call('SET', KEYS[1], tostring(new_next))
+      return 0
+    end
+
+    if next_time < now then
+      local new_next = now + jitter
+      redis.call('SET', KEYS[1], tostring(new_next))
+      return 0
+    else
+      local delay = next_time - now
+      local new_next = next_time + jitter
+      redis.call('SET', KEYS[1], tostring(new_next))
+      return delay
+    end
+  `;
+
   try {
-    const val = await redisClient.get(redisKey);
-    let nextAvailableTime = val ? parseInt(val, 10) : 0;
-    
-    // Random jitter between 5 to 10 seconds
-    const jitter = Math.floor(Math.random() * 5001) + 5000; // 5000ms to 10000ms
-    
-    if (isOtp) {
-      // OTPs are sent immediately
-      // Push the next available slot forward so campaign messages respect the gap
-      const newNextAvailableTime = Math.max(nextAvailableTime, now) + jitter;
-      await redisClient.set(redisKey, newNextAvailableTime.toString());
-      console.log(`[Queue] OTP scheduled immediately for user ${userId}. Pushed next slot to ${new Date(newNextAvailableTime).toISOString()}`);
-      return 0;
-    }
-    
-    if (nextAvailableTime < now) {
-      // No messages queued recently or delay has expired
-      const newNextAvailableTime = now + jitter;
-      await redisClient.set(redisKey, newNextAvailableTime.toString());
-      console.log(`[Queue] First/Idle WhatsApp message scheduled for user ${userId} with 0ms delay.`);
-      return 0;
-    } else {
-      // Future slot already reserved by another message
-      const delay = nextAvailableTime - now;
-      const newNextAvailableTime = nextAvailableTime + jitter;
-      await redisClient.set(redisKey, newNextAvailableTime.toString());
-      console.log(`[Queue] WhatsApp message scheduled for user ${userId} with delay of ${delay}ms. Next slot reserved.`);
-      return delay;
-    }
+    const delay = await redisClient.eval(luaScript, {
+      keys: [redisKey],
+      arguments: [now.toString(), jitter.toString(), isOtp.toString()]
+    });
+    return parseInt(delay, 10);
   } catch (err) {
     console.error(`[Queue] Error calculating WhatsApp delay for user ${userId}:`, err.message);
     return 0; // Fallback to immediate sending if Redis fails

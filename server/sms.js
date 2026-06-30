@@ -99,5 +99,99 @@ export async function sendSmsMessage(userId, recipient, message) {
     return { success: true, provider, response: resText };
   }
 
+  if (provider === 'httpsms') {
+    if (!apiKey) {
+      throw new Error('httpSMS API Key is missing.');
+    }
+    if (!senderId) {
+      throw new Error('httpSMS Sender ID (From Phone Number) is missing.');
+    }
+
+    // Helper to format phone number to E.164 (+964...)
+    const formatE164 = (phone) => {
+      if (!phone) return '';
+      let cleaned = phone.replace(/[\s\-\(\)]/g, ''); // Remove spaces, hyphens, parentheses
+      if (cleaned.startsWith('+')) return cleaned;
+      if (cleaned.startsWith('00')) return '+' + cleaned.substring(2);
+      if (cleaned.startsWith('07')) return '+964' + cleaned.substring(1);
+      if (cleaned.startsWith('7') && cleaned.length === 10) return '+964' + cleaned;
+      if (cleaned.startsWith('964')) return '+' + cleaned;
+      return '+' + cleaned;
+    };
+
+    const formattedFrom = formatE164(senderId);
+    const formattedTo = formatE164(recipient);
+
+    console.log(`[SMS Service] Sending via httpSMS: from="${formattedFrom}" to="${formattedTo}" message="${message}"`);
+
+    // Default to the official httpSMS API URL if apiSecret is not specified (e.g. for self-hosting)
+    const baseUrl = apiSecret ? apiSecret.replace(/\/$/, '') : 'https://api.httpsms.com';
+    const gatewayUrl = `${baseUrl}/v1/messages/send`;
+
+    const response = await fetch(gatewayUrl, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: message,
+        from: formattedFrom,
+        to: formattedTo
+      })
+    });
+
+    const resData = await response.json();
+    if (!response.ok) {
+      const details = resData.errors ? JSON.stringify(resData.errors) : (resData.message || JSON.stringify(resData));
+      throw new Error(`httpSMS API Error (Status: ${response.status}): ${details}`);
+    }
+
+    return { success: true, provider: 'httpsms', messageId: resData.data?.id || resData.id || 'httpsms_sent' };
+  }
+
+  if (provider === 'otpiq') {
+    if (!apiKey) {
+      throw new Error('OTPIQ API Key is missing.');
+    }
+
+    // Helper to format phone number to OTPIQ format: 9647XXXXXXXX (no '+' sign)
+    const formatOtpiqPhone = (phone) => {
+      if (!phone) return '';
+      let cleaned = phone.replace(/[\s\-\(\)\+]/g, ''); // Remove spaces, hyphens, parentheses, and plus sign
+      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+      if (cleaned.startsWith('07')) cleaned = '964' + cleaned.substring(1);
+      if (cleaned.startsWith('7') && cleaned.length === 10) cleaned = '964' + cleaned;
+      return cleaned;
+    };
+
+    const formattedTo = formatOtpiqPhone(recipient);
+
+    console.log(`[SMS Service] Sending via OTPIQ: to="${formattedTo}" message="${message}" senderId="${senderId || 'default'}"`);
+
+    const response = await fetch('https://api.otpiq.com/api/sms', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        phoneNumber: formattedTo,
+        smsType: 'custom',
+        customMessage: message,
+        senderId: senderId || undefined,
+        provider: 'sms'
+      })
+    });
+
+    const resData = await response.json();
+    if (!response.ok) {
+      const details = resData.errors ? JSON.stringify(resData.errors) : (resData.message || JSON.stringify(resData));
+      throw new Error(`OTPIQ API Error (Status: ${response.status}): ${details}`);
+    }
+
+    return { success: true, provider: 'otpiq', messageId: resData.smsId || resData.id || 'otpiq_sent' };
+  }
+
   throw new Error(`Unsupported SMS provider: ${provider}`);
 }

@@ -28,6 +28,8 @@ import { templatesDb } from '../data/templates';
 import type { TemplateItem } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { TemplateBuilder } from './TemplateBuilder';
+import { useSumer } from '../context/SumerContext';
+import { apiFetch, API_BASE } from '../config';
 
 interface SettingsViewProps {
   lang: 'en' | 'ar';
@@ -39,25 +41,28 @@ interface SettingsViewProps {
   setCurrentTab: (tab: string) => void;
   setLogs: React.Dispatch<React.SetStateAction<any[]>>;
   setPhoneNotifications?: React.Dispatch<React.SetStateAction<any[]>>;
-  controlledSubTab?: 'smtp' | 'whatsapp' | 'templates' | 'system' | 'security';
+  controlledSubTab?: 'smtp' | 'sms' | 'whatsapp' | 'templates' | 'system' | 'security';
   onBuilderToggle?: (active: boolean) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
   lang, 
   theme,
-  setEmailBody, 
-  setEmailSubject,
-  setMsgBody,
-  setPlaygroundChannel,
   setCurrentTab,
   setLogs,
   setPhoneNotifications,
   controlledSubTab,
   onBuilderToggle
 }) => {
+  const {
+    setEmailBody,
+    setEmailSubject,
+    setMsgBody,
+    setPlaygroundChannel
+  } = useSumer();
   const getSubTabName = (tab?: string) => {
     if (tab === 'smtp') return 'smtp';
+    if (tab === 'sms') return 'sms';
     if (tab === 'whatsapp') return 'whatsapp';
     if (tab === 'templates') return 'templates';
     if (tab === 'system') return 'system';
@@ -65,7 +70,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     return 'smtp';
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'smtp' | 'whatsapp' | 'templates' | 'system' | 'security'>(() => getSubTabName(controlledSubTab));
+  const [activeSubTab, setActiveSubTab] = useState<'smtp' | 'sms' | 'whatsapp' | 'templates' | 'system' | 'security'>(() => getSubTabName(controlledSubTab));
 
   useEffect(() => {
     if (controlledSubTab) {
@@ -93,6 +98,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showGuide, setShowGuide] = useState(true);
 
+  // DNS Deliverability states
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState<any>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
+  // SMS settings state
+  const [smsProvider, setSmsProvider] = useState<'mock' | 'httpsms' | 'otpiq' | 'twilio' | 'zain' | 'asiacell'>(() => (localStorage.getItem('sms_provider') as any) || 'mock');
+  const [smsApiKey, setSmsApiKey] = useState(() => localStorage.getItem('sms_api_key') || '');
+  const [smsApiSecret, setSmsApiSecret] = useState(() => localStorage.getItem('sms_api_secret') || '');
+  const [smsSenderId, setSmsSenderId] = useState(() => localStorage.getItem('sms_sender_id') || 'SumerSend');
+  const [smsTestRecipient, setSmsTestRecipient] = useState(() => localStorage.getItem('sumer_admin_test_sms') || '');
+  const [isSavingSms, setIsSavingSms] = useState(false);
+  const [isTestingSms, setIsTestingSms] = useState(false);
+
+  // Live OTPIQ data
+  const [otpiqInfo, setOtpiqInfo] = useState<{ projectName: string; credit: number } | null>(null);
+  const [otpiqSenderIds, setOtpiqSenderIds] = useState<Array<{ _id: string; senderId: string; status: string }>>([]);
+
   // Template gallery states
   const [activeCategory, setActiveCategory] = useState<'email' | 'sms' | 'whatsapp'>('email');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('welcome_onboarding');
@@ -118,7 +141,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   }, [isBuildingTemplate, onBuilderToggle]);
 
   const fetchCustomTemplates = () => {
-    fetch('http://127.0.0.1:3000/api/templates/custom')
+    apiFetch('/api/templates/custom')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -166,9 +189,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleSaveCustomTemplate = async (payload: TemplateItem) => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+      const res = await apiFetch('/api/templates/custom', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -197,7 +219,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/templates/custom/${templateId}`, {
+      const res = await apiFetch(`/api/templates/custom/${templateId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -242,7 +264,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Load security config
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/security/config')
+    apiFetch('/api/security/config')
       .then(res => res.json())
       .then(data => {
         if (data) {
@@ -257,7 +279,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Fetch WhatsApp status
   const fetchWaStatus = () => {
-    fetch('http://127.0.0.1:3000/api/whatsapp/status')
+    apiFetch('/api/whatsapp/status')
       .then(res => res.json())
       .then(data => {
         setWaStatus(data);
@@ -276,7 +298,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleWaLogout = async () => {
     setWaLoading(true);
     try {
-      await fetch('http://127.0.0.1:3000/api/whatsapp/logout', { method: 'POST' });
+      await apiFetch('/api/whatsapp/logout', { method: 'POST' });
       fetchWaStatus();
     } catch (e) {
       console.error(e);
@@ -303,9 +325,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setSecuritySuccess(null);
     
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/security/verify-phone', {
+      const res = await apiFetch('/api/security/verify-phone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: securityPhone })
       });
       const data = await res.json();
@@ -348,9 +369,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setSecuritySuccess(null);
     
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/security/confirm-otp', {
+      const res = await apiFetch('/api/security/confirm-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ otp: securityOtp })
       });
       const data = await res.json();
@@ -376,9 +396,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
 
     try {
-      await fetch('http://127.0.0.1:3000/api/security/config', {
+      await apiFetch('/api/security/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
     } catch (err) {
@@ -390,9 +409,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!window.confirm(lang === 'en' ? 'Are you sure you want to unlink your phone number?' : 'هل أنت متأكد من إلغاء ربط رقم الهاتف؟')) return;
     
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/security/config', {
+      const res = await apiFetch('/api/security/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: '', verified: false, requireCampaign2FA: false, requireApiKey2FA: false })
       });
       if (res.ok) {
@@ -429,6 +447,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       guideText: 'Configure your SMTP credentials to enable delivery of real emails to user inboxes when triggered via the API Playground or your direct system integration.',
       successSave: 'SMTP configuration saved successfully.',
       successTest: 'Test email delivered successfully! Check your inbox.',
+      smsTab: 'SMS Gateway Config',
+      smsProviderLabel: 'SMS Provider Gateway',
+      smsApiKeyLabel: 'API Key / Username / Account SID',
+      smsApiSecretLabel: 'API Secret / Password / Auth Token / Custom URL',
+      smsSenderIdLabel: 'Sender ID / From Phone Number',
+      smsSaveBtn: 'Save SMS Settings',
+      smsTestTitle: 'Verify SMS Dispatcher',
+      smsTestDesc: 'Send a test SMS to ensure your gateway credentials are correct.',
+      smsTestRecLabel: 'Recipient Mobile Number',
+      smsTestBtn: 'Send Test SMS',
+      smsSuccessSave: 'SMS configuration saved successfully.',
+      smsSuccessTest: 'Test SMS dispatched successfully!',
+      smsGuideTitle: 'httpSMS Gateway Setup Guide',
+      smsGuideText: 'To use your Android phone as a local gateway, select "httpSMS Gateway", enter the API key from your httpsms.com settings, and set the Sender ID to your phone number.',
       errorFail: 'Operation failed. Please check server logs.',
       categoryEmail: 'Email Templates',
       categorySms: 'SMS Messages',
@@ -463,6 +495,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       guideText: 'قم بتهيئة إعدادات الـ SMTP لتفعيل إرسال رسائل البريد الإلكتروني الحقيقية للمستخدمين عند تحفيز الـ API أو استخدام منصة الاختبار البرمجية.',
       successSave: 'تم حفظ إعدادات الـ SMTP بنجاح.',
       successTest: 'تم إرسال البريد التجريبي بنجاح! يرجى التحقق من صندوق الوارد.',
+      smsTab: 'إعدادات بوابة الـ SMS',
+      smsProviderLabel: 'بوابة إرسال الـ SMS (Provider)',
+      smsApiKeyLabel: 'مفتاح الـ API (API Key) / اسم المستخدم / Account SID',
+      smsApiSecretLabel: 'الرمز السري (Secret Key) / كلمة المرور / Auth Token / رابط الخدمة',
+      smsSenderIdLabel: 'هوية المرسل (Sender ID) / رقم الهاتف المحلي',
+      smsSaveBtn: 'حفظ إعدادات الـ SMS',
+      smsTestTitle: 'اختبار بوابة إرسال الـ SMS',
+      smsTestDesc: 'أرسل رسالة SMS تجريبية للتحقق من تكوين إعدادات البوابة والاتصال بها.',
+      smsTestRecLabel: 'رقم هاتف المستلم التجريبي',
+      smsTestBtn: 'فحص الاتصال وإرسال رسالة SMS',
+      smsSuccessSave: 'تم حفظ إعدادات الـ SMS بنجاح.',
+      smsSuccessTest: 'تم إرسال رسالة الـ SMS التجريبية بنجاح!',
+      smsGuideTitle: 'دليل ربط وتكوين بوابة httpSMS',
+      smsGuideText: 'لاستخدام هاتفك الأندرويد كبوابة إرسال محلية، اختر "httpSMS Gateway"، ثم أدخل مفتاح الـ API من إعدادات حسابك في موقع httpsms.com، واجعل معرف المرسل هو رقم هاتفك المحمول.',
       errorFail: 'فشلت العملية. يرجى التحقق من صحة البيانات أو سجلات الخادم.',
       categoryEmail: 'قوالب البريد الإلكتروني',
       categorySms: 'رسائل الـ SMS القصيرة',
@@ -484,10 +530,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   useEffect(() => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
-    fetch('http://127.0.0.1:3000/api/smtp/config', { signal: controller.signal })
+    
+    // Fetch SMTP Config
+    apiFetch('/api/smtp/config', { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
-        clearTimeout(timeoutId);
         if (data.host) {
           setHost(data.host);
           localStorage.setItem('smtp_host', data.host);
@@ -508,9 +555,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         }
       })
       .catch(err => {
-        clearTimeout(timeoutId);
-        console.error('Failed to connect to backend server:', err);
+        console.error('Failed to connect to SMTP config backend:', err);
       });
+
+    // Fetch SMS Config
+    apiFetch('/api/sms/config', { signal: controller.signal })
+      .then(res => res.json())
+      .then(data => {
+        if (data.provider) {
+          setSmsProvider(data.provider);
+          localStorage.setItem('sms_provider', data.provider);
+        }
+        if (data.apiKey) {
+          setSmsApiKey(data.apiKey);
+          localStorage.setItem('sms_api_key', data.apiKey);
+        }
+        if (data.apiSecret) {
+          setSmsApiSecret(data.apiSecret);
+          localStorage.setItem('sms_api_secret', data.apiSecret);
+        }
+        if (data.senderId) {
+          setSmsSenderId(data.senderId);
+          localStorage.setItem('sms_sender_id', data.senderId);
+        }
+        if (data.otpiqInfo) {
+          setOtpiqInfo(data.otpiqInfo);
+        }
+        if (data.otpiqSenderIds) {
+          setOtpiqSenderIds(data.otpiqSenderIds);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to connect to SMS config backend:', err);
+      });
+
     return () => { clearTimeout(timeoutId); controller.abort(); };
   }, []);
 
@@ -522,9 +600,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-    fetch('http://127.0.0.1:3000/api/smtp/config', {
+    apiFetch('/api/smtp/config', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
         host,
@@ -577,9 +654,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-    fetch('http://127.0.0.1:3000/api/smtp/test', {
+    apiFetch('/api/smtp/test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
         host,
@@ -612,7 +688,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }
         }
         // Sync logs from server (test dispatch is saved in server logs)
-        fetch('http://127.0.0.1:3000/api/logs')
+        apiFetch('/api/logs')
           .then(res => res.json())
           .then(serverLogs => {
             if (Array.isArray(serverLogs)) {
@@ -633,7 +709,159 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         }
         
         // Sync logs from server (failed test dispatch is also saved in server logs)
-        fetch('http://127.0.0.1:3000/api/logs')
+        apiFetch('/api/logs')
+          .then(res => res.json())
+          .then(serverLogs => {
+            if (Array.isArray(serverLogs)) {
+              setLogs(serverLogs);
+            }
+          })
+          .catch(syncErr => console.error('Failed to sync logs after test failure:', syncErr));
+      });
+  };
+
+  const handleAuditDomain = async () => {
+    if (!from && !user) {
+      alert(lang === 'ar' ? 'يرجى إدخال البريد الإلكتروني للمرسل أو اسم المستخدم أولاً.' : 'Please enter the sender or username email first.');
+      return;
+    }
+
+    setIsAuditing(true);
+    setAuditError(null);
+    setAuditResult(null);
+
+    try {
+      const res = await apiFetch('/api/smtp/dns-check', {
+        method: 'POST',
+        body: JSON.stringify({ host, user, from })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to query SMTP domain DNS configuration.');
+      setAuditResult(data);
+    } catch (err: any) {
+      console.error(err);
+      setAuditError(err.message || 'An error occurred during DNS audit.');
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
+  const handleSaveSms = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSms(true);
+    setStatusMsg(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    apiFetch('/api/sms/config', {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({
+        provider: smsProvider,
+        apiKey: smsApiKey,
+        apiSecret: smsApiSecret,
+        senderId: smsSenderId
+      })
+    })
+      .then(res => { clearTimeout(timeoutId); return res.json(); })
+      .then(data => {
+        setIsSavingSms(false);
+        if (data.success) {
+          setStatusMsg({ type: 'success', text: t.smsSuccessSave });
+          localStorage.setItem('sms_provider', smsProvider);
+          localStorage.setItem('sms_api_key', smsApiKey);
+          localStorage.setItem('sms_api_secret', smsApiSecret);
+          localStorage.setItem('sms_sender_id', smsSenderId);
+          if (data.otpiqInfo) {
+            setOtpiqInfo(data.otpiqInfo);
+          }
+          if (data.otpiqSenderIds) {
+            setOtpiqSenderIds(data.otpiqSenderIds);
+            if (data.otpiqSenderIds.length > 0 && !data.otpiqSenderIds.some((s: any) => s.senderId === smsSenderId)) {
+              setSmsSenderId(data.otpiqSenderIds[0].senderId);
+            }
+          }
+        } else {
+          setStatusMsg({ type: 'error', text: data.error || t.errorFail });
+        }
+      })
+      .catch(err => {
+        clearTimeout(timeoutId);
+        console.error(err);
+        setIsSavingSms(false);
+        if (err.name === 'AbortError') {
+          setStatusMsg({ type: 'error', text: lang === 'ar' ? 'انتهت مهلة الاتصال بالخادم الخلفي. تأكد من تشغيله.' : 'Backend server connection timed out. Ensure it is running.' });
+        } else {
+          setStatusMsg({ type: 'error', text: lang === 'en' ? 'Could not connect to Sumer Send backend server.' : 'تعذر الاتصال بخادم سومر سيند الخلفي.' });
+        }
+      });
+  };
+
+  const handleTestSmsConnection = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!smsTestRecipient) {
+      setStatusMsg({ type: 'error', text: lang === 'en' ? 'Recipient mobile number is required.' : 'يرجى إدخال رقم الهاتف للمستلم التجريبي.' });
+      return;
+    }
+
+    setIsTestingSms(true);
+    setStatusMsg(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    apiFetch('/api/sms/test', {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({
+        provider: smsProvider,
+        apiKey: smsApiKey,
+        apiSecret: smsApiSecret,
+        senderId: smsSenderId,
+        testRecipient: smsTestRecipient
+      })
+    })
+      .then(res => {
+        clearTimeout(timeoutId);
+        if (!res.ok) {
+          return res.json().then(err => { throw new Error(err.error || t.errorFail); });
+        }
+        return res.json();
+      })
+      .then(data => {
+        setIsTestingSms(false);
+        if (data.success) {
+          setStatusMsg({ type: 'success', text: t.smsSuccessTest });
+          localStorage.setItem('sms_provider', smsProvider);
+          localStorage.setItem('sms_api_key', smsApiKey);
+          localStorage.setItem('sms_api_secret', smsApiSecret);
+          localStorage.setItem('sms_sender_id', smsSenderId);
+          localStorage.setItem('sumer_admin_test_sms', smsTestRecipient);
+          if (data.otpiqInfo) {
+            setOtpiqInfo(data.otpiqInfo);
+          }
+          if (data.otpiqSenderIds) {
+            setOtpiqSenderIds(data.otpiqSenderIds);
+          }
+        }
+        // Sync logs
+        apiFetch('/api/logs')
+          .then(res => res.json())
+          .then(serverLogs => {
+            if (Array.isArray(serverLogs)) {
+              setLogs(serverLogs);
+            }
+          })
+          .catch(err => console.error('Failed to sync logs:', err));
+      })
+      .catch(err => {
+        clearTimeout(timeoutId);
+        setIsTestingSms(false);
+        setStatusMsg({ type: 'error', text: err.message || (lang === 'ar' ? 'تعذر الاتصال بالخادم الخلفي أو فشل الإرسال.' : 'Could not connect to backend server or dispatch failed.') });
+        
+        // Sync logs
+        apiFetch('/api/logs')
           .then(res => res.json())
           .then(serverLogs => {
             if (Array.isArray(serverLogs)) {
@@ -955,7 +1183,381 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </button>
               </form>
             </BentoCard>
+
+            {/* Deliverability & Anti-Spam Auditor */}
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                  <Shield size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'ar' ? 'فاحص حظر السبام والـ DNS' : 'Email Deliverability & DNS Auditor'}
+                </h3>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.55 }}>
+                {lang === 'ar' 
+                  ? 'تأكد من أن نطاق بريدك الإلكتروني مهيأ بشكل صحيح بسجلات SPF و DMARC لتجنب تصنيف رسائلك كرسائل مزعجة (Spam).' 
+                  : 'Verify that your email domain is configured with correct SPF and DMARC records to ensure maximum deliverability.'}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleAuditDomain}
+                disabled={isAuditing}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginBottom: '20px', borderRadius: '10px', height: '42px', fontSize: '13px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                {isAuditing ? (
+                  <>
+                    <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--text-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
+                    <span>{lang === 'ar' ? 'جاري التحليل والتدقيق...' : 'Auditing DNS Records...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Shield size={14} />
+                    <span>{lang === 'ar' ? 'ابدأ فحص ومطابقة النطاق' : 'Audit Domain Deliverability'}</span>
+                  </>
+                )}
+              </button>
+
+              {auditError && (
+                <div style={{ padding: '12px', borderRadius: '8px', fontSize: '12px', backgroundColor: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.12)', marginBottom: '16px' }}>
+                  <AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: '6px', marginLeft: '6px' }} />
+                  <span>{auditError}</span>
+                </div>
+              )}
+
+              {auditResult && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', fontSize: '12px' }}>
+                    <strong>{lang === 'ar' ? 'النطاق المفحوص:' : 'Target Domain:'}</strong> <code style={{ color: 'var(--accent-color)' }}>{auditResult.domain}</code>
+                  </div>
+
+                  {/* Alignment check */}
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '10px', fontSize: '13px' }}>
+                    <div style={{ marginTop: '2px' }}>
+                      {auditResult.alignment.status === 'pass' ? (
+                        <CheckCircle size={16} color="#10b981" />
+                      ) : (
+                        <AlertCircle size={16} color="#f59e0b" />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{lang === 'ar' ? 'تطابق النطاق (Alignment)' : 'Domain Alignment'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{auditResult.alignment.message}</div>
+                    </div>
+                  </div>
+
+                  {/* MX check */}
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '10px', fontSize: '13px' }}>
+                    <div style={{ marginTop: '2px' }}>
+                      {auditResult.mx.status === 'pass' ? (
+                        <CheckCircle size={16} color="#10b981" />
+                      ) : (
+                        <AlertCircle size={16} color="#ef4444" />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{lang === 'ar' ? 'خوادم استقبال البريد (MX Records)' : 'MX Records'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{auditResult.mx.message}</div>
+                    </div>
+                  </div>
+
+                  {/* SPF check */}
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '10px', fontSize: '13px' }}>
+                    <div style={{ marginTop: '2px' }}>
+                      {auditResult.spf.status === 'pass' ? (
+                        <CheckCircle size={16} color="#10b981" />
+                      ) : (
+                        <AlertCircle size={16} color="#ef4444" />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{lang === 'ar' ? 'سجل SPF (Sender Policy Framework)' : 'SPF Record'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: auditResult.spf.record ? '4px' : 0 }}>
+                        {auditResult.spf.message}
+                      </div>
+                      {auditResult.spf.record && (
+                        <code style={{ fontSize: '10px', display: 'block', padding: '6px', background: 'var(--bg-color)', borderRadius: '4px', wordBreak: 'break-all' }}>
+                          {auditResult.spf.record}
+                        </code>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DMARC check */}
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '10px', fontSize: '13px' }}>
+                    <div style={{ marginTop: '2px' }}>
+                      {auditResult.dmarc.status === 'pass' ? (
+                        <CheckCircle size={16} color="#10b981" />
+                      ) : (
+                        <AlertCircle size={16} color="#f59e0b" />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{lang === 'ar' ? 'سجل الحماية DMARC' : 'DMARC Record'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: auditResult.dmarc.record ? '4px' : 0 }}>
+                        {auditResult.dmarc.message}
+                      </div>
+                      {auditResult.dmarc.record && (
+                        <code style={{ fontSize: '10px', display: 'block', padding: '6px', background: 'var(--bg-color)', borderRadius: '4px', wordBreak: 'break-all' }}>
+                          {auditResult.dmarc.record}
+                        </code>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </BentoCard>
           </div>
+        </div>
+      )}
+
+      {/* 1.2 SMS TAB */}
+      {activeSubTab === 'sms' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {statusMsg && (
+            <div style={{ 
+              padding: '14px 18px', 
+              borderRadius: '12px', 
+              fontSize: '13px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              backgroundColor: statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+              color: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
+              border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}`
+            }}>
+              {statusMsg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+              <span>{statusMsg.text}</span>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', alignItems: 'start' }}>
+            
+            {/* SMS config form */}
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Phone size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
+                  {lang === 'ar' ? 'إعدادات بوابة الـ SMS' : 'SMS Gateway Credentials'}
+                </h3>
+              </div>
+
+              <form onSubmit={handleSaveSms}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.smsProviderLabel}</label>
+                  <select
+                    className="form-input"
+                    value={smsProvider}
+                    onChange={(e) => setSmsProvider(e.target.value as any)}
+                    style={{ borderRadius: '10px', height: '40px', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', width: '100%', padding: '0 12px', fontSize: '13px' }}
+                  >
+                    <option value="mock">{lang === 'ar' ? 'محاكاة محلياً (Mock)' : 'Simulated (Mock)'}</option>
+                    <option value="httpsms">{lang === 'ar' ? 'بوابة httpSMS (أندرويد)' : 'httpSMS Gateway (Android)'}</option>
+                    <option value="otpiq">{lang === 'ar' ? 'بوابة OTPIQ العراقية (SMS/WA)' : 'OTPIQ Iraq Gateway (SMS/WA)'}</option>
+                    <option value="twilio">Twilio</option>
+                    <option value="zain">Zain Iraq (Bulk SMS)</option>
+                    <option value="asiacell">Asiacell (Bulk SMS)</option>
+                  </select>
+                </div>
+
+                {smsProvider === 'otpiq' && otpiqInfo && (
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(56, 189, 248, 0.08)', 
+                    border: '1px solid rgba(56, 189, 248, 0.2)', 
+                    marginBottom: '20px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between' 
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{lang === 'ar' ? 'مشروع OTPIQ' : 'OTPIQ Project'}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{otpiqInfo.projectName}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{lang === 'ar' ? 'الرصيد المتبقي' : 'Remaining Credit'}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-color)' }}>
+                        {otpiqInfo.credit.toLocaleString()} {lang === 'ar' ? 'د.ع' : 'IQD'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {smsProvider !== 'mock' && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.smsApiKeyLabel}</label>
+                      <input
+                        type="password"
+                        className="form-input"
+                        value={smsApiKey}
+                        onChange={(e) => setSmsApiKey(e.target.value)}
+                        placeholder={smsProvider === 'twilio' ? 'Account SID' : smsProvider === 'httpsms' ? 'e.g. key_xxx' : smsProvider === 'otpiq' ? 'e.g. sk_live_xxx' : 'Username'}
+                        required
+                        style={{ borderRadius: '10px', height: '40px' }}
+                      />
+                    </div>
+
+                    {smsProvider !== 'otpiq' && (
+                      <div className="form-group" style={{ marginBottom: '16px' }}>
+                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>
+                          {smsProvider === 'httpsms' 
+                            ? (lang === 'ar' ? 'رابط الخدمة المخصص (اختياري للـ Self-host)' : 'Custom Base URL (Optional for Self-host)')
+                            : t.smsApiSecretLabel}
+                        </label>
+                        <input
+                          type="password"
+                          className="form-input"
+                          value={smsApiSecret}
+                          onChange={(e) => setSmsApiSecret(e.target.value)}
+                          placeholder={smsProvider === 'twilio' ? 'Auth Token' : smsProvider === 'httpsms' ? 'e.g. http://localhost:8000' : 'Password'}
+                          required={smsProvider !== 'httpsms'}
+                          style={{ borderRadius: '10px', height: '40px' }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.smsSenderIdLabel}</label>
+                  {smsProvider === 'otpiq' && otpiqSenderIds && otpiqSenderIds.length > 0 ? (
+                    <select
+                      className="form-input"
+                      value={smsSenderId}
+                      onChange={(e) => setSmsSenderId(e.target.value)}
+                      style={{ borderRadius: '10px', height: '40px', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', width: '100%', padding: '0 12px', fontSize: '13px' }}
+                    >
+                      <option value="">{lang === 'ar' ? 'اختر اسم المرسل' : 'Select Sender ID'}</option>
+                      {otpiqSenderIds.map((s) => (
+                        <option key={s._id} value={s.senderId}>
+                          {s.senderId} ({s.status === 'accepted' ? (lang === 'ar' ? 'مقبول' : 'Accepted') : s.status})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={smsSenderId}
+                      onChange={(e) => setSmsSenderId(e.target.value)}
+                      placeholder={smsProvider === 'httpsms' ? 'e.g. +9647700000000' : 'e.g. SumerSend'}
+                      required={smsProvider !== 'otpiq'}
+                      style={{ borderRadius: '10px', height: '40px' }}
+                    />
+                  )}
+                  {smsProvider === 'otpiq' && otpiqSenderIds && otpiqSenderIds.length === 0 && (
+                    <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '6px' }}>
+                      {lang === 'ar' 
+                        ? '⚠️ لم يتم العثور على أي أسماء مرسل نصية معتمدة في حسابك. يرجى طلب تسجيل اسم مرسل من موقع otpiq.com.' 
+                        : '⚠️ No approved Sender IDs found in your account. Request one on otpiq.com first.'}
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={isSavingSms}
+                  style={{ width: '100%', opacity: isSavingSms ? 0.7 : 1, cursor: isSavingSms ? 'not-allowed' : 'pointer', borderRadius: '10px', height: '42px', fontSize: '13px' }}
+                >
+                  {isSavingSms ? (
+                    <>
+                      <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--bg-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: '6px', marginLeft: '6px' }}></span>
+                      <span>{lang === 'en' ? 'Saving...' : 'جاري الحفظ...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      <span>{t.smsSaveBtn}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </BentoCard>
+
+            {/* Test connection */}
+            <BentoCard style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <Send size={16} />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{t.smsTestTitle}</h3>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.55 }}>
+                {t.smsTestDesc}
+              </p>
+
+              <form onSubmit={handleTestSmsConnection}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '6px' }}>{t.smsTestRecLabel}</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={smsTestRecipient}
+                    onChange={(e) => setSmsTestRecipient(e.target.value)}
+                    placeholder="e.g. +9647700000000"
+                    required
+                    style={{ borderRadius: '10px', height: '40px' }}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn" 
+                  disabled={isTestingSms}
+                  style={{ width: '100%', opacity: isTestingSms ? 0.7 : 1, cursor: isTestingSms ? 'not-allowed' : 'pointer', borderRadius: '10px', height: '42px', fontSize: '13px' }}
+                >
+                  {isTestingSms ? (
+                    <>
+                      <span className="spinner-icon" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--text-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: '6px', marginLeft: '6px' }}></span>
+                      <span>{lang === 'en' ? 'Sending Test...' : 'جاري إرسال التجربة...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={14} />
+                      <span>{t.smsTestBtn}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </BentoCard>
+          </div>
+
+          {/* Guide Card */}
+          {showGuide && (
+            <BentoCard style={{ padding: '28px', borderLeft: '4px solid var(--accent-color)', position: 'relative' }}>
+              <button 
+                onClick={() => setShowGuide(false)}
+                style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px' }}
+              >
+                ✕
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="service-icon" style={{ background: 'rgba(var(--accent-rgb), 0.08)', color: 'var(--accent-color)' }}>
+                  <Info size={16} />
+                </div>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                  {smsProvider === 'otpiq' 
+                    ? (lang === 'ar' ? 'دليل ربط وتكوين بوابة OTPIQ العراقية' : 'OTPIQ Iraq Gateway Setup Guide')
+                    : t.smsGuideTitle}
+                </h4>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, paddingRight: '20px' }}>
+                {smsProvider === 'otpiq' 
+                  ? (lang === 'ar' 
+                      ? 'لاستخدام بوابة OTPIQ، اختر "OTPIQ Iraq Gateway" من القائمة، ثم أدخل مفتاح الـ API الخاص بك من إعدادات حسابك في موقع otpiq.com (يبدأ بـ sk_live_)، واجعل معرف المرسل هو الاسم النصي المعتمد لشركتك (مثل SumerSend) أو اتركه فارغاً لاستخدام المعرف الافتراضي للمشروع.'
+                      : 'To use OTPIQ, select "OTPIQ Iraq Gateway", enter the API key from your otpiq.com settings (starts with sk_live_), and set the Sender ID to your approved brand name (e.g. SumerSend) or leave it blank to use the default project Sender ID.')
+                  : t.smsGuideText}
+              </p>
+            </BentoCard>
+          )}
         </div>
       )}
 

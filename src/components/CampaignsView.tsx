@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -22,7 +23,8 @@ import {
   FileSpreadsheet,
   Users,
   Smartphone,
-  Laptop
+  Laptop,
+  Shield
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { templatesDb } from '../data/templates';
@@ -30,6 +32,8 @@ import type { TemplateItem } from '../data/templates';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { renderTemplateIcon } from './IconHelper';
 import { TemplateBuilder } from './TemplateBuilder';
+import { useSumer } from '../context/SumerContext';
+import { apiFetch, API_BASE } from '../config';
 
 interface CampaignsViewProps {
   lang: 'en' | 'ar';
@@ -147,6 +151,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   setPhoneNotifications,
   hideHeader = false,
 }) => {
+  const { behaviorProfile } = useSumer();
   const [viewState, setViewState] = useState<'list' | 'create' | 'progress'>('list');
   const [campaigns, setCampaigns] = useState<Campaign[]>(defaultCampaignsList);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -171,7 +176,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   // Load security config
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/security/config')
+    apiFetch('/api/security/config')
       .then(res => res.json())
       .then(data => setSecurityConfig(data))
       .catch(err => console.warn('Could not load security config in campaigns:', err));
@@ -179,7 +184,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   // Load SMTP config
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/smtp/config')
+    apiFetch('/api/smtp/config')
       .then(res => res.json())
       .then(data => setSmtpConfig(data))
       .catch(err => console.warn('Could not load SMTP config in campaigns:', err));
@@ -193,7 +198,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   // Load custom templates from server
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/templates/custom')
+    apiFetch('/api/templates/custom')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCustomTemplates(data);
@@ -201,13 +206,13 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       .catch(err => console.warn('Could not load custom templates, using fallback:', err));
   }, []);
 
-  const getMergedTemplates = (channel: 'email' | 'sms' | 'whatsapp') => {
+  const getMergedTemplates = useCallback((channel: 'email' | 'sms' | 'whatsapp') => {
     const staticList = templatesDb[channel] || [];
     const customList = customTemplates.filter(t => t.type === channel) || [];
     return [...staticList, ...customList];
-  };
+  }, [customTemplates]);
 
-  const getFilteredTemplates = () => {
+  const getFilteredTemplates = useCallback(() => {
     const all = [
       ...templatesDb.email.map(t => ({ ...t, type: 'email' })),
       ...templatesDb.sms.map(t => ({ ...t, type: 'sms' })),
@@ -217,13 +222,12 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     
     if (activeTemplateFilter === 'all') return allMerged;
     return allMerged.filter(t => t.type === activeTemplateFilter);
-  };
+  }, [customTemplates, activeTemplateFilter]);
 
   const handleBuilderSave = async (payload: TemplateItem) => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+      const res = await apiFetch('/api/templates/custom', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -250,7 +254,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     if (!window.confirm(lang === 'en' ? 'Delete this template?' : 'هل أنت متأكد من حذف هذا القالب؟')) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/templates/custom/${id}`, {
+      const res = await apiFetch(`/api/templates/custom/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -302,9 +306,121 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getEmailSpamAudit = () => {
+    if (campChannel !== 'email') return null;
+
+    let score = 100;
+    const warnings: Array<{ id: string; textAr: string; textEn: string }> = [];
+
+    const subjectLower = campSubject.toLowerCase();
+    const bodyLower = campBody.toLowerCase();
+
+    // 1. Check subject length
+    if (campSubject.trim().length > 0) {
+      if (campSubject.trim().length > 65) {
+        score -= 15;
+        warnings.push({
+          id: 'subject_len',
+          textAr: 'عنوان الرسالة طويل جداً (يفضل أقل من 60 حرفاً).',
+          textEn: 'Subject line is too long (prefer under 60 characters).'
+        });
+      }
+      if (campSubject === campSubject.toUpperCase() && /[a-z]/i.test(campSubject)) {
+        score -= 20;
+        warnings.push({
+          id: 'subject_caps',
+          textAr: 'عنوان الرسالة مكتوب بالكامل بأحرف كبيرة (ALL CAPS)، وهذا مؤشر سبام قوي.',
+          textEn: 'Subject is in ALL CAPS. This is a strong spam filter trigger.'
+        });
+      }
+      if ((campSubject.match(/!/g) || []).length > 2 || (campSubject.match(/\?/g) || []).length > 2) {
+        score -= 10;
+        warnings.push({
+          id: 'subject_punc',
+          textAr: 'تجنب استخدام علامات التعجب أو الاستفهام المفرطة في العنوان.',
+          textEn: 'Avoid excessive punctuation (!!! or ???) in the subject line.'
+        });
+      }
+    } else {
+      score -= 25;
+      warnings.push({
+        id: 'no_subject',
+        textAr: 'عنوان الرسالة فارغ.',
+        textEn: 'Subject line is empty.'
+      });
+    }
+
+    // 2. Check spam trigger words
+    const spamWords = [
+      { word: 'free', labelAr: 'مجاني', labelEn: 'free' },
+      { word: 'مجاني', labelAr: 'مجاني', labelEn: 'free' },
+      { word: '100%', labelAr: '100%', labelEn: '100%' },
+      { word: 'win', labelAr: 'فوز', labelEn: 'win' },
+      { word: 'winner', labelAr: 'فائز', labelEn: 'winner' },
+      { word: 'اربح', labelAr: 'اربح', labelEn: 'earn/win' },
+      { word: 'cash', labelAr: 'نقود', labelEn: 'cash' },
+      { word: 'urgent', labelAr: 'عاجل', labelEn: 'urgent' },
+      { word: 'عاجل', labelAr: 'عاجل', labelEn: 'urgent' },
+      { word: 'guaranteed', labelAr: 'مضمون', labelEn: 'guaranteed' },
+      { word: 'مضمون', labelAr: 'مضمون', labelEn: 'guaranteed' },
+      { word: 'make money', labelAr: 'كسب المال', labelEn: 'make money' },
+      { word: 'earn money', labelAr: 'ربح المال', labelEn: 'earn money' },
+      { word: 'click here', labelAr: 'اضغط هنا', labelEn: 'click here' },
+      { word: 'اضغط هنا', labelAr: 'اضغط هنا', labelEn: 'click here' }
+    ];
+
+    const detectedWords: string[] = [];
+    spamWords.forEach(sw => {
+      if (subjectLower.includes(sw.word) || bodyLower.includes(sw.word)) {
+        detectedWords.push(lang === 'ar' ? sw.labelAr : sw.labelEn);
+      }
+    });
+
+    if (detectedWords.length > 0) {
+      score -= Math.min(detectedWords.length * 15, 40);
+      warnings.push({
+        id: 'spam_words',
+        textAr: `تم الكشف عن كلمات تثير الشكوك: (${detectedWords.join(', ')}).`,
+        textEn: `Spam trigger words detected: (${detectedWords.join(', ')}).`
+      });
+    }
+
+    // 3. Check for unsubscribe options
+    const hasUnsub = bodyLower.includes('unsubscribe') || 
+                     bodyLower.includes('إلغاء الاشتراك') || 
+                     bodyLower.includes('unsub') || 
+                     bodyLower.includes('{{unsubscribe}}') ||
+                     bodyLower.includes('{unsubscribe}') ||
+                     bodyLower.includes('unsubscribed');
+    
+    if (!hasUnsub && campBody.trim().length > 0) {
+      score -= 30;
+      warnings.push({
+        id: 'no_unsubscribe',
+        textAr: 'تحذير: لم يتم العثور على رابط أو خيار إلغاء الاشتراك. رسائل البث الجماعي بدون إلغاء اشتراك تُصنف كسبام فوراً.',
+        textEn: 'Warning: Missing unsubscribe link/option. Bulk emails without unsubscribe links are instantly flagged by Gmail/Yahoo.'
+      });
+    }
+
+    // 4. Check body length
+    if (campBody.trim().length > 0 && campBody.trim().length < 50) {
+      score -= 10;
+      warnings.push({
+        id: 'body_short',
+        textAr: 'محتوى الرسالة قصير جداً. تفضل الفلاتر الرسائل ذات المحتوى المتوازن.',
+        textEn: 'Email content is very short. Balanced text ratios improve deliverability.'
+      });
+    }
+
+    return {
+      score: Math.max(score, 0),
+      warnings
+    };
+  };
+
   // Load subscribers for campaign target selector
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/subscribers')
+    apiFetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setSubscribers(data);
@@ -479,7 +595,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
   // Fetch campaign history on mount
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/campaigns')
+    apiFetch('/api/campaigns')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCampaigns(data);
@@ -920,14 +1036,14 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     };
 
     const endpoint = campChannel === 'email' ? 'emails' : campChannel;
-    const url = `http://127.0.0.1:3000/v1/${endpoint}`;
+    const url = `${API_BASE}/v1/${endpoint}`;
 
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer sm_live_campaign_auth'
+          'Authorization': `Bearer ${localStorage.getItem('sumer_token')}`
         },
         body: JSON.stringify(payload)
       });
@@ -999,38 +1115,19 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         setVerificationOtpError(null);
         setVerificationOtpInput('');
         
-        const res = await fetch('http://127.0.0.1:3000/api/security/verify-phone', {
+        const res = await apiFetch('/api/security/verify-phone', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: securityConfig.phone })
         });
         const data = await res.json();
         
-        if (res.ok && data.otp) {
-          setPendingOtpCode(data.otp);
+        if (res.ok) {
           setIs2faModalOpen(true);
-          
-          // Trigger mock SMS notification on phone
-          setPhoneNotifications(prev => [
-            {
-              id: 'security_2fa_camp_' + Date.now(),
-              type: 'sms',
-              title: 'SMS: Sumer Security',
-              body: `رمز التحقق الثنائي لإطلاق حملتك "${campName}" هو: ${data.otp}. لا تشارك هذا الرمز.`,
-              time: 'Now'
-            },
-            ...prev
-          ]);
         } else {
-          // If verify-phone failed, fallback
-          const code = Math.floor(100000 + Math.random() * 900000).toString();
-          setPendingOtpCode(code);
-          setIs2faModalOpen(true);
+          setVerificationOtpError(lang === 'ar' ? 'فشل إرسال رمز التحقق.' : 'Failed to send OTP.');
         }
       } catch (err) {
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        setPendingOtpCode(code);
-        setIs2faModalOpen(true);
+        setVerificationOtpError(lang === 'ar' ? 'فشل الاتصال بالخادم.' : 'Failed to connect to server.');
       }
       return;
     }
@@ -1054,9 +1151,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           variables: [],
           type: campChannel
         };
-        const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+        const res = await apiFetch('/api/templates/custom', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(templatePayload)
         });
         if (res.ok) {
@@ -1077,9 +1173,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
 
     let createdCamp: Campaign;
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/campaigns', {
+      const res = await apiFetch('/api/campaigns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: campName,
           type: campChannel,
@@ -1111,166 +1206,64 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       setActiveCampaign(createdCamp);
     }
 
-    // Step 2: Loop recipients and dispatch
-    const updatedRecipients = [...createdCamp.recipients];
+    // Step 2: Dispatch Campaign via Backend Asynchronously
     let successes = 0;
     let failures = 0;
-    const rate = getCostPerMessage();
-    let currentBalance = walletBalance;
+    setExecProgress(10);
+    setExecLogs(prev => [...prev, `> Requesting bulk dispatch on backend...`]);
 
-    for (let index = 0; index < updatedRecipients.length; index++) {
-      const rc = updatedRecipients[index];
+    try {
+      const sendRes = await apiFetch(`/api/campaigns/${createdCamp.id}/send`, {
+        method: 'POST'
+      });
+      const sendData = await sendRes.json();
       
-      setExecLogs(prev => [...prev, `> [${index + 1}/${updatedRecipients.length}] Sending to ${rc.name} (${rc.to})...`]);
-      updatedRecipients[index].status = 'sending';
-
-      if (currentBalance < rate) {
-        failures++;
-        updatedRecipients[index].status = 'failed';
-        updatedRecipients[index].error = 'Insufficient balance';
-        setExecLogs(prev => [...prev, `  [Failed] Error: Insufficient Wallet Balance.`]);
-        continue;
-      }
-      
-      // Compute personalized message and subject
-      const personalizedBody = getPreviewText(campBody, rc);
-      const personalizedSubject = campChannel === 'email' ? getPreviewText(campSubject, rc) : '';
-      
-      const payload = campChannel === 'email' ? {
-        from: smtpConfig?.from || undefined,
-        to: rc.to,
-        subject: personalizedSubject || 'Campaign Alert!',
-        html: `<p>${personalizedBody}</p>`
-      } : {
-        to: rc.to,
-        body: personalizedBody
-      };
-
-      const endpoint = campChannel === 'email' ? 'emails' : campChannel;
-      const url = `http://127.0.0.1:3000/v1/${endpoint}`;
-
-      // Wait 100ms between sends to simulate latency but keep it very fast
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      try {
-        const sendRes = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer sm_live_campaign_auth'
-          },
-          body: JSON.stringify(payload)
-        });
-        const sendData = await sendRes.json();
-        
-        if (!sendRes.ok) {
-          throw { isServerError: true, message: sendData.error?.message || (typeof sendData.error === 'string' ? sendData.error : '') || 'Dispatch failed' };
-        }
-
-        // Success
-        successes++;
-        updatedRecipients[index].status = 'delivered';
-        currentBalance -= rate;
-        setWalletBalance(currentBalance);
-        
-        setExecLogs(prev => [
-          ...prev, 
-          `  [Success] Status: 200 OK | Message ID: ${sendData.id || 'msg_sim'} (${rate} IQD deducted)`
-        ]);
-
-        // Push phone mockup notification preview
-        setPhoneNotifications(prev => [
-          {
-            id: Date.now().toString() + index,
-            type: campChannel,
-            title: campChannel === 'email' ? (campSubject || 'New Mail') : campChannel === 'sms' ? 'SMS: Sumer Send' : 'WhatsApp: Sumer Send',
-            body: personalizedBody,
-            time: 'Now'
-          },
-          ...prev
-        ]);
-
-      } catch (err: any) {
-        if (err.isServerError) {
-          failures++;
-          updatedRecipients[index].status = 'failed';
-          updatedRecipients[index].error = err.message;
-          setExecLogs(prev => [
-            ...prev,
-            `  [Failed] Error: ${err.message}`
-          ]);
-        } else {
-          // Fallback simulation if server connection fails
-          console.warn(`Fallback dispatch for ${rc.to}:`, err.message);
-          
-          // Check if balance allows fallback send
-          if (currentBalance >= rate) {
-            successes++;
-            updatedRecipients[index].status = 'delivered';
-            currentBalance -= rate;
-            setWalletBalance(currentBalance);
-            
-            setExecLogs(prev => [
-              ...prev, 
-              `  [Success Fallback] Status: 200 OK | ID: ${campChannel}_${Math.floor(100000 + Math.random()*900000)}`
-            ]);
-
-            setPhoneNotifications(prev => [
-              {
-                id: Date.now().toString() + index,
-                type: campChannel,
-                title: campChannel === 'email' ? (campSubject || 'New Mail') : campChannel === 'sms' ? 'SMS: Sumer Send' : 'WhatsApp: Sumer Send',
-                body: personalizedBody,
-                time: 'Now'
-              },
-              ...prev
-            ]);
-          } else {
-            failures++;
-            updatedRecipients[index].status = 'failed';
-            updatedRecipients[index].error = 'Insufficient balance';
-            setExecLogs(prev => [...prev, `  [Failed] Error: Insufficient Wallet Balance.`]);
-          }
-        }
+      if (!sendRes.ok) {
+        throw new Error(sendData.error || 'Backend dispatch failed');
       }
 
-      // Sync logs inside frontend
-      fetch('http://127.0.0.1:3000/api/logs')
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) setLogs(data);
-        })
-        .catch(() => {});
-
-      // Update progress bar
-      setExecProgress(Math.round(((index + 1) / updatedRecipients.length) * 100));
+      successes = sendData.successes || 0;
+      failures = sendData.failures || 0;
+      setExecProgress(100);
+      setExecLogs(prev => [
+        ...prev,
+        `> Backend dispatch complete!`,
+        `> Successfully queued: ${successes}`,
+        `> Failed to queue: ${failures}`
+      ]);
+    } catch (err: any) {
+      failures = audience.length;
+      setExecLogs(prev => [
+        ...prev,
+        `> [Error] Dispatch failed: ${err.message || err}`
+      ]);
     }
 
-    // Update Campaign final status on Backend
+    // Sync wallet balance
+    try {
+      const walletRes = await apiFetch('/api/wallet');
+      if (walletRes.ok) {
+        const walletData = await walletRes.json();
+        setWalletBalance(walletData.balance);
+      }
+    } catch (e) {}
+
+    // Sync logs
+    try {
+      const logsRes = await apiFetch('/api/logs');
+      if (logsRes.ok) {
+        const logsData = await logsRes.json();
+        if (Array.isArray(logsData)) setLogs(logsData);
+      }
+    } catch (e) {}
+
     const completedCampaign = {
       ...createdCamp,
       status: 'completed' as const,
       successCount: successes,
       failedCount: failures,
-      recipients: updatedRecipients
+      recipients: audience.map(r => ({ name: r.name, to: r.to, status: 'delivered' as const }))
     };
-
-    setExecLogs(prev => [...prev, `> Updating campaign records...`]);
-
-    try {
-      await fetch(`http://127.0.0.1:3000/api/campaigns/${createdCamp.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'completed',
-          successCount: successes,
-          failedCount: failures,
-          recipients: updatedRecipients
-        })
-      });
-    } catch (e) {
-      console.warn('Could not persist final campaign stats to backend.');
-    }
 
     setCampaigns(prev => prev.map(c => c.id === createdCamp.id ? completedCampaign : c));
     setActiveCampaign(completedCampaign);
@@ -1294,7 +1287,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     e.stopPropagation();
     if (!window.confirm(lang === 'en' ? 'Delete this campaign from history?' : 'حذف هذه الحملة من السجل التاريخي؟')) return;
 
-    fetch(`http://127.0.0.1:3000/api/campaigns/${id}`, { method: 'DELETE' })
+    apiFetch(`/api/campaigns/${id}`, { method: 'DELETE' })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -1891,6 +1884,45 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           {/* STEP 2: COMPOSER */}
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Contextual Intelligence Insight */}
+              {behaviorProfile?.insights.filter(i => i.section === 'templates' || i.section === 'campaigns').map(insight => (
+                <div key={insight.id} className="context-insight-banner" style={{
+                  padding: '16px 20px',
+                  background: 'var(--panel-muted)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '11.5px',
+                  textAlign: 'start'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      fontSize: '8px',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '99px',
+                      textTransform: 'uppercase',
+                      border: '1px solid rgba(168, 85, 247, 0.15)',
+                      backgroundColor: 'rgba(168, 85, 247, 0.04)',
+                      color: '#a855f7',
+                      letterSpacing: '0.3px'
+                    }}>
+                      {lang === 'ar' ? 'تحليل القوالب' : 'Copy Optimization'}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '2px' }}>
+                      {lang === 'ar' ? insight.titleAr : insight.titleEn}
+                    </strong>
+                    <span style={{ color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      {lang === 'ar' ? insight.descAr : insight.descEn}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
               <div>
                 <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>{t.selectTemplate}</label>
                 <select
@@ -1935,6 +1967,56 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   style={{ fontFamily: 'monospace', fontSize: '13px', padding: '12px', lineHeight: 1.5 }}
                 />
               </div>
+
+              {campChannel === 'email' && (() => {
+                const audit = getEmailSpamAudit();
+                if (!audit) return null;
+                
+                const scoreColor = audit.score >= 80 ? '#10b981' : audit.score >= 50 ? '#f59e0b' : '#ef4444';
+                const scoreTextAr = audit.score >= 80 ? 'ممتاز' : audit.score >= 50 ? 'خطر متوسط' : 'مخاطرة سبام عالية';
+                const scoreTextEn = audit.score >= 80 ? 'Excellent' : audit.score >= 50 ? 'Moderate Risk' : 'High Spam Risk';
+
+                return (
+                  <div style={{ marginTop: '16px', marginBottom: '16px', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-bg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Shield size={16} color={scoreColor} />
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>
+                          {lang === 'ar' ? 'مؤشر قابلية التوصيل والأمان (Anti-Spam Advisor)' : 'Anti-Spam & Deliverability Advisor'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {lang === 'ar' ? scoreTextAr : scoreTextEn}
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: scoreColor }}>
+                          {audit.score}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-color)', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
+                      <div style={{ width: `${audit.score}%`, height: '100%', backgroundColor: scoreColor, transition: 'width 0.3s ease, background-color 0.3s ease' }} />
+                    </div>
+
+                    {audit.warnings.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {audit.warnings.map(w => (
+                          <div key={w.id} style={{ display: 'flex', alignItems: 'start', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            <span style={{ color: scoreColor, marginTop: '2px' }}>•</span>
+                            <span>{lang === 'ar' ? w.textAr : w.textEn}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '11px', color: '#10b981' }}>
+                        {lang === 'ar' ? '✓ الرسالة متوافقة تماماً مع معايير منع السبام ومستعدة للإرسال الآمن.' : '✓ Email matches all anti-spam criteria and is ready for safe delivery.'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Token Helpers */}
               <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', backgroundColor: 'var(--panel-bg)' }}>
@@ -2417,7 +2499,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                         
                         <div 
                           style={{ padding: '16px', fontSize: '13px', lineHeight: 1.5 }}
-                          dangerouslySetInnerHTML={{ __html: getPreviewText(campBody, getAudienceList()[previewSubIndex]).replace(/\n/g, '<br />') }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getPreviewText(campBody, getAudienceList()[previewSubIndex]).replace(/\n/g, '<br />')) }}
                         />
                       </div>
                     ) : (
@@ -2736,9 +2818,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   }
                   
                   try {
-                    const res = await fetch('http://127.0.0.1:3000/api/security/confirm-otp', {
+                    const res = await apiFetch('/api/security/confirm-otp', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ otp: verificationOtpInput })
                     });
                     
@@ -2747,23 +2828,11 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                       setVerificationOtpInput('');
                       executeCampaignLaunch(calculateTotalCost());
                     } else {
-                      if (pendingOtpCode && verificationOtpInput === pendingOtpCode) {
-                        setIs2faModalOpen(false);
-                        setVerificationOtpInput('');
-                        executeCampaignLaunch(calculateTotalCost());
-                      } else {
-                        const errData = await res.json();
-                        setVerificationOtpError(errData.error || (lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.'));
-                      }
+                      const errData = await res.json();
+                      setVerificationOtpError(errData.error || (lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.'));
                     }
                   } catch (e) {
-                    if (pendingOtpCode && verificationOtpInput === pendingOtpCode) {
-                      setIs2faModalOpen(false);
-                      setVerificationOtpInput('');
-                      executeCampaignLaunch(calculateTotalCost());
-                    } else {
-                      setVerificationOtpError(lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.');
-                    }
+                    setVerificationOtpError(lang === 'ar' ? 'حدث خطأ في الاتصال بالخادم.' : 'Failed to connect to server.');
                   }
                 }}
               >

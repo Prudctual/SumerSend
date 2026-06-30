@@ -13,9 +13,10 @@ import { PlaygroundView } from './components/PlaygroundView';
 import { CampaignsView } from './components/CampaignsView';
 import { BillingView } from './components/BillingView';
 import { SettingsIntegrationsView } from './components/SettingsIntegrationsView';
-import { LandingView } from './components/LandingView';
+
 import { SettingsView } from './components/SettingsView';
 import { AuthView } from './components/AuthView';
+import { LandingView } from './components/LandingView';
 import { SubscribersView } from './components/SubscribersView';
 import { PublicSubscribeView } from './components/PublicSubscribeView';
 import { ChannelsView } from './components/ChannelsView';
@@ -71,14 +72,6 @@ export default function App() {
     setTransactions,
     phoneNotifications,
     setPhoneNotifications,
-    emailSubject,
-    setEmailSubject,
-    emailBody,
-    setEmailBody,
-    msgBody,
-    setMsgBody,
-    playgroundChannel,
-    setPlaygroundChannel,
     handleLogout
   } = useSumer();
 
@@ -108,6 +101,8 @@ export default function App() {
         return `${settingsSection} > ${lang === 'ar' ? 'حالة النظام والتعرفة' : 'System Rates & Status'}`;
       case 'smtp':
         return `${settingsSection} > ${lang === 'ar' ? 'إرسال البريد SMTP' : 'SMTP Server Config'}`;
+      case 'sms':
+        return `${settingsSection} > ${lang === 'ar' ? 'بوابة الـ SMS' : 'SMS Gateway Config'}`;
       case 'whatsapp':
         return `${settingsSection} > ${lang === 'ar' ? 'ربط جلسة واتساب' : 'WhatsApp Sync'}`;
       
@@ -150,10 +145,6 @@ export default function App() {
           setPhoneNotifications={setPhoneNotifications}
           activeSubTab={activeDashboardSubTab}
           setActiveSubTab={setActiveDashboardSubTab}
-          setEmailBody={setEmailBody}
-          setEmailSubject={setEmailSubject}
-          setMsgBody={setMsgBody}
-          setPlaygroundChannel={setPlaygroundChannel}
         />
       );
     }
@@ -169,14 +160,6 @@ export default function App() {
           domains={domains}
           phoneNotifications={phoneNotifications}
           setPhoneNotifications={setPhoneNotifications}
-          emailBody={emailBody}
-          setEmailBody={setEmailBody}
-          emailSubject={emailSubject}
-          setEmailSubject={setEmailSubject}
-          msgBody={msgBody}
-          setMsgBody={setMsgBody}
-          activeTab={playgroundChannel}
-          setActiveTab={setPlaygroundChannel}
           hideHeader={false}
         />
       );
@@ -231,19 +214,14 @@ export default function App() {
       );
     }
 
-    // 4. Delivery Channels: includes 'channels', 'whatsapp', 'smtp', 'domains'
-    if (['channels', 'whatsapp', 'smtp', 'domains'].includes(currentTab)) {
+    // 4. Delivery Channels: includes 'channels', 'whatsapp', 'sms', 'smtp', 'domains'
+    if (['channels', 'whatsapp', 'sms', 'smtp', 'domains'].includes(currentTab)) {
       const initialSubTab = currentTab === 'channels' ? 'whatsapp' : (currentTab as any);
       return (
         <ChannelsView
           lang={lang}
           theme={theme}
           domains={domains}
-          setDomains={setDomains}
-          setEmailBody={setEmailBody}
-          setEmailSubject={setEmailSubject}
-          setMsgBody={setMsgBody}
-          setPlaygroundChannel={setPlaygroundChannel}
           setCurrentTab={setCurrentTab}
           setLogs={setLogs}
           setPhoneNotifications={setPhoneNotifications}
@@ -272,10 +250,6 @@ export default function App() {
           setWalletBalance={setWalletBalance}
           setPhoneNotifications={setPhoneNotifications}
           setCurrentTab={setCurrentTab}
-          setEmailBody={setEmailBody}
-          setEmailSubject={setEmailSubject}
-          setMsgBody={setMsgBody}
-          setPlaygroundChannel={setPlaygroundChannel}
         />
       );
     }
@@ -291,10 +265,6 @@ export default function App() {
           setWalletBalance={setWalletBalance}
           transactions={transactions}
           setTransactions={setTransactions}
-          setEmailBody={setEmailBody}
-          setEmailSubject={setEmailSubject}
-          setMsgBody={setMsgBody}
-          setPlaygroundChannel={setPlaygroundChannel}
           setCurrentTab={setCurrentTab}
           setLogs={setLogs}
           setPhoneNotifications={setPhoneNotifications}
@@ -333,10 +303,6 @@ export default function App() {
         setPhoneNotifications={setPhoneNotifications}
         activeSubTab={activeDashboardSubTab}
         setActiveSubTab={setActiveDashboardSubTab}
-        setEmailBody={setEmailBody}
-        setEmailSubject={setEmailSubject}
-        setMsgBody={setMsgBody}
-        setPlaygroundChannel={setPlaygroundChannel}
       />
     );
   };
@@ -354,22 +320,17 @@ export default function App() {
         fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'var(--font-family)',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
-            backgroundColor: 'var(--text-primary)',
-            color: 'var(--panel-bg)',
-            fontSize: '22px',
-            fontWeight: 'bold',
-            marginBottom: '16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}>
-            ✦
-          </div>
+          <img 
+            src="/artboard2.svg" 
+            alt="Sumer Send Logo" 
+            style={{
+              width: '44px',
+              height: '44px',
+              objectFit: 'contain',
+              marginBottom: '16px',
+              filter: 'drop-shadow(0 4px 12px rgba(114, 38, 255, 0.2))'
+            }}
+          />
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
             {lang === 'ar' ? 'جاري تهيئة منصة المطور...' : 'Loading developer portal...'}
           </div>
@@ -378,16 +339,15 @@ export default function App() {
     );
   }
 
-  // Guest view routing (Landing)
+  // Render Landing Page View
   if (currentTab === 'landing') {
     return (
       <LandingView
         lang={lang}
         setLang={setLang}
-        setCurrentTab={setCurrentTab}
         theme={theme}
         setTheme={setTheme}
-        user={user}
+        onNavigate={(tab) => setCurrentTab(tab)}
       />
     );
   }
@@ -407,7 +367,7 @@ export default function App() {
           setUser(u);
           setCurrentTab('dashboard');
         }}
-        onBackToLanding={() => setCurrentTab('landing')}
+        onBackToLanding={() => setCurrentTab('auth-signin')}
       />
     );
   }
@@ -712,6 +672,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     // Settings
     { id: 'smtp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إعدادات خادم البريد SMTP', titleEn: 'SMTP Server Config', shortcut: 'S S', icon: <Server size={14} />, action: () => setCurrentTab('smtp') },
+    { id: 'sms', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'بوابة الـ SMS (httpSMS)', titleEn: 'SMS Gateway Config', shortcut: 'S M', icon: <Phone size={14} />, action: () => setCurrentTab('sms') },
     { id: 'whatsapp', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'ربط حساب واتساب الشخصي/التجاري', titleEn: 'WhatsApp Sync Connection', shortcut: 'S W', icon: <MessageSquare size={14} />, action: () => setCurrentTab('whatsapp') },
     { id: 'domains', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'إدارة النطاقات والـ DNS والتوثيق', titleEn: 'Domains & DNS Setup', shortcut: 'S D', icon: <Globe size={14} />, action: () => setCurrentTab('domains') },
     { id: 'api', categoryAr: 'الإعدادات والربط', categoryEn: 'Settings & Integrations', titleAr: 'مفاتيح الـ API وصلاحيات المطور', titleEn: 'Developer API Keys', shortcut: 'S A', icon: <Key size={14} />, action: () => setCurrentTab('api') },

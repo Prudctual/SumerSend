@@ -11,11 +11,38 @@ import {
 
 dotenv.config();
 
+if (!process.env.WHATSAPP_SERVICE_SECRET) {
+  console.warn('⚠️ WARNING: WHATSAPP_SERVICE_SECRET is not configured. Falling back to default secret.');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Middleware to verify shared service token for security hardening
+const serviceAuthMiddleware = (req, res, next) => {
+  if (req.path === '/health') {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  const serviceSecret = process.env.WHATSAPP_SERVICE_SECRET || 'sumer_send_whatsapp_service_secret_key_98765';
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (token !== serviceSecret) {
+    return res.status(401).json({ error: 'Unauthorized: Service secret token mismatch.' });
+  }
+
+  next();
+};
+
+app.use(serviceAuthMiddleware);
 
 // GET /status/:userId -> Returns WhatsApp connection status and QR code
 app.get('/status/:userId', (req, res) => {

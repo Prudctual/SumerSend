@@ -9,21 +9,21 @@
     "dev": "nodemon --ignore '*.json' --ignore 'baileys_auth_info/' index.js"
   },
   "dependencies": {
-    "bullmq": "^5.8.2",
     "@sentry/node": "^10.61.0",
     "@supabase/supabase-js": "^2.108.2",
+    "@whiskeysockets/baileys": "^7.0.0-rc13",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^6.9.13",
-    "rate-limit-redis": "^5.0.0",
-    "redis": "^6.0.1",
-    "@whiskeysockets/baileys": "^7.0.0-rc13",
+    "nodemailer": "^9.0.3",
     "pino": "^10.3.1",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "rate-limit-redis": "^5.0.0",
+    "redis": "^6.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { ScrollReveal } from './LandingView';
 import { TemplatesView } from './TemplatesView';
+import { SumerAiChat } from './SumerAiChat';
+import { useSumer } from '../context/SumerContext';
 
 interface DashboardViewProps {
   lang: 'en' | 'ar';
@@ -73,11 +75,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   activeSubTab: propActiveSubTab,
   setActiveSubTab: propSetActiveSubTab,
   theme,
-  setEmailBody,
-  setEmailSubject,
-  setMsgBody,
-  setPlaygroundChannel
 }) => {
+  const { 
+    behaviorProfile,
+    setEmailBody,
+    setEmailSubject,
+    setMsgBody,
+    setPlaygroundChannel
+  } = useSumer();
   const [showStepsAnyway, setShowStepsAnyway] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
     return localStorage.getItem('sumer_onboarding_dismissed_v2') === 'true';
@@ -921,6 +926,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {/* Bento Grid */}
               <div className="dashboard-bento-grid">
                 
+                {/* Card 0: Sumer AI Chat Assistant */}
+                <SumerAiChat />
+                
                 {/* Card 1: Today's Sends (Sparkline) */}
                 <div className="bento-card-flat bento-card-sparkline">
                   <div style={{ textAlign: 'start' }}>
@@ -1110,6 +1118,175 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               </div>
 
+              {/* Sumer Intelligence Engine Core Panel */}
+              {behaviorProfile && behaviorProfile.insights.length > 0 && (
+                <div className="intelligence-core-panel" style={{ marginTop: '32px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+                  <div className="intelligence-core-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <Sparkles size={16} className="shimmer" style={{ color: 'var(--success-color)' }} />
+                    <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                      {lang === 'ar' ? 'مستشار الذكاء الاصطناعي لوحة التحكم' : 'Sumer AI Co-Pilot Diagnostics'}
+                    </h2>
+                    <span className="intelligence-badge" style={{
+                      fontSize: '8px',
+                      fontWeight: 800,
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      border: '1px solid rgba(16, 185, 129, 0.15)',
+                      color: 'var(--success-color)',
+                      padding: '2px 6px',
+                      borderRadius: '99px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Active
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.5', textAlign: 'start', margin: '0 0 20px 0' }}>
+                    {lang === 'ar' ? behaviorProfile.summaryAr : behaviorProfile.summaryEn}
+                  </p>
+
+                  <div className="intelligence-insights-grid" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    {behaviorProfile.insights.map((insight: any) => {
+                      const isWeakness = insight.type === 'weakness';
+                      const isPrediction = insight.type === 'prediction';
+                      
+                      let accentColor = 'var(--success-color)';
+                      let badgeBg = 'rgba(16, 185, 129, 0.04)';
+                      let badgeBorder = 'rgba(16, 185, 129, 0.15)';
+                      let hoverGlow = 'rgba(16, 185, 129, 0.12)';
+                      
+                      if (isWeakness) {
+                        accentColor = 'var(--danger-color)';
+                        badgeBg = 'rgba(239, 68, 68, 0.04)';
+                        badgeBorder = 'rgba(239, 68, 68, 0.15)';
+                        hoverGlow = 'rgba(239, 68, 68, 0.12)';
+                      } else if (isPrediction) {
+                        accentColor = '#a855f7';
+                        badgeBg = 'rgba(168, 85, 247, 0.04)';
+                        badgeBorder = 'rgba(168, 85, 247, 0.15)';
+                        hoverGlow = 'rgba(168, 85, 247, 0.12)';
+                      }
+
+                      return (
+                        <div 
+                          key={insight.id} 
+                          className="intelligence-insight-card"
+                          style={{
+                            background: 'var(--panel-bg)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px 20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            textAlign: 'start',
+                            boxShadow: 'var(--card-shadow)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = 'var(--card-shadow-hover)';
+                            e.currentTarget.style.borderColor = hoverGlow;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = 'var(--card-shadow)';
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* Desaturated Tiny Badge */}
+                            <div>
+                              <span style={{
+                                fontSize: '8px',
+                                fontWeight: 800,
+                                padding: '2px 8px',
+                                borderRadius: '99px',
+                                textTransform: 'uppercase',
+                                border: `1px solid ${badgeBorder}`,
+                                backgroundColor: badgeBg,
+                                color: accentColor,
+                                letterSpacing: '0.3px'
+                              }}>
+                                {isWeakness 
+                                  ? (lang === 'ar' ? 'إجراء مطلوب' : 'Action Required') 
+                                  : isPrediction 
+                                    ? (lang === 'ar' ? 'تحليل ذكي' : 'Predictive') 
+                                    : (lang === 'ar' ? 'ميزة نشطة' : 'Strength')}
+                              </span>
+                            </div>
+
+                            <h4 style={{
+                              fontSize: '13px',
+                              fontWeight: 750,
+                              color: 'var(--text-primary)',
+                              margin: 0
+                            }}>
+                              {lang === 'ar' ? insight.titleAr : insight.titleEn}
+                            </h4>
+                            <p style={{
+                              fontSize: '11.5px',
+                              color: 'var(--text-secondary)',
+                              lineHeight: '1.5',
+                              margin: 0
+                            }}>
+                              {lang === 'ar' ? insight.descAr : insight.descEn}
+                            </p>
+                          </div>
+
+                          {insight.actionLabelAr && (
+                            <button
+                              onClick={() => {
+                                if (insight.tab) {
+                                  if (insight.tab === 'domains' || insight.tab === 'webhooks') {
+                                    setCurrentTab('dashboard', insight.tab);
+                                  } else {
+                                    setCurrentTab(insight.tab);
+                                  }
+                                }
+                              }}
+                              style={{
+                                alignSelf: lang === 'ar' ? 'flex-start' : 'flex-end',
+                                background: 'var(--panel-muted)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '6px 12px',
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'var(--text-primary)';
+                                e.currentTarget.style.color = 'var(--panel-bg)';
+                                e.currentTarget.style.borderColor = 'var(--text-primary)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'var(--panel-muted)';
+                                e.currentTarget.style.color = 'var(--text-primary)';
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                              }}
+                            >
+                              <span>{lang === 'ar' ? insight.actionLabelAr : insight.actionLabelEn}</span>
+                              <ChevronRight size={10} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Active Delivery Channels */}
               <div className="dispatch-channels-section">
                 <div className="flex-between" style={{ alignItems: 'center', marginBottom: '4px' }}>
@@ -1258,6 +1435,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>{t.domainsTitle}</h2>
                 </div>
               </div>
+              {/* Contextual Intelligence Insight */}
+              {behaviorProfile?.insights.filter(i => i.section === 'developer' && i.id.includes('domain')).map(insight => (
+                <div key={insight.id} className="context-insight-banner" style={{
+                  marginBottom: '20px',
+                  padding: '16px 20px',
+                  background: 'var(--panel-muted)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '11.5px',
+                  textAlign: 'start'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      fontSize: '8px',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '99px',
+                      textTransform: 'uppercase',
+                      border: `1px solid ${insight.type === 'weakness' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)'}`,
+                      backgroundColor: insight.type === 'weakness' ? 'rgba(239, 68, 68, 0.04)' : 'rgba(16, 185, 129, 0.04)',
+                      color: insight.type === 'weakness' ? 'var(--danger-color)' : 'var(--success-color)',
+                      letterSpacing: '0.3px'
+                    }}>
+                      {insight.type === 'weakness' ? (lang === 'ar' ? 'تنبيه' : 'Action Required') : (lang === 'ar' ? 'قوة النطاق' : 'Domain Strength')}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '2px' }}>
+                      {lang === 'ar' ? insight.titleAr : insight.titleEn}
+                    </strong>
+                    <span style={{ color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      {lang === 'ar' ? insight.descAr : insight.descEn}
+                    </span>
+                  </div>
+                </div>
+              ))}
 
               {showDomainsGuide && (
                 <div 
@@ -1560,6 +1776,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Contextual Intelligence Insight */}
+              {behaviorProfile?.insights.filter(i => i.section === 'billing').map(insight => {
+                const isWeakness = insight.type === 'weakness';
+                const isPrediction = insight.type === 'prediction';
+                const accentColor = isWeakness ? 'var(--danger-color)' : isPrediction ? '#a855f7' : 'var(--success-color)';
+                const badgeBg = isWeakness ? 'rgba(239, 68, 68, 0.04)' : isPrediction ? 'rgba(168, 85, 247, 0.04)' : 'rgba(16, 185, 129, 0.04)';
+                const badgeBorder = isWeakness ? 'rgba(239, 68, 68, 0.15)' : isPrediction ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+
+                return (
+                  <div key={insight.id} className="context-insight-banner" style={{
+                    marginBottom: '20px',
+                    padding: '16px 20px',
+                    background: 'var(--panel-muted)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    fontSize: '11.5px',
+                    textAlign: 'start'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        fontSize: '8px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '99px',
+                        textTransform: 'uppercase',
+                        border: `1px solid ${badgeBorder}`,
+                        backgroundColor: badgeBg,
+                        color: accentColor,
+                        letterSpacing: '0.3px'
+                      }}>
+                        {isWeakness ? (lang === 'ar' ? 'تنبيه' : 'Action Required') : isPrediction ? (lang === 'ar' ? 'تحليل تنبؤي' : 'AI Prediction') : (lang === 'ar' ? 'ميزة نشطة' : 'Strength')}
+                      </span>
+                    </div>
+                    <div>
+                      <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '2px' }}>
+                        {lang === 'ar' ? insight.titleAr : insight.titleEn}
+                      </strong>
+                      <span style={{ color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                        {lang === 'ar' ? insight.descAr : insight.descEn}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* Zain Cash Recharge Form */}
               <div className="dashboard-card" style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '24px', textAlign: 'start' }}>

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../config';
 import { 
   BarChart3, 
   Send, 
@@ -21,7 +22,8 @@ import {
   Mail,
   MessageSquare,
   MessageCircle,
-  Check
+  Check,
+  Users
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -46,11 +48,30 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   setCurrentTab,
   hideHeader = false,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'channels' | 'costs' | 'exports'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'channels' | 'costs' | 'exports' | 'audience'>('overview');
 
-  const handleSubTabChange = (tab: 'overview' | 'channels' | 'costs' | 'exports') => {
+  const handleSubTabChange = (tab: 'overview' | 'channels' | 'costs' | 'exports' | 'audience') => {
     setActiveSubTab(tab);
   };
+
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
+  const [subsSearchQuery, setSubsSearchQuery] = useState('');
+
+  useEffect(() => {
+    apiFetch('/api/subscribers')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSubscribers(data);
+        }
+        setSubsLoading(false);
+      })
+      .catch(err => {
+        console.warn('Failed to fetch subscribers for reports:', err);
+        setSubsLoading(false);
+      });
+  }, []);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
@@ -68,6 +89,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       tabChannels: 'Channels Breakdown',
       tabCosts: 'Costs & Spend',
       tabExports: 'Exports & Invoices',
+      tabAudience: 'Audience Analytics',
       
       // Card labels
       totalSent: 'Total Sent',
@@ -120,6 +142,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       tabChannels: 'تحليل القنوات',
       tabCosts: 'التكاليف والمصاريف',
       tabExports: 'التصدير والفواتير',
+      tabAudience: 'تحليلات المشتركين',
       
       // Card labels
       totalSent: 'إجمالي المرسل',
@@ -1075,6 +1098,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         >
           <FileText size={14} style={{ marginInlineEnd: '6px' }} />
           {t.tabExports}
+        </button>
+        <button 
+          onClick={() => handleSubTabChange('audience')} 
+          className={`capsule-tab-btn ${activeSubTab === 'audience' ? 'active' : ''}`}
+        >
+          <Users size={14} style={{ marginInlineEnd: '6px' }} />
+          {t.tabAudience}
         </button>
       </div>
 
@@ -2176,6 +2206,261 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
         </div>
       )}
+
+      {activeSubTab === 'audience' && (() => {
+        const sortedSubscribers = [...subscribers].sort((a, b) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime());
+        const dailyTotals: Record<string, number> = {};
+        sortedSubscribers.forEach(s => {
+          const dateStr = new Date(s.createdAt || s.created_at).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' });
+          dailyTotals[dateStr] = (dailyTotals[dateStr] || 0) + 1;
+        });
+
+        let runningTotal = 0;
+        const growthData = Object.entries(dailyTotals).map(([date, val]) => {
+          runningTotal += val as number;
+          return { date, count: runningTotal };
+        });
+
+        const recentActivity = [...subscribers].sort((a, b) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime());
+        const filteredSubs = recentActivity.filter(s => {
+          if (!subsSearchQuery.trim()) return true;
+          const q = subsSearchQuery.toLowerCase();
+          return (
+            (s.email && s.email.toLowerCase().includes(q)) || 
+            (s.name && s.name.toLowerCase().includes(q)) ||
+            (s.phone && s.phone.includes(q)) ||
+            (s.status && s.status.toLowerCase().includes(q))
+          );
+        });
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Top Level Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+              <BentoCard className="dashboard-card bento-metric-card sms-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px', padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Users size={15} style={{ opacity: 0.8 }} />
+                    <span className="bento-header-title">{lang === 'ar' ? 'إجمالي قاعدة الاتصال' : 'Total Audience'}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
+                  <div className="bento-value" style={{ fontSize: '28px', fontWeight: 800 }}>{subscribers.length}</div>
+                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>100%</span>
+                </div>
+              </BentoCard>
+
+              <BentoCard className="dashboard-card bento-metric-card email-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px', padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={15} style={{ opacity: 0.8 }} />
+                    <span className="bento-header-title">{lang === 'ar' ? 'المشتركون النشطون' : 'Active Subscribers'}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
+                  <div className="bento-value" style={{ fontSize: '28px', fontWeight: 800 }}>{subscribers.filter(s => s.status === 'active').length}</div>
+                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
+                    {subscribers.length > 0 ? ((subscribers.filter(s => s.status === 'active').length / subscribers.length) * 100).toFixed(0) : '0'}%
+                  </span>
+                </div>
+              </BentoCard>
+
+              <BentoCard className="dashboard-card bento-metric-card wa-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px', padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={15} style={{ opacity: 0.8 }} />
+                    <span className="bento-header-title">{lang === 'ar' ? 'الملغى اشتراكهم' : 'Unsubscribed'}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
+                  <div className="bento-value" style={{ fontSize: '28px', fontWeight: 800 }}>{subscribers.filter(s => s.status === 'unsubscribed').length}</div>
+                  <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>
+                    {subscribers.length > 0 ? ((subscribers.filter(s => s.status === 'unsubscribed').length / subscribers.length) * 100).toFixed(0) : '0'}%
+                  </span>
+                </div>
+              </BentoCard>
+            </div>
+
+            {/* Charts Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+              {/* SVG Growth Chart */}
+              <div className="card" style={{ padding: '24px', borderRadius: '8px', overflow: 'visible' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
+                  {lang === 'ar' ? 'منحنى نمو قاعدة المشتركين' : 'Audience Growth Trend'}
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
+                  {lang === 'ar' ? 'متابعة الزيادة التراكمية في أعداد المشتركين.' : 'Cumulative growth of subscribers over time.'}
+                </p>
+
+                {growthData.length > 0 ? (() => {
+                  const maxVal = Math.max(...growthData.map(d => d.count)) * 1.15 || 10;
+                  const points = growthData.map((d, idx) => {
+                    const x = growthData.length > 1 ? (idx / (growthData.length - 1)) * 100 : 50;
+                    const y = 100 - (d.count / maxVal) * 100;
+                    return `${x},${y}`;
+                  }).join(' ');
+
+                  return (
+                    <div style={{ position: 'relative', width: '100%', direction: 'ltr' }}>
+                      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '160px', overflow: 'visible' }}>
+                        <defs>
+                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.25"/>
+                            <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0.00"/>
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d={`M0,100 L${points} L100,100 Z`}
+                          fill="url(#chartGrad)"
+                          style={{ transition: 'all 0.3s ease' }}
+                        />
+                        <polyline
+                          fill="none"
+                          stroke="var(--accent-color)"
+                          strokeWidth="2"
+                          points={points}
+                          style={{ transition: 'all 0.3s ease' }}
+                        />
+                        <line x1="0" y1="50" x2="100" y2="50" stroke="var(--border-color)" strokeWidth="0.5" strokeDasharray="3" />
+                        <line x1="0" y1="0" x2="100" y2="0" stroke="var(--border-color)" strokeWidth="0.5" strokeDasharray="3" />
+                      </svg>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '10px', color: 'var(--text-secondary)' }}>
+                        <span>{growthData[0]?.date}</span>
+                        <span>{growthData[Math.floor(growthData.length / 2)]?.date}</span>
+                        <span>{growthData[growthData.length - 1]?.date}</span>
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    {lang === 'ar' ? 'لا تتوفر بيانات نمو كافية حتى الآن.' : 'No growth data available yet.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Entrypoints progress card */}
+              <div className="card" style={{ padding: '24px', borderRadius: '8px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
+                  {lang === 'ar' ? 'مصادر الاشتراكات' : 'Subscription Entrypoints'}
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
+                  {lang === 'ar' ? 'توزيع المشتركين حسب وسيلة التسجيل في النظام.' : 'Distribution of audience by signup method.'}
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {[
+                    { key: 'hosted_page', nameAr: 'الصفحة المخصصة (Hosted Page)', nameEn: 'Hosted Opt-in Page', color: 'var(--accent-color)' },
+                    { key: 'embed_form', nameAr: 'النموذج المضمن (Embed Form)', nameEn: 'Embedded Forms', color: 'var(--success-color)' },
+                    { key: 'manual', nameAr: 'إضافة يدوية', nameEn: 'Manual Admin Add', color: 'var(--channel-whatsapp)' },
+                    { key: 'import', nameAr: 'استيراد ملف (Excel/CSV)', nameEn: 'Bulk Import', color: '#f59e0b' },
+                    { key: 'api', nameAr: 'الربط البرمجي (API Gateway)', nameEn: 'Direct API Access', color: '#8b5cf6' }
+                  ].map(src => {
+                    const count = subscribers.filter(s => (s.metadata?.source || 'unknown') === src.key).length;
+                    const percent = subscribers.length > 0 ? Math.round((count / subscribers.length) * 100) : 0;
+                    return (
+                      <div key={src.key}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                          <span style={{ fontWeight: 500 }}>{lang === 'ar' ? src.nameAr : src.nameEn}</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{count} ({percent}%)</span>
+                        </div>
+                        <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-color)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percent}%`, height: '100%', backgroundColor: src.color, borderRadius: '3px', transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Subscriber Activity Logs */}
+            <div className="card" style={{ padding: '24px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                    {lang === 'ar' ? 'سجل حركات المشتركين (المشتركون والملغون)' : 'Recent Subscription Activity Logs'}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                    {lang === 'ar' ? 'استعراض من اشترك ومن ألغى الاشتراك وتفاصيل العمليات.' : 'Audit logs of who joined and who unsubscribed.'}
+                  </p>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder={lang === 'ar' ? 'البحث بالبريد الإلكتروني أو الاسم...' : 'Search by email or name...'}
+                  value={subsSearchQuery}
+                  onChange={(e) => setSubsSearchQuery(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--panel-bg)',
+                    color: 'var(--text-primary)',
+                    fontSize: '12px',
+                    maxWidth: '240px',
+                    width: '100%'
+                  }}
+                />
+              </div>
+
+              {subsLoading ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  {lang === 'ar' ? 'جاري تحميل سجلات المشتركين...' : 'Loading subscriber audit logs...'}
+                </div>
+              ) : filteredSubs.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="v-table" style={{ fontSize: '12px' }}>
+                    <thead>
+                      <tr>
+                        <th>{lang === 'ar' ? 'الاسم' : 'Name'}</th>
+                        <th>{lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}</th>
+                        <th>{lang === 'ar' ? 'قناة المصدر' : 'Source'}</th>
+                        <th>{lang === 'ar' ? 'التاريخ والوقت' : 'Timestamp'}</th>
+                        <th>{lang === 'ar' ? 'الحالة' : 'Status'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSubs.map((sub, idx) => {
+                        const dateFormatted = new Date(sub.createdAt || sub.created_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US');
+                        const sourceName = sub.metadata?.source || 'unknown';
+                        const badgeBg = sub.status === 'active' ? 'var(--success-bg)' : 'var(--error-bg)';
+                        const badgeText = sub.status === 'active' ? 'var(--success-text)' : 'var(--error-text)';
+                        
+                        return (
+                          <tr key={idx}>
+                            <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{sub.name || '—'}</td>
+                            <td>{sub.email}</td>
+                            <td style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                              {sourceName.replace('_', ' ')}
+                            </td>
+                            <td>{dateFormatted}</td>
+                            <td>
+                              <span style={{ 
+                                fontSize: '10px', 
+                                color: badgeText, 
+                                backgroundColor: badgeBg, 
+                                padding: '2px 8px', 
+                                borderRadius: '8px',
+                                fontWeight: 600
+                              }}>
+                                {sub.status === 'active' ? (lang === 'ar' ? 'مشترك نشط' : 'Subscribed') : (lang === 'ar' ? 'إلغاء الاشتراك' : 'Unsubscribed')}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  {lang === 'ar' ? 'لا توجد نتائج مطابقة.' : 'No activity logs found matching the filter.'}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       </div>
       </div>
     </ScrollReveal>

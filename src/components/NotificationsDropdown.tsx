@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch, API_BASE } from '../config';
 import { Bell, Check, Trash2, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 interface Notification {
@@ -83,7 +84,7 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/notifications');
+      const res = await apiFetch('/api/notifications');
       if (res.ok) {
         const data = (await res.json()) as Notification[];
         
@@ -133,7 +134,7 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/notifications/${id}/read`, {
+      const res = await apiFetch(`/api/notifications/${id}/read`, {
         method: 'PUT',
       });
       if (res.ok) {
@@ -148,7 +149,7 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
 
   const handleMarkAllAsRead = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/notifications/read-all', {
+      const res = await apiFetch('/api/notifications/read-all', {
         method: 'PUT',
       });
       if (res.ok) {
@@ -167,7 +168,7 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/notifications/${id}`, {
+      const res = await apiFetch(`/api/notifications/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -180,7 +181,7 @@ export default function NotificationsDropdown({ lang }: NotificationsDropdownPro
 
   const handleClearAll = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/notifications', {
+      const res = await apiFetch('/api/notifications', {
         method: 'DELETE',
       });
       if (res.ok) {

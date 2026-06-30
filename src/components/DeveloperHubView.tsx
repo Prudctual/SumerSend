@@ -2,6 +2,7 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../config';
 import { 
   Key, 
   Plus, 
@@ -121,9 +122,8 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   const [verificationOtpError, setVerificationOtpError] = useState<string | null>(null);
   const [pendingOtpCode, setPendingOtpCode] = useState<string | null>(null);
 
-  // Load security config
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/security/config')
+    apiFetch('/api/security/config')
       .then(res => res.json())
       .then(data => setSecurityConfig(data))
       .catch(err => console.warn('Could not load security config in developer hub:', err));
@@ -164,7 +164,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   useEffect(() => {
     if (activeSubTab === 'webhooks') {
       const fetchLogs = () => {
-        fetch('http://127.0.0.1:3000/api/webhooks/logs')
+        apiFetch('/api/webhooks/logs')
           .then(res => res.json())
           .then(data => {
             if (Array.isArray(data)) {
@@ -213,11 +213,11 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     const cost = selectedChannel === 'email' ? 10 : selectedChannel === 'sms' ? 120 : 150;
     
     const addLog = (msg: string) => {
-      setConsoleLogs(prev => [...prev, `> ${msg}`]);
+      setConsoleLogs((prev: string[]) => [...prev, `> ${msg}`]);
     };
     
     const endpoint = selectedChannel === 'email' ? 'emails' : selectedChannel;
-    const url = `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000'}/v1/${endpoint}`;
+    const url = `${import.meta.env.VITE_API_URL || API_BASE}/v1/${endpoint}`;
     
     addLog(`POST ${url}`);
     addLog(`Authorization: Bearer ${apiKey.slice(0, 15)}...`);
@@ -261,7 +261,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
           }
           
           if (setLogs) {
-            fetch('http://127.0.0.1:3000/api/logs')
+            apiFetch('/api/logs')
               .then(r => r.json())
               .then(serverLogs => {
                 if (Array.isArray(serverLogs)) setLogs(serverLogs);
@@ -346,7 +346,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   };
 
   useEffect(() => {
-    fetch('http://127.0.0.1:3000/api/smtp/config')
+    apiFetch('/api/smtp/config')
       .then(res => res.json())
       .then(data => {
         if (data && data.host) {
@@ -536,9 +536,24 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     return keyObj ? keyObj.key : 'YOUR_API_KEY';
   };
 
-  const executeCreateKey = (name: string, scope: string) => {
+  const executeCreateKey = async (name: string, scope: string) => {
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      const res = await apiFetch('/api/apikeys', {
+        method: 'POST',
+        body: JSON.stringify({ name, scope })
+      });
+      if (!res.ok) {
+        throw new Error('Failed to create API key on backend');
+      }
+      const newObj = await res.json();
+      setApiKeys([...apiKeys, newObj]);
+      setSelectedApiKeyId(newObj.id);
+      setKeyName('');
+      setKeyScope('full');
+    } catch (err) {
+      console.error('Failed to create API Key on backend, falling back to local:', err);
+      // local fallback
       const randomHex = Array.from({ length: 32 }, () => 
         Math.floor(Math.random() * 16).toString(16)
       ).join('');
@@ -556,8 +571,9 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
       setSelectedApiKeyId(newObj.id);
       setKeyName('');
       setKeyScope('full');
+    } finally {
       setIsGenerating(false);
-    }, 600);
+    }
   };
 
   const handleCreateKey = async (e: React.FormEvent) => {
@@ -569,38 +585,19 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
         setVerificationOtpError(null);
         setVerificationOtpInput('');
         
-        const res = await fetch('http://127.0.0.1:3000/api/security/verify-phone', {
+        const res = await apiFetch('/api/security/verify-phone', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: securityConfig.phone })
         });
         const data = await res.json();
         
-        if (res.ok && data.otp) {
-          setPendingOtpCode(data.otp);
+        if (res.ok) {
           setIs2faModalOpen(true);
-          
-          if (setPhoneNotifications) {
-            setPhoneNotifications(prev => [
-              {
-                id: 'security_2fa_api_' + Date.now(),
-                type: 'sms',
-                title: 'SMS: Sumer Security',
-                body: `رمز التحقق لإنشاء مفتاح API الجديد "${name}" هو: ${data.otp}. لا تشارك هذا الرمز.`,
-                time: 'Now'
-              },
-              ...prev
-            ]);
-          }
         } else {
-          const code = Math.floor(100000 + Math.random() * 900000).toString();
-          setPendingOtpCode(code);
-          setIs2faModalOpen(true);
+          setVerificationOtpError(lang === 'ar' ? 'فشل إرسال رمز التحقق.' : 'Failed to send OTP.');
         }
       } catch (err) {
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        setPendingOtpCode(code);
-        setIs2faModalOpen(true);
+        setVerificationOtpError(lang === 'ar' ? 'فشل الاتصال بالخادم.' : 'Failed to connect to server.');
       }
       return;
     }
@@ -608,7 +605,15 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
     executeCreateKey(name, keyScope);
   };
 
-  const handleDeleteKey = (id: string) => {
+  const handleDeleteKey = async (id: string) => {
+    try {
+      await apiFetch(`/api/apikeys/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.error('Failed to delete API Key from backend:', err);
+    }
+    
     setApiKeys(prev => prev.filter(k => k.id !== id));
     if (selectedApiKeyId === id) {
       setSelectedApiKeyId('');
@@ -622,17 +627,17 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   };
 
   const toggleVisibility = (id: string) => {
-    setVisibleKeys(prev => ({ ...prev, [id]: !prev[id] }));
+    setVisibleKeys((prev: Record<string, boolean>) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const toggleSecretVisibility = (id: string) => {
-    setVisibleSecrets(prev => ({ ...prev, [id]: !prev[id] }));
+    setVisibleSecrets((prev: Record<string, boolean>) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleEventToggle = (event: string) => {
-    setWebhookEvents(prev => 
+    setWebhookEvents((prev: string[]) => 
       prev.includes(event) 
-        ? prev.filter(e => e !== event) 
+        ? prev.filter((e: string) => e !== event) 
         : [...prev, event]
     );
   };
@@ -653,9 +658,8 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
       secret: `sumer_wh_${randomHex}`
     };
 
-    fetch('http://127.0.0.1:3000/api/webhooks', {
+    apiFetch('/api/webhooks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
       .then(res => {
@@ -673,7 +677,7 @@ export const DeveloperHubView: React.FC<DeveloperHubViewProps> = ({
   };
 
   const handleDeleteWebhook = (id: string) => {
-    fetch(`http://127.0.0.1:3000/api/webhooks/${id}`, {
+    apiFetch(`/api/webhooks/${id}`, {
       method: 'DELETE'
     })
       .then(res => {
@@ -834,7 +838,7 @@ echo "Webhook Processed";
   // Code Block Templates Generator
   const getGeneratedCode = () => {
     const apiKey = getSelectedApiKeyText();
-    const endpointHost = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+    const endpointHost = import.meta.env.VITE_API_URL || API_BASE;
     
     switch (selectedLang) {
       case 'curl':
@@ -2075,7 +2079,7 @@ echo "Webhook Processed";
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
                         <span style={{ color: '#52525b', fontSize: '9px', marginLeft: '6px' }}>sumer-webhook-simulator</span>
                       </div>
-                      {simulationLogs.map((log, index) => (
+                      {simulationLogs.map((log: string, index: number) => (
                         <div key={index} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{log}</div>
                       ))}
                       {isSimulating && (
@@ -2132,7 +2136,7 @@ echo "Webhook Processed";
                     </tr>
                   </thead>
                   <tbody>
-                    {webhookLogs.map((log) => (
+                    {webhookLogs.map((log: any) => (
                       <tr key={log.id}>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{log.event}</td>
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.url}>{log.url}</td>
@@ -2523,7 +2527,7 @@ echo "Webhook Processed";
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {consoleLogs.map((log, idx) => {
+                          {consoleLogs.map((log: string, idx: number) => {
                             let color = '#eaeaea';
                             if (log.startsWith('> POST') || log.startsWith('> GET')) {
                               color = '#60a5fa'; // Blue
@@ -2731,9 +2735,8 @@ echo "Webhook Processed";
                   
                   const targetName = keyName.trim() || (lang === 'en' ? 'Default API Key' : 'مفتاح API افتراضي');
                   try {
-                    const res = await fetch('http://127.0.0.1:3000/api/security/confirm-otp', {
+                    const res = await apiFetch('/api/security/confirm-otp', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ otp: verificationOtpInput })
                     });
                     
@@ -2742,23 +2745,11 @@ echo "Webhook Processed";
                       setVerificationOtpInput('');
                       executeCreateKey(targetName, keyScope);
                     } else {
-                      if (pendingOtpCode && verificationOtpInput === pendingOtpCode) {
-                        setIs2faModalOpen(false);
-                        setVerificationOtpInput('');
-                        executeCreateKey(targetName, keyScope);
-                      } else {
-                        const errData = await res.json();
-                        setVerificationOtpError(errData.error || (lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.'));
-                      }
+                      const errData = await res.json();
+                      setVerificationOtpError(errData.error || (lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.'));
                     }
                   } catch (e) {
-                    if (pendingOtpCode && verificationOtpInput === pendingOtpCode) {
-                      setIs2faModalOpen(false);
-                      setVerificationOtpInput('');
-                      executeCreateKey(targetName, keyScope);
-                    } else {
-                      setVerificationOtpError(lang === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid code.');
-                    }
+                    setVerificationOtpError(lang === 'ar' ? 'حدث خطأ في الاتصال بالخادم.' : 'Failed to connect to server.');
                   }
                 }}
               >

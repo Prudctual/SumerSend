@@ -101,6 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [profileMenuOpen, setProfileMenuOpen] = React.useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  };
+
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -205,6 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       subItems: [
         { id: 'domains', subTab: 'domains', labelAr: 'النطاقات والـ DNS', labelEn: 'Domains & DNS' },
         { id: 'whatsapp', labelAr: 'ربط واتساب', labelEn: 'WhatsApp Connection' },
+        { id: 'sms', labelAr: 'بوابة الـ SMS', labelEn: 'SMS Gateway' },
         { id: 'smtp', labelAr: 'خادم SMTP', labelEn: 'SMTP Server Config' },
       ]
     },
@@ -241,6 +249,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return currentTab === 'dashboard' && activeDashboardSubTab === 'domains';
       case 'whatsapp':
         return currentTab === 'whatsapp';
+      case 'sms':
+        return currentTab === 'sms';
       case 'smtp':
         return currentTab === 'smtp';
       case 'send':
@@ -411,6 +421,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div key={group.id} className="sidebar-item-container">
                   <a
                     href={group.subItems.length === 1 ? getPathFromTab(group.subItems[0].id, group.subItems[0].subTab) : undefined}
+                    tabIndex={0}
+                    onKeyDown={(e) => handleKeyDown(e, () => handleGroupClick(group))}
                     className={`sidebar-link ${isGroupAct ? 'active' : ''} sidebar-item-animated`}
                     style={{
                       transitionDelay: `${index * 30}ms`,
@@ -452,6 +464,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <a
                             key={subItem.id}
                             href={getPathFromTab(subItem.id, subItem.subTab)}
+                            tabIndex={0}
+                            onKeyDown={(e) => handleKeyDown(e, () => setCurrentTab(subItem.id, subItem.subTab as any))}
                             className={`sidebar-nested-link ${isSubActive ? 'active' : ''}`}
                             onClick={(e) => {
                               e.preventDefault();
@@ -677,6 +691,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* User Profile Info & Dropdown Trigger */}
           <div 
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            onKeyDown={(e) => handleKeyDown(e, () => setProfileMenuOpen(!profileMenuOpen))}
+            tabIndex={0}
+            role="button"
             className="profile-menu-trigger"
             style={{ 
               display: 'flex', 

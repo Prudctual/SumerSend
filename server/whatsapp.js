@@ -1,6 +1,7 @@
 import { makeWASocket, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import QRCode from 'qrcode';
+import crypto from 'crypto';
 import { supabase } from './db.js';
 import { useSupabaseAuthState } from './wa_db_auth.js';
 
@@ -196,7 +197,7 @@ export async function initializeAllWhatsAppConnections() {
 // Low-level helper to inject notification records from the WhatsApp background service
 async function addServiceNotification(userId, title, body, type = 'info') {
     try {
-        const id = 'nt_' + Math.random().toString(36).substring(2, 15);
+        const id = 'nt_' + crypto.randomUUID();
         const { error } = await supabase
             .from('notifications')
             .insert({

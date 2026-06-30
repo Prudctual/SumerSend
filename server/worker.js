@@ -6,17 +6,41 @@ import { sendWhatsAppMessage } from './whatsapp.js';
 import { sendSmsMessage } from './sms.js';
 import { redisConnectionOpts, redisClient } from './redis.js';
 import { queueMessageJob, queueWebhookJob } from './queue.js';
+import { htmlToText, decryptText } from './utils.js';
 
-// Cache of NodeMailer transporters
-const transporters = {};
+// Cache of NodeMailer transporters (LRU Map with size limit)
+const transporters = new Map();
+const MAX_CACHE_SIZE = 100;
 
 function createTransporter(config) {
   if (!config.host || !config.user || !config.pass) {
     return null;
   }
-  const cacheKey = `${config.host}:${config.port}:${config.user}`;
-  if (transporters[cacheKey]) {
-    return transporters[cacheKey];
+  
+  // Hash all config variables (including password) to invalidate cache on credential changes
+  const cacheKey = crypto.createHash('md5')
+    .update(`${config.host}:${config.port}:${config.user}:${config.pass}`)
+    .digest('hex');
+
+  if (transporters.has(cacheKey)) {
+    const cached = transporters.get(cacheKey);
+    transporters.delete(cacheKey);
+    transporters.set(cacheKey, cached);
+    return cached;
+  }
+
+  // Evict oldest if limit exceeded
+  if (transporters.size >= MAX_CACHE_SIZE) {
+    const oldestKey = transporters.keys().next().value;
+    const oldestTransporter = transporters.get(oldestKey);
+    if (oldestTransporter) {
+      try {
+        oldestTransporter.close();
+      } catch (err) {
+        console.error('Error closing evicted SMTP transporter:', err);
+      }
+    }
+    transporters.delete(oldestKey);
   }
 
   const transporter = nodemailer.createTransport({
@@ -35,7 +59,7 @@ function createTransporter(config) {
     maxMessages: 100
   });
 
-  transporters[cacheKey] = transporter;
+  transporters.set(cacheKey, transporter);
   return transporter;
 }
 
@@ -101,18 +125,26 @@ export function startQueueWorker() {
           port: smtpConfig.port,
           secure: smtpConfig.secure,
           user: smtpConfig.username,
-          pass: smtpConfig.password
+          pass: decryptText(smtpConfig.password || '')
         });
 
         if (!transporter) {
           throw new Error('Could not create SMTP transporter. Invalid config.');
         }
 
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.APP_URL || 'http://127.0.0.1:3000');
+        const unsubscribeUrl = `${baseUrl}/api/public/subscribers/unsubscribe/${userId}?email=${encodeURIComponent(recipient)}`;
+
         await transporter.sendMail({
           from: smtpConfig.sender || `Sumer Send <onboarding@sumersend.com>`,
           to: recipient,
           subject: subject || 'No Subject',
-          html: body
+          html: body,
+          text: htmlToText(body),
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+          }
         });
         success = true;
 
@@ -144,7 +176,7 @@ export function startQueueWorker() {
 
       // Create log entry
       await supabase.from('logs').insert({
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+        id: `msg_${crypto.randomUUID()}`,
         user_id: userId,
         type,
         sender: type === 'email' ? 'SMTP Config Sender' : 'Sumer Send API',
@@ -210,7 +242,7 @@ export function startQueueWorker() {
 
       // 2. Refund WhatsApp cost (150 units)
       const refundCost = 150;
-      const refundTxId = `TX_REF_FO_${Math.random().toString(36).substring(2, 15)}`;
+      const refundTxId = `TX_REF_FO_${crypto.randomUUID()}`;
       try {
         await supabase.rpc('refund_wallet_atomic', {
           p_user_id: userId,
@@ -247,7 +279,7 @@ export function startQueueWorker() {
       if (!smsInsertErr && newSms) {
         // 4. Charge SMS cost (120 units)
         const smsCost = 120;
-        const chargeTxId = `TX_CHG_FO_${Math.random().toString(36).substring(2, 15)}`;
+        const chargeTxId = `TX_CHG_FO_${crypto.randomUUID()}`;
         try {
           const charged = await supabase.rpc('charge_wallet_atomic', {
             p_user_id: userId,
@@ -277,7 +309,7 @@ export function startQueueWorker() {
 
       // 6. Log the WhatsApp failure
       await supabase.from('logs').insert({
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+        id: `msg_${crypto.randomUUID()}`,
         user_id: userId,
         type: 'whatsapp',
         sender: 'Sumer Send API',
@@ -316,7 +348,7 @@ export function startQueueWorker() {
 
       // Refund wallet atomically
       const refundCost = type === 'email' ? 10 : (type === 'sms' ? 120 : 150);
-      const refundTxId = `TX_REF_${Math.random().toString(36).substring(2, 15)}`;
+      const refundTxId = `TX_REF_${crypto.randomUUID()}`;
       try {
         await supabase.rpc('refund_wallet_atomic', {
           p_user_id: userId,
@@ -331,7 +363,7 @@ export function startQueueWorker() {
 
       // Create log entry
       await supabase.from('logs').insert({
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+        id: `msg_${crypto.randomUUID()}`,
         user_id: userId,
         type,
         sender: 'Sumer Send API',
@@ -440,7 +472,7 @@ export function startQueueWorker() {
 
       // Save webhook log entry
       await supabase.from('webhook_logs').insert({
-        id: 'whlog_' + Math.random().toString(36).substring(2, 15),
+        id: 'whlog_' + crypto.randomUUID(),
         webhook_id: webhookId,
         user_id: userId,
         url,
@@ -476,7 +508,7 @@ export function startQueueWorker() {
       await supabase.from('webhook_queue').delete().eq('id', webhookJobId);
 
       await supabase.from('webhook_logs').insert({
-        id: 'whlog_' + Math.random().toString(36).substring(2, 15),
+        id: 'whlog_' + crypto.randomUUID(),
         webhook_id: webhookId,
         user_id: userId,
         url,

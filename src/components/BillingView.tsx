@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Wallet, Plus, Clock, Shield, AlertCircle, ArrowUpRight, BarChart3, Settings, CreditCard, Download, CheckCircle2, Mail, MessageSquare, Phone, Zap, Layers } from 'lucide-react';
+import { useSumer } from '../context/SumerContext';
+import { API_BASE } from '../config';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -25,6 +27,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
   setTransactions,
   hideHeader = false,
 }) => {
+  const { user, token } = useSumer();
   const [activeTab, setActiveTab] = useState<'wallet' | 'tariff'>('wallet');
   const [showZainModal, setShowZainModal] = useState(false);
   const [showFastPayModal, setShowFastPayModal] = useState(false);
@@ -234,7 +237,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
     }, 1000);
   };
 
-  const handleVerifyOTP = (e: React.FormEvent, provider: 'Zain Cash' | 'FastPay') => {
+  const handleVerifyOTP = async (e: React.FormEvent, provider: 'Zain Cash' | 'FastPay') => {
     e.preventDefault();
     if (!otp || otp.length < 4) {
       setError(t.otpError);
@@ -245,52 +248,78 @@ export const BillingView: React.FC<BillingViewProps> = ({
     setIsVerifying(true);
     
     const depositAmount = parseInt(amount);
+    const payload = {
+      userId: user?.id || 'simulated_user_id',
+      provider,
+      amount: depositAmount,
+      phoneNumber: phoneNumber
+    };
 
-    fetch('http://127.0.0.1:3000/api/wallet/topup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const payloadStr = JSON.stringify(payload);
+      const secretKey = 'sumer_send_gateway_secret_key_12345';
+      const enc = new TextEncoder();
+      
+      const cryptoKey = await window.crypto.subtle.importKey(
+        "raw",
+        enc.encode(secretKey),
+        { name: "HMAC", hash: { name: "SHA-256" } },
+        false,
+        ["sign"]
+      );
+      
+      const sigBuffer = await window.crypto.subtle.sign(
+        "HMAC",
+        cryptoKey,
+        enc.encode(payloadStr)
+      );
+      
+      const signature = Array.from(new Uint8Array(sigBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      const res = await fetch(`${API_BASE}/api/wallet/topup/webhook`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-gateway-signature': signature,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: payloadStr
+      });
+
+      if (!res.ok) throw new Error('Failed to deposit funds');
+      const data = await res.json();
+      
+      if (data.balance !== undefined) {
+        setWalletBalance(data.balance);
+      }
+      if (Array.isArray(data.transactions)) {
+        setTransactions(data.transactions);
+      }
+      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    } catch (err) {
+      console.error('Failed to post top-up:', err);
+      // Local fallback in case server is not running
+      setWalletBalance(prev => prev + depositAmount);
+      const newTx = {
+        id: `TX_${window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString()}`,
         provider,
         amount: depositAmount,
-        phoneNumber: phoneNumber
-      })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to deposit funds');
-        return res.json();
-      })
-      .then(data => {
-        if (data.balance !== undefined) {
-          setWalletBalance(data.balance);
-        }
-        if (Array.isArray(data.transactions)) {
-          setTransactions(data.transactions);
-        }
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-      })
-      .catch(err => {
-        console.error('Failed to post top-up:', err);
-        // Local fallback in case server is not running
-        setWalletBalance(prev => prev + depositAmount);
-        const newTx = {
-          id: 'TX' + Math.floor(100000 + Math.random() * 900000).toString(),
-          provider,
-          amount: depositAmount,
-          status: 'completed',
-          date: new Date().toISOString(),
-          description: `Simulated top-up via ${provider}`
-        };
-        setTransactions([newTx, ...transactions]);
-      })
-      .finally(() => {
-        setIsVerifying(false);
-        setShowZainModal(false);
-        setShowFastPayModal(false);
-        setStep(1);
-        setPin('');
-        setOtp('');
-        setError('');
-      });
+        status: 'completed',
+        date: new Date().toISOString(),
+        description: `Simulated secure top-up via ${provider}`
+      };
+      setTransactions([newTx, ...transactions]);
+    } finally {
+      setIsVerifying(false);
+      setShowZainModal(false);
+      setShowFastPayModal(false);
+      setStep(1);
+      setPin('');
+      setOtp('');
+      setError('');
+    }
   };
 
   const [invoiceTx, setInvoiceTx] = useState<any | null>(null);

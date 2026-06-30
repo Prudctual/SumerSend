@@ -24,10 +24,10 @@ interface SettingsIntegrationsViewProps {
   walletBalance: number;
   setPhoneNotifications: any;
   setCurrentTab: any;
-  setEmailBody: any;
-  setEmailSubject: any;
-  setMsgBody: any;
-  setPlaygroundChannel: any;
+  setEmailBody?: any;
+  setEmailSubject?: any;
+  setMsgBody?: any;
+  setPlaygroundChannel?: any;
   initialTab?: 'domains' | 'apikeys' | 'webhooks' | 'code';
 }
 

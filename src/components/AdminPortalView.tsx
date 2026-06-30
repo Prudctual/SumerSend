@@ -243,7 +243,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ lang, setLang,
             
             <button 
               type="button"
-              onClick={() => setCurrentTab('landing')}
+              onClick={() => setCurrentTab('auth-signin')}
               style={{
                 background: 'none',
                 border: 'none',

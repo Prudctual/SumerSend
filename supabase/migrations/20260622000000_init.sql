@@ -248,16 +248,6 @@ BEGIN
   INSERT INTO public.security_configs (user_id, phone, verified, require_campaign_2fa, require_apikey_2fa)
   VALUES (NEW.id, '', false, false, false);
 
-  -- Insert default API key
-  INSERT INTO public.api_keys (id, user_id, name, key, scope)
-  VALUES (
-    NEW.id || '_key_1',
-    NEW.id,
-    'Main Application Key',
-    'sm_live_' || md5(random()::text || clock_timestamp()::text),
-    'full'
-  );
-
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

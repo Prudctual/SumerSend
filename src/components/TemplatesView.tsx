@@ -24,6 +24,7 @@ import type { TemplateItem, TemplateVariable } from '../data/templates';
 import { TemplateBuilder } from './TemplateBuilder';
 import { BentoCard } from './LandingView';
 import { useSumer } from '../context/SumerContext';
+import { API_BASE } from '../config';
 
 interface TemplatesViewProps {
   lang: 'en' | 'ar';
@@ -42,7 +43,7 @@ interface TemplatesViewProps {
 
 export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
   const { lang, theme, domains, setLogs, walletBalance, setWalletBalance } = props;
-  const { user } = useSumer();
+  const { user, setEmailSubject, setEmailBody, setMsgBody, setPlaygroundChannel } = useSumer();
 
   // Tabs & category state
   const [activeCategory, setActiveCategory] = useState<'all' | 'email' | 'sms' | 'whatsapp'>('all');
@@ -69,7 +70,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
 
   // Load custom templates and SMTP configuration for test sender
   const fetchCustomTemplates = () => {
-    fetch('http://127.0.0.1:3000/api/templates/custom')
+    fetch(API_BASE + '/api/templates/custom')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -80,7 +81,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
   };
 
   const fetchSmtpConfig = () => {
-    fetch('http://127.0.0.1:3000/api/smtp/config')
+    fetch(API_BASE + '/api/smtp/config')
       .then(res => res.json())
       .then(data => {
         if (data.user) {
@@ -223,6 +224,11 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
     ? compileTemplate(selectedTemplate, previewVars)
     : { subject: '', body: '' };
 
+  const otpVariable = selectedTemplate?.variables?.find(
+    v => v.key.toLowerCase().includes('otp') || v.key.toLowerCase().includes('code') || v.key.toLowerCase().includes('coupon')
+  );
+  const activeOtpCode = otpVariable ? (previewVars[otpVariable.key] || '') : null;
+
   // Copy template content
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -235,12 +241,12 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
     if (!selectedTemplate) return;
     
     if (selectedTemplate.type === 'email') {
-      props.setEmailSubject(compiledSubject || 'Free Minds Digest');
-      props.setEmailBody(compiledBody);
+      setEmailSubject(compiledSubject || 'Free Minds Digest');
+      setEmailBody(compiledBody);
     } else {
-      props.setMsgBody(compiledBody);
+      setMsgBody(compiledBody);
     }
-    props.setPlaygroundChannel(selectedTemplate.type || 'sms');
+    setPlaygroundChannel(selectedTemplate.type || 'sms');
     props.setCurrentTab('playground');
   };
 
@@ -276,10 +282,10 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
     setTestStatus(null);
 
     const apiEndpoint = selectedTemplate.type === 'email'
-      ? 'http://127.0.0.1:3000/v1/emails'
+      ? API_BASE + '/v1/emails'
       : selectedTemplate.type === 'sms'
-        ? 'http://127.0.0.1:3000/v1/sms'
-        : 'http://127.0.0.1:3000/v1/whatsapp';
+        ? API_BASE + '/v1/sms'
+        : API_BASE + '/v1/whatsapp';
 
     const apiBody = selectedTemplate.type === 'email'
       ? { from: emailFrom, to: testRecipient, subject: compiledSubject, html: compiledBody }
@@ -309,7 +315,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
       });
 
       // Sync backend logs
-      const logsRes = await fetch('http://127.0.0.1:3000/api/logs');
+      const logsRes = await fetch(API_BASE + '/api/logs');
       const serverLogs = await logsRes.json();
       if (Array.isArray(serverLogs)) {
         setLogs(serverLogs);
@@ -327,7 +333,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
   // Custom template save handler
   const handleSaveCustomTemplate = async (payload: TemplateItem) => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+      const res = await fetch(API_BASE + '/api/templates/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -359,7 +365,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/templates/custom/${templateId}`, {
+      const res = await fetch(`${API_BASE}/api/templates/custom/${templateId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -417,7 +423,75 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
             ::-webkit-scrollbar-thumb:hover {
               background: rgba(0,0,0,0.2);
             }
+            /* Smart OTP hover & active styles */
+            .otp-code-box {
+              transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .otp-code-box:hover {
+              background-color: #e4e4e7 !important;
+              border-color: #a1a1aa !important;
+              transform: scale(1.04);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            }
+            .otp-code-box:active {
+              transform: scale(0.97);
+            }
           </style>
+          <script>
+            document.addEventListener('DOMContentLoaded', () => {
+              const otpBox = document.querySelector('.otp-code-box');
+              if (otpBox) {
+                otpBox.addEventListener('click', () => {
+                  const codeText = otpBox.innerText.trim();
+                  navigator.clipboard.writeText(codeText).then(() => {
+                    showTooltip(otpBox, '${lang === 'ar' ? 'تم نسخ رمز التحقق بنجاح! 📋' : 'Verification code copied! 📋'}');
+                  }).catch(err => {
+                    console.error('Could not copy OTP: ', err);
+                  });
+                });
+              }
+            });
+
+            function showTooltip(element, message) {
+              let tooltip = document.getElementById('otp-success-tooltip');
+              if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'otp-success-tooltip';
+                tooltip.style.position = 'fixed';
+                tooltip.style.bottom = '24px';
+                tooltip.style.left = '50%';
+                tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+                tooltip.style.backgroundColor = '#09090b';
+                tooltip.style.color = '#ffffff';
+                tooltip.style.padding = '10px 20px';
+                tooltip.style.borderRadius = '30px';
+                tooltip.style.fontSize = '12.5px';
+                tooltip.style.fontWeight = '600';
+                tooltip.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2)';
+                tooltip.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                tooltip.style.zIndex = '99999';
+                tooltip.style.opacity = '0';
+                tooltip.style.fontFamily = "'Cairo', -apple-system, sans-serif";
+                tooltip.style.display = 'flex';
+                tooltip.style.alignItems = 'center';
+                tooltip.style.gap = '8px';
+                tooltip.style.whiteSpace = 'nowrap';
+                tooltip.innerHTML = '<span style="color:#22c55e;font-weight:bold;">✓</span> ' + message;
+                document.body.appendChild(tooltip);
+              }
+              
+              // Force reflow
+              tooltip.offsetHeight;
+              
+              tooltip.style.opacity = '1';
+              tooltip.style.transform = 'translateX(-50%) translateY(0)';
+              
+              setTimeout(() => {
+                tooltip.style.opacity = '0';
+                tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+              }, 2200);
+            }
+          </script>
         </head>
         <body>
           <div style="width: 100%; display: flex; justify-content: center;">
@@ -936,11 +1010,45 @@ export const TemplatesView: React.FC<TemplatesViewProps> = (props) => {
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
               }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  {lang === 'ar' ? 'معاينة حية ومباشرة' : 'Live Mockup Viewport'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    {lang === 'ar' ? 'معاينة حية ومباشرة' : 'Live Mockup Viewport'}
+                  </span>
+                  {activeOtpCode && (
+                    <div 
+                      onClick={() => handleCopy(activeOtpCode, 'otp_top')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        border: '1px solid rgba(37, 99, 235, 0.15)',
+                        padding: '3px 10px',
+                        borderRadius: '99px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        userSelect: 'none',
+                        animation: 'status-pulse 2s infinite'
+                      }}
+                      className="otp-preview-badge"
+                      title={lang === 'ar' ? 'انقر لنسخ الرمز التأكيدي' : 'Click to copy verification code'}
+                    >
+                      <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#2563eb' }}></span>
+                        {lang === 'ar' ? `رمز التأكيد: ${activeOtpCode}` : `Code: ${activeOtpCode}`}
+                      </span>
+                      {copiedId === 'otp_top' ? (
+                        <Check size={10} color="#10b981" />
+                      ) : (
+                        <Copy size={10} color="#2563eb" style={{ opacity: 0.8 }} />
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {selectedTemplate.type === 'email' && (
                   <div style={{

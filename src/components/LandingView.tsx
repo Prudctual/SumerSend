@@ -1,30 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { backgroundData } from '../data/background_data';
 import { 
-  Mail, 
-  MessageSquare, 
-  Phone, 
-  CheckCircle2, 
-  ArrowRight, 
-  Languages,
-  Cpu,
-  ShieldCheck,
-  Zap,
-  Copy,
-  Check,
-  Play,
-  Terminal,
-  Sun,
-  Moon
+  Mail, MessageSquare, Phone, Check, Globe, Shield, Zap, Code, 
+  Terminal, Sparkles, ArrowRight, ArrowLeft, SunMoon, Languages, 
+  Lock, Cpu, Database, ChevronRight, Activity, Share2, Layers, Copy
 } from 'lucide-react';
-
-interface LandingViewProps {
-  lang: 'en' | 'ar';
-  setLang: (lang: 'en' | 'ar') => void;
-  setCurrentTab: (tab: string) => void;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-  user?: any;
-}
 
 // Reusable Apple-style Scroll Reveal Wrapper
 export const ScrollReveal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,8 +34,6 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, style
     }
   };
 
-  const glowRgb = glowColor || 'var(--glow-rgb)';
-
   return (
     <div
       ref={ref}
@@ -68,14 +46,17 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, style
         position: 'relative',
         transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s',
         border: isHovered 
-          ? `1px solid rgba(${glowColor ? glowColor : 'var(--glow-rgb)'}, 0.4)` 
+          ? `1px solid rgba(${glowColor ? glowColor : '24, 24, 27'}, 0.4)` 
           : '1px solid var(--border-color)',
         boxShadow: isHovered 
-          ? `0 12px 30px rgba(${glowColor ? glowColor : 'var(--glow-rgb)'}, 0.04), 0 0 0 1px rgba(${glowColor ? glowColor : 'var(--glow-rgb)'}, 0.08)` 
+          ? `0 12px 30px rgba(${glowColor ? glowColor : '24, 24, 27'}, 0.04), 0 0 0 1px rgba(${glowColor ? glowColor : '24, 24, 27'}, 0.08)` 
           : 'none',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         cursor: 'pointer',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backgroundColor: 'var(--panel-bg)',
+        borderRadius: '16px',
+        padding: '24px'
       }}
     >
       {isHovered && (
@@ -83,7 +64,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, style
           position: 'absolute',
           inset: 0,
           borderRadius: 'inherit',
-          background: `radial-gradient(280px circle at ${coords.x}px ${coords.y}px, rgba(${glowColor ? glowColor : 'var(--glow-rgb)'}, 0.08), transparent 80%)`,
+          background: `radial-gradient(280px circle at ${coords.x}px ${coords.y}px, rgba(${glowColor ? glowColor : '24, 24, 27'}, 0.06), transparent 80%)`,
           zIndex: 0,
           pointerEvents: 'none',
           transition: 'opacity 0.25s'
@@ -96,2506 +77,1420 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, style
   );
 };
 
+
+
+export const PixelShaderLogo: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mouse, setMouse] = useState({ x: -1000, y: -1000, isHovered: false });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationId: number;
+    let time = 0;
+
+    // SVG path data from Artboard 2.svg
+    const pathData = "M629.75,552.54c-22.91-10.27-46.54-17.17-72.24-15.95.12-.61.1-.78.18-.84,1.2-.9,2.45-1.74,3.63-2.68,29.98-23.97,42.71-55.02,35.06-92.67-11.14-54.83-65.97-87.63-120-73.02-34.39,9.3-61.05,40.11-65.06,75.2-1.95,17.05-8.08,24.26-24.65,28.77-5.74,1.56-11.62,2.67-17.32,4.37-7.74,2.31-11.33,8.83-10.11,16.66,1.73,11.08,8.96,18.02,17.54,23.91,13.89,9.54,29.99,12.78,46.17,15.67,5.65,1.01,11.34,1.74,17.81,2.71-5.6,3.24-10.1,6.46-14.21,10.15-25.42,22.83-40.64,50.61-41.52,85.44-.12,4.56,1.12,5.85,5.74,5.84,57.86-.16,115.72-.2,173.58-.06,23.95.06,42.11-10.1,54.89-30.05,9.68-15.1,13.21-31.87,12.87-49.65-.04-2.11-.41-2.92-2.37-3.79ZM462.32,520.51c-2.1.36-4.16.58-6.27.49-24.92-.82-48.9-5.64-71.28-17.02-4.12-2.1-8.29-4.33-11.18-8.15-3.06-4.04-2.22-6.55,2.65-7.69,4.21-.98,8.52-1.55,12.75-2.49,7.84-1.74,14.77-5.32,21.17-10.22,7.54-5.78,13.59-5.31,20.31,1.56,10.11,10.35,20.61,20.18,32.98,27.84,1.94,1.2,3.37,2.98,4.38,5.05,2.65,5.44.42,9.59-5.5,10.61ZM539.86,445.44l-4.18,1.15c-.44.16-.89.29-1.34.42,0,0-.01,0-.02,0-5.17,1.96-11.16,4.93-15.91,9.3-3.46,3.19-8.91,17.26-11.59,24.6-.55,1.52-2.69,1.52-3.26.01-2.03-5.38-5.6-14.36-8.72-20.04h0c-1.17-1.85-2.38-3.43-3.62-4.57-.81-.74-1.48-1.43-2.05-2.09-.01-.01-.02-.02-.04-.04-4.15-3.17-8.89-5.47-13.11-7.09-.44-.14-1.15-.38-1.6-.52l-4.18-1.15c-1.71-.47-1.7-2.89,0-3.36l3.78-1.03s.01,0,.02,0c5.13-1.8,11.34-4.67,16.4-8.95,0,0,.01,0,.02-.02.28-.3.58-.6.92-.91.48-.44.95-.95,1.42-1.51,0,0,0,0,0,0,3.46-4.85,8.16-16.68,10.61-23.16.57-1.5,2.69-1.52,3.25-.02,2.77,7.32,8.43,21.5,11.91,24.7,5.23,4.81,11.99,7.94,17.48,9.87,0,0,.01,0,.02,0l3.78,1.03c1.71.47,1.71,2.89,0,3.36Z";
+    
+    const path = new Path2D(pathData);
+
+    const render = () => {
+      const speed = mouse.isHovered ? 0.08 : 0.03;
+      time += speed;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const scale = 0.58; 
+      const step = 8; 
+      const screenPixelSize = step * scale;
+
+      // 3D Perspective Rotation Calculations
+      let rotX = 0;
+      let rotY = 0;
+
+      if (mouse.isHovered) {
+        // Calculate normalized offset from center (-1 to 1)
+        const dx = (mouse.x - w / 2) / (w / 2);
+        const dy = (mouse.y - h / 2) / (h / 2);
+        // Tilt towards cursor (max 26 degrees)
+        rotY = dx * 26;
+        rotX = -dy * 26;
+      } else {
+        // Gentle 3D idle floating oscillation
+        rotY = Math.sin(time * 0.8) * 14;
+        rotX = Math.cos(time * 0.8) * 8;
+      }
+
+      // Apply 3D transform directly to style
+      canvas.style.transform = `perspective(800px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+
+      for (let y = 140; y < 860; y += step) {
+        for (let x = 140; x < 860; x += step) {
+          if (ctx.isPointInPath(path, x, y)) {
+            let screenX = (x - 500) * scale + w / 2;
+            let screenY = (y - 500) * scale + h / 2;
+
+            let hoverFactor = 0;
+            if (mouse.isHovered) {
+              const dx = screenX - mouse.x;
+              const dy = screenY - mouse.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 150) {
+                hoverFactor = (1 - dist / 150);
+                
+                const angle = Math.atan2(dy, dx);
+                const push = hoverFactor * 22 * Math.sin(time * 8 + dist * 0.06);
+                screenX += Math.cos(angle) * push;
+                screenY += Math.sin(angle) * push;
+              }
+            }
+
+            const nx = x / 1000;
+            const ny = y / 1000;
+
+            const wave1 = Math.sin(nx * 8 + time * 2) * 0.5 + 0.5;
+            const wave2 = Math.cos(ny * 8 - time * 1.5) * 0.5 + 0.5;
+            const wave3 = Math.sin((nx + ny) * 6 + time * 3) * 0.5 + 0.5;
+
+            let r = Math.floor(114 + 120 * wave1);
+            let g = Math.floor(38 + 50 * wave2);
+            let b = Math.floor(255 - 40 * wave3);
+
+            if (hoverFactor > 0) {
+              r = Math.floor(r * (1 - hoverFactor) + 20 * hoverFactor); 
+              g = Math.floor(g * (1 - hoverFactor) + 220 * hoverFactor); 
+              b = Math.floor(b * (1 - hoverFactor) + 255 * hoverFactor); 
+            }
+
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillRect(
+              screenX - screenPixelSize / 2,
+              screenY - screenPixelSize / 2,
+              screenPixelSize - 0.7,
+              screenPixelSize - 0.7
+            );
+
+            ctx.fillStyle = theme === 'dark' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+            ctx.fillRect(screenX - screenPixelSize / 2, screenY - screenPixelSize / 2, screenPixelSize, 0.7);
+            ctx.fillRect(screenX - screenPixelSize / 2, screenY - screenPixelSize / 2, 0.7, screenPixelSize);
+          }
+        }
+      }
+
+      animationId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, [mouse]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const domX = e.clientX - rect.left;
+      const domY = e.clientY - rect.top;
+      setMouse({
+        x: domX * (canvas.width / rect.width),
+        y: domY * (canvas.height / rect.height),
+        isHovered: true
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setMouse({ x: -1000, y: -1000, isHovered: false });
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '10px',
+        position: 'relative'
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        width={500}
+        height={500}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          width: '260px',
+          height: '260px',
+          imageRendering: 'pixelated',
+          cursor: 'crosshair', 
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.12s ease-out, filter 0.3s',
+          filter: theme === 'dark'
+            ? 'drop-shadow(0 0 35px rgba(114, 38, 255, 0.45))'
+            : 'drop-shadow(0 0 20px rgba(114, 38, 255, 0.15))',
+        }}
+      />
+    </div>
+  );
+};
+
+interface LandingViewProps {
+  lang: 'en' | 'ar';
+  setLang: (lang: 'en' | 'ar') => void;
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+  onNavigate: (tab: string) => void;
+}
+
 export const LandingView: React.FC<LandingViewProps> = ({
   lang,
   setLang,
-  setCurrentTab,
   theme,
   setTheme,
-  user,
+  onNavigate
 }) => {
-  const isAr = lang === 'ar';
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('');
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, opacity: 0 });
-  const [showHeader, setShowHeader] = useState(true);
-  const lastScrollY = useRef(0);
-
-  const navRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<{ [key: string]: HTMLAnchorElement | null }>({});
-
-  // Hover states for interactive sections and pricing cards
-  const [isConsoleHovered, setIsConsoleHovered] = useState(false);
-  const [isIdeHovered, setIsIdeHovered] = useState(false);
-  const [isEmailCardHovered, setIsEmailCardHovered] = useState(false);
-  const [isSmsCardHovered, setIsSmsCardHovered] = useState(false);
-  const [isWhatsappCardHovered, setIsWhatsappCardHovered] = useState(false);
-
-  // State for pricing calculator
-  const [emailCount, setEmailCount] = useState<number>(15000);
-  const [smsCount, setSmsCount] = useState<number>(1500);
-  const [whatsappCount, setWhatsappCount] = useState<number>(500);
-  const [presetTier, setPresetTier] = useState<'starter' | 'growth' | 'enterprise' | null>('starter');
-
-  // State for code snippet quickstarts
-  const [activeCodeTab, setActiveCodeTab] = useState<'curl' | 'node' | 'python' | 'go'>('curl');
+  const isRtl = lang === 'ar';
+  const [emailInput, setEmailInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'sms' | 'email'>('whatsapp');
+  const [activeCodeLang, setActiveCodeLang] = useState<'curl' | 'javascript' | 'python'>('curl');
   const [copied, setCopied] = useState(false);
 
-
-  // Interactive Live Dashboard Mockup State
-  const [mockStats, setMockStats] = useState({ sent: 12480, rate: 99.98, balance: 142500 });
-  const [mockTab, setMockTab] = useState<'all' | 'email' | 'sms' | 'whatsapp'>('all');
-  const [mockLogs, setMockLogs] = useState([
-    { id: '1', type: 'email', to: 'customer@mystore.iq', status: 'delivered', time: 'Just now' },
-    { id: '2', type: 'sms', to: '0780***9281', status: 'delivered', time: '3m ago' },
-    { id: '3', type: 'whatsapp', to: '0770***5432', status: 'delivered', time: '12m ago' },
-    { id: '4', type: 'email', to: 'admin@iraqdev.org', status: 'delivered', time: '35m ago' }
-  ]);
-  const [graphPoints, setGraphPoints] = useState<number[]>([85, 75, 80, 55, 65, 45, 35]);
-
-  // Bento Card Micro-simulation States
-  const [smsOtpStatus, setSmsOtpStatus] = useState<'typing' | 'verified'>('typing');
-  const [whatsappMockState, setWhatsappMockState] = useState<'idle' | 'confirmed' | 'cancelled'>('idle');
-
-  // Rates in IQD
-  const emailRate = 10;
-  const smsRate = 120;
-  const whatsappRate = 150;
-
-  const totalCost = (emailCount * emailRate) + (smsCount * smsRate) + (whatsappCount * whatsappRate);
-
-
-  useEffect(() => {
-    // Loop the SMS OTP code verification in bento grid
-    const interval = setInterval(() => {
-      setSmsOtpStatus(prev => prev === 'typing' ? 'verified' : 'typing');
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 1. Scroll-aware auto-hide and active section scroll tracking
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsScrolled(currentScrollY > 20);
-
-      // Close dropdown if user scrolls down past a threshold
-      if (currentScrollY > 50) {
-        setIsMobileMenuOpen(false);
-      }
-
-      // Show/Hide header based on scroll direction - disabled so header remains visible
-      if (currentScrollY > 150) {
-        if (currentScrollY > lastScrollY.current) {
-          // Scrolling down - close drawer but keep header visible
-          setIsMobileMenuOpen(false);
+  // Localization Dictionary
+  const content = {
+    en: {
+      brand: 'Sumer Send',
+      tagline: 'Developer-first communication platform',
+      nav: {
+        products: 'Products',
+        pricing: 'Pricing',
+        docs: 'Documentation',
+        login: 'Sign In',
+        signup: 'Get Started Free'
+      },
+      hero: {
+        title: 'Smart Messaging Infrastructure for Iraq',
+        subtitle: 'Sync WhatsApp sessions, route local carrier SMS, and dispatch transactional emails with a single unified API. Designed for high performance and zero delivery latency.',
+        inputPlaceholder: 'Enter your business email',
+        cta: 'Start Free',
+        badge: 'NEW: Official API Integration',
+        features: ['No credit card required', 'Free WhatsApp sync', 'Local gateway speeds']
+      },
+      marquee: 'TRUSTED BY INNOVATIVE DEVELOPERS AND TEAMS IN IRAQ',
+      products: {
+        title: 'Unified Communication Channels',
+        desc: 'Everything you need to message users, verify transactions, and run campaigns programmatically.',
+        whatsapp: {
+          label: 'WhatsApp Sync',
+          title: 'Direct WhatsApp Sync via WebSockets',
+          desc: 'Instantly connect personal or business WhatsApp numbers by scanning a secure QR code. Send automated transaction alerts, customer confirmations, and interactive button menus with no Meta approval delay.',
+          metric: 'Real-time sync status'
+        },
+        sms: {
+          label: 'SMS Gateway',
+          title: 'High-Deliverability Local SMS Routes',
+          desc: 'Direct integration with Iraqi mobile operators (Zain, Asiacell, Korek). Send verification OTPs and transactional notifications with verified sender names, automatically routing messages for maximum speed.',
+          metric: 'Carrier-grade routing'
+        },
+        email: {
+          label: 'Email SMTP',
+          title: 'Premium Transactional Email API',
+          desc: 'Reliable email delivery with built-in DNS configuration guides (SPF/DKIM/DMX). Keep your automated password resets and notification emails out of the spam folder with verified sender domains.',
+          metric: 'Inbox-optimized delivery'
         }
+      },
+      code: {
+        title: 'Integrate in seconds',
+        desc: 'Sumer Send provides clean APIs that drop directly into your software stack. Start dispatching alerts with just a few lines of code.',
+        tabs: {
+          curl: 'cURL',
+          js: 'JavaScript',
+          py: 'Python'
+        }
+      },
+      bento: {
+        title: 'Engineered for Digital Scale',
+        desc: 'A robust backbone for financial portals, retail websites, and developer startups.',
+        stat1: 'Delivered Messages',
+        stat1Num: '+5,000,000',
+        stat2: 'API Uptime SLA',
+        stat2Num: '99.98%',
+        stat3: 'Response Latency',
+        stat3Num: '< 20ms',
+        payments: 'Local Wallet Top-ups',
+        paymentsDesc: 'Top up your API balance instantly using local wallets like Zain Cash, AsiaHawala, or credit cards. Fully automated billing and invoicing.',
+        security: 'Enterprise Security',
+        securityDesc: 'Low-level cryptographic Argon2 password hashing, secure JWT tokens, and sandboxed execution ensure your keys remain confidential.'
+      },
+      ctaBanner: {
+        title: 'Ready to upgrade your messaging stack?',
+        desc: 'Create your developer account in less than two minutes. Get free trial credits to test all features instantly.',
+        btn: 'Get Started for Free'
+      },
+      footer: {
+        copyright: '© 2026 Sumer Send. All rights reserved.',
+        product: 'Product',
+        features: 'Features',
+        developers: 'Developers',
+        docs: 'API Reference',
+        status: 'System Status',
+        legal: 'Legal',
+        privacy: 'Privacy Policy',
+        terms: 'Terms of Service',
+        security: 'Security Standards'
       }
-      setShowHeader(true);
-      lastScrollY.current = currentScrollY;
-
-      // Active section bounds detection
-      const scrollPosition = currentScrollY + 200;
-      const featuresSection = document.getElementById('features');
-      const pricingSection = document.getElementById('pricing');
-
-      if (pricingSection && scrollPosition >= pricingSection.offsetTop) {
-        setActiveSection('pricing');
-      } else if (featuresSection && scrollPosition >= featuresSection.offsetTop) {
-        setActiveSection('features');
-      } else {
-        setActiveSection('');
+    },
+    ar: {
+      brand: 'سومر سيند',
+      tagline: 'منصة الإشعارات الأولى للمطورين في العراق',
+      nav: {
+        products: 'المنتجات',
+        pricing: 'الأسعار',
+        docs: 'التوثيق البرمجي',
+        login: 'تسجيل الدخول',
+        signup: 'ابدأ مجاناً'
+      },
+      hero: {
+        title: 'البنية التحتية الذكية للمراسلة والإشعارات في العراق',
+        subtitle: 'اربط جلسات واتساب، أرسل رسائل SMS محلية موثوقة، وبث رسائل البريد الإلكتروني عبر API موحد. مصممة للمطورين والشركات للوصول الفوري بدون تأخير.',
+        inputPlaceholder: 'أدخل بريدك الإلكتروني للعمل',
+        cta: 'ابدأ مجاناً',
+        badge: 'جديد: واجهة ربط الواتساب الرسمية',
+        features: ['لا يتطلب بطاقة ائتمان', 'ربط مجاني للواتساب', 'بوابة دفع عراقية محلية']
+      },
+      marquee: 'موثوقة ومستخدمة من قبل المطورين والشركات الناشئة في العراق',
+      products: {
+        title: 'قنوات تواصل متكاملة وموحدة',
+        desc: 'كل ما تحتاجه لإرسال رسائل التنبيه والتحقق الثنائي والرسائل الترويجية برمجياً عبر بوابة واحدة.',
+        whatsapp: {
+          label: 'ربط واتساب',
+          title: 'ربط جلسات واتساب فورياً عبر الويب سوكيت',
+          desc: 'اربط حساب الواتساب الخاص بك (الشخصي أو الأعمال) بمجرد مسح رمز الـ QR. أرسل إشعارات المعاملات، الردود التلقائية، والقوائم التفاعلية لعملائك دون انتظار موافقة ميتا المعقدة.',
+          metric: 'مزامنة لحظية مباشرة'
+        },
+        sms: {
+          label: 'بوابة الـ SMS',
+          title: 'رسائل نصية SMS عراقية عالية الموثوقية',
+          desc: 'اتصال مباشر بشبكات الهواتف المحلية (زين، آسيا سيل، كورك) لضمان تسليم رسائل التحقق (OTP) والتنبيهات باسم مرسل خاص بشركتك وبأقصى سرعة ممكنة.',
+          metric: 'توجيه ذكي عبر الشبكات'
+        },
+        email: {
+          label: 'إرسال البريد SMTP',
+          title: 'خادم SMTP احترافي لرسائل المعاملات',
+          desc: 'بوابة إرسال البريد الإلكتروني البرمجية مع لوحة إعداد متكاملة لسجلات DNS (SPF/DKIM/DMARC) لضمان وصول رسائل استعادة كلمة المرور والتنبيهات لصندوق الوارد مباشرة.',
+          metric: 'توصيل محسن لصندوق الوارد'
+        }
+      },
+      code: {
+        title: 'معدة للمطورين. تكامل خلال دقائق.',
+        desc: 'واجهة برمجية (API) بسيطة ومباشرة وموثقة بالكامل. اختر لغتك البرمجية المفضلة وابدأ بالربط فوراً.',
+        tabs: {
+          curl: 'cURL',
+          js: 'JavaScript',
+          py: 'Python'
+        }
+      },
+      bento: {
+        title: 'بنية تحتية متطورة تواكب نمو أعمالك',
+        desc: 'العمود الفقري للمتاجر الرقمية، الأنظمة المالية، وبوابات المطورين الحديثة في العراق.',
+        stat1: 'رسالة تم تسليمها',
+        stat1Num: '+5,000,000',
+        stat2: 'وقت التشغيل SLA',
+        stat2Num: '99.98%',
+        stat3: 'زمن استجابة الـ API',
+        stat3Num: '< 20ms',
+        payments: 'شحن رصيد المحفظة محلياً',
+        paymentsDesc: 'اشحن رصيد المراسلة الخاص بك فوراً وبأتمتة كاملة باستخدام المحافظ الإلكترونية العراقية (زين كاش، آسيا حوالة) أو بطاقات الدفع الأخرى.',
+        security: 'أمان وحماية بمستوى مؤسساتي',
+        securityDesc: 'تشفير كلمات المرور عبر Argon2، توليد مفاتيح API مشفرة، وتأمين وحماية الهوية عبر توكنات JWT مشفرة بالكامل.'
+      },
+      ctaBanner: {
+        title: 'جاهز لترقية بنيتك البرمجية للمراسلة؟',
+        desc: 'أنشئ حساب مطور مجاني في أقل من دقيقتين، واحصل على رصيد تجريبي مجاني لتجربة كافة القنوات.',
+        btn: 'ابدأ التسجيل مجاناً'
+      },
+      footer: {
+        copyright: '© 2026 سومر سيند. جميع الحقوق محفوظة.',
+        product: 'المنصة',
+        features: 'الميزات والخدمات',
+        developers: 'المطورون',
+        docs: 'التوثيق البرمجي والـ API',
+        status: 'حالة النظام والشبكة',
+        legal: 'القوانين',
+        privacy: 'سياسة الخصوصية',
+        terms: 'شروط الخدمة',
+        security: 'معايير الأمان والامتثال'
       }
-    };
+    }
+  }[lang];
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    // Initial call to set active section correctly on mount
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Code snippets for the API playground
+  const codeSnippets = {
+    curl: `curl -X POST https://api.sumersend.com/v1/messages \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "channel": "${activeTab}",
+    "to": "+9647700000000",
+    "content": "Your verification code is: 48927"
+  }'`,
+    javascript: `// Initialize Sumer Send SDK
+import { SumerClient } from 'sumersend';
 
-  // 2. Recalculate sliding highlight indicator coordinates on tab active/hover state change
-  useEffect(() => {
-    const updateIndicator = () => {
-      const currentItem = hoveredItem || activeSection;
-      const element = currentItem ? itemRefs.current[currentItem] : null;
-      const navElement = navRef.current;
-      
-      if (element && navElement) {
-        const navRect = navElement.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
-        setNavIndicator({
-          left: elementRect.left - navRect.left,
-          width: elementRect.width,
-          opacity: 1
-        });
-      } else {
-        setNavIndicator(prev => ({ ...prev, opacity: 0 }));
-      }
-    };
+const sumer = new SumerClient({ apiKey: 'YOUR_API_KEY' });
 
-    // Use a small timeout to let the DOM settle, especially when changing language (RTL toggles sizes)
-    const timeoutId = setTimeout(updateIndicator, 50);
-    
-    // Also update on resize to keep coordinate tracking accurate
-    window.addEventListener('resize', updateIndicator);
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', updateIndicator);
-    };
-  }, [activeSection, hoveredItem, lang]);
+await sumer.messages.create({
+  channel: '${activeTab}',
+  to: '+9647700000000',
+  content: 'Your verification code is: 48927'
+});`,
+    python: `# Initialize Sumer Send Client
+from sumersend import SumerClient
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(codeSnippets[activeCodeTab]);
+sumer = SumerClient(api_key='YOUR_API_KEY')
+
+response = sumer.messages.create(
+    channel='${activeTab}',
+    to='+9647700000000',
+    content='Your verification code is: 48927'
+)`
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(codeSnippets[activeCodeLang]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleApplyPreset = (tier: 'starter' | 'growth' | 'enterprise') => {
-    setPresetTier(tier);
-    if (tier === 'starter') {
-      setEmailCount(15000);
-      setSmsCount(1500);
-      setWhatsappCount(500);
-    } else if (tier === 'growth') {
-      setEmailCount(50000);
-      setSmsCount(5000);
-      setWhatsappCount(2000);
-    } else if (tier === 'enterprise') {
-      setEmailCount(100000);
-      setSmsCount(20000);
-      setWhatsappCount(10000);
-    }
-  };
-
-  const handleSliderChange = (type: 'email' | 'sms' | 'whatsapp', val: number) => {
-    setPresetTier(null);
-    if (type === 'email') setEmailCount(val);
-    if (type === 'sms') setSmsCount(val);
-    if (type === 'whatsapp') setWhatsappCount(val);
-  };
-
-  const handleTriggerApiCall = () => {
-    // Mock log trigger with sound/visual feedback
-    const channels = ['email', 'sms', 'whatsapp'];
-    const randomChannel = channels[Math.floor(Math.random() * channels.length)];
-    const mockTo = randomChannel === 'email' 
-      ? `customer_${Math.floor(Math.random() * 800) + 100}@gmail.com`
-      : `07${['80', '77', '90'][Math.floor(Math.random()*3)]}***${Math.floor(1000 + Math.random()*9000)}`;
-
-    const newLog = {
-      id: Date.now().toString(),
-      type: randomChannel,
-      to: mockTo,
-      status: 'delivered',
-      time: 'Just now'
-    };
-
-    setMockLogs(prev => [newLog, ...prev.slice(0, 3)]);
-    setMockStats(prev => ({
-      sent: prev.sent + 1,
-      rate: 99.98,
-      balance: prev.balance - (randomChannel === 'email' ? emailRate : randomChannel === 'sms' ? smsRate : whatsappRate)
-    }));
-
-    // Update graph points to create real-time scrolling graph animation
-    const nextPoint = Math.floor(Math.random() * 65) + 15; // y coordinate (15 to 80, lower is higher traffic)
-    setGraphPoints(prev => [...prev.slice(1), nextPoint]);
-
-    // Dispatch global toast event to show toast on top right of the viewport
-    const toastEvent = new CustomEvent('sumer-toast', {
-      detail: {
-        message: randomChannel === 'email' 
-          ? `API OK: Routed to ${mockTo} [10 IQD]` 
-          : `API OK: Dispatched OTP to ${mockTo} [${randomChannel === 'sms' ? 120 : 150} IQD]`,
-        type: randomChannel,
-        duration: 3500
-      }
-    });
-    window.dispatchEvent(toastEvent);
-  };
-
-  const getGraphPath = () => {
-    const width = 400;
-    const step = width / (graphPoints.length - 1);
-    let d = `M 0 ${graphPoints[0]}`;
-    for (let i = 1; i < graphPoints.length; i++) {
-      const x = i * step;
-      const y = graphPoints[i];
-      const prevX = (i - 1) * step;
-      const prevY = graphPoints[i - 1];
-      const cp1x = prevX + step / 2;
-      const cp1y = prevY;
-      const cp2x = prevX + step / 2;
-      const cp2y = y;
-      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
-    }
-    return d;
-  };
-
-  const filteredMockLogs = mockTab === 'all' 
-    ? mockLogs 
-    : mockLogs.filter(log => log.type === mockTab);
-
-  const t = {
-    en: {
-      brand: 'Sumer Send',
-      subBrand: 'Developer',
-      tagline: 'Sumer Send for Developers',
-      taglineSub: 'One platform. Every channel. Tailored for Iraq.',
-      description: 'Integrate transactional Email API, local SMS OTP gateways, and interactive WhatsApp business messaging with single-digit millisecond latency. Designed to build secure, scalable customer communications.',
-      enterConsole: 'Go to Console',
-      sandbox: 'API Playground',
-      features: 'Features',
-      pricing: 'Pricing & Tiers',
-      pricingSub: 'Pay-as-you-go billing calculated in Iraqi Dinars.',
-      calcTitle: 'Configure Volume',
-      calcDesc: 'Estimate monthly pricing by adjusting predicted volumes or selecting a quick preset.',
-      emailRateLabel: '10 IQD per transaction',
-      smsRateLabel: '120 IQD per transaction',
-      whatsappRateLabel: '150 IQD per transaction',
-      estMonthly: 'Monthly Cost',
-      iqd: 'IQD',
-      perMonth: 'per month',
-      quickstart: 'Quickstart Integration',
-      quickstartDesc: 'Implement Sumer Send in your runtime env. Copy-paste these snippets to integrate in seconds.',
-      channelEmail: 'Email API Bridge',
-      channelEmailDesc: 'Configure custom domains, verify DKIM records, and route transactional notifications directly to inbox.',
-      channelSms: 'SMS OTP Gateway',
-      channelSmsDesc: 'Verify identities instantly. High-priority routing for Zain, Asiacell, and Korek networks with direct local carrier tunnels.',
-      channelWhatsapp: 'WhatsApp Business API',
-      channelWhatsappDesc: 'Build rich transactional user experiences with media attachments, structured custom buttons, and templates.',
-      showcaseTitle: 'Interactive Console Experience',
-      showcaseDesc: 'Manage domains, inspect payloads, audit logs, configure webhooks, and trigger smart campaigns from a clean workspace.',
-      footer: '© 2026 Sumer Send Developer. Crafted for Free Minds in Baghdad, Iraq.',
-      presetStarter: 'Starter Plan',
-      presetGrowth: 'Growth Plan',
-      presetEnterprise: 'Enterprise Plan',
-      latencyLabel: 'Baghdad Node Latency',
-      statusActive: 'Active Nodes',
-      triggerTest: 'Simulate API Call',
-      consoleLogs: 'Live Console Log Output',
-      consoleTraffic: 'Console API Traffic Flow'
-    },
-    ar: {
-      brand: 'سومر سيند',
-      subBrand: 'للمطورين',
-      tagline: 'سومر سيند للمطورين',
-      taglineSub: 'منصة موحدة. كافة قنوات الاتصال. مصممة للعراق.',
-      description: 'اربط بوابة البريد الإلكتروني (Email API)، إشعارات الـ SMS OTP المحلية، ورسائل الواتساب التفاعلية بزمن استجابة فائق السرعة. مصممة لبناء قنوات اتصال آمنة وقابلة للتوسع.',
-      enterConsole: 'الدخول للمنصة',
-      sandbox: 'منصة الاختبار',
-      features: 'المميزات البرمجية',
-      pricing: 'الأسعار والتسعير',
-      pricingSub: 'حساب مرن وشفاف يدفع حسب الاستهلاك الفعلي بالدينار العراقي.',
-      calcTitle: 'تهيئة وتحديد حجم الاستهلاك',
-      calcDesc: 'قم بتحريك المؤشرات لحساب التكلفة الشهرية المتوقعة أو اختر إحدى الباقات الجاهزة.',
-      emailRateLabel: '10 د.ع لكل رسالة ناجحة',
-      smsRateLabel: '120 د.ع لكل رسالة ناجحة',
-      whatsappRateLabel: '150 د.ع لكل رسالة ناجحة',
-      estMonthly: 'التكلفة الشهرية المتوقعة',
-      iqd: 'دينار عراقي',
-      perMonth: 'شهرياً',
-      quickstart: 'دمج برمجيات سريع',
-      quickstartDesc: 'اربط منصة سومر سيند مع مشروعك خلال ثوانٍ. انسخ الأكواد الجاهزة وابدأ الإرسال فوراً.',
-      channelEmail: 'بريد المعاملات (Email API)',
-      channelEmailDesc: 'أضف نطاقاتك، ووثق سجلات الـ DNS والـ DKIM، وأرسل رسائل المعاملات مباشرة لصندوق الوارد.',
-      channelSms: 'رسائل التفعيل والـ OTP',
-      channelSmsDesc: 'أكد هويات عملائك فوراً. إرسال فائق الأولوية لشبكات زين، آسيا سيل، وكورك عبر قنوات ربط مباشر.',
-      channelWhatsapp: 'الواتساب التفاعلي للأعمال',
-      channelWhatsappDesc: 'ابنِ تجارب تفاعلية غنية بالوسائط، الأزرار التفاعلية، والتحديثات الآلية لعملائك.',
-      showcaseTitle: 'لوحة تحكم تفاعلية متكاملة',
-      showcaseDesc: 'أدر نطاقاتك، وراجع سجلات الطلبات التفصيلية، ووجه الويب هوكس، وأطلق الحملات الذكية من مكان واحد.',
-      footer: '© 2026 سومر سيند للمطورين. صُنع بعناية للعقول الحرة في بغداد، العراق.',
-      presetStarter: 'باقة ستارت اب',
-      presetGrowth: 'باقة النمو المتسارع',
-      presetEnterprise: 'باقة المؤسسات والشركات',
-      latencyLabel: 'زمن استجابة خادم بغداد',
-      statusActive: 'الشبكة متصلة',
-      triggerTest: 'محاكاة طلب API',
-      consoleLogs: 'مخرجات سجلات التحكم المباشرة',
-      consoleTraffic: 'تدفق مرور البيانات البرمجية'
-    }
-  };
-
-  const currentT = t[lang];
-
-  // Raw code strings for clipboard copy
-  const codeSnippets = {
-    curl: `curl -X POST "https://api.sumersend.com/v1/emails" \\
-  -H "Authorization: Bearer sm_live_key_9281" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "from": "Sumer Send <admin@aiandthings.tech>",
-    "to": "customer@gmail.com",
-    "subject": "Order #9283 Dispatch Success",
-    "html": "<h3>Your package is on its way!</h3>"
-  }'`,
-    node: `// Node.js - Dispatch Email
-const fetch = require('node-fetch');
-
-const payload = {
-  from: "Sumer Send <admin@aiandthings.tech>",
-  to: "customer@gmail.com",
-  subject: "Welcome to our platform!",
-  html: "<h2>Welcome!</h2><p>Thanks for subscribing.</p>"
-};
-
-fetch('https://api.sumersend.com/v1/emails', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer sm_live_key_9281',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(payload)
-})
-.then(res => res.json())
-.then(data => console.log('Success:', data))
-.catch(err => console.error('Error:', err));`,
-    python: `# Python - Send Transactional Email
-import requests
-
-url = "https://api.sumersend.com/v1/emails"
-headers = {
-    "Authorization": "Bearer sm_live_key_9281",
-    "Content-Type": "application/json"
-}
-payload = {
-    "from": "Sumer Send <admin@aiandthings.tech>",
-    "to": "customer@gmail.com",
-    "subject": "System Confirmation",
-    "html": "<h3>Account Activated Successfully</h3>"
-}
-
-response = requests.post(url, json=payload, headers=headers)
-print(response.json())`,
-    go: `// Go - Send Transactional Email
-package main
-
-import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-)
-
-func main() {
-	payload := map[string]interface{}{
-		"from":    "Sumer Send <admin@aiandthings.tech>",
-		"to":      "customer@gmail.com",
-		"subject": "System Alert",
-		"html":    "<b>CPU load exceeded</b>",
-	}
-	body, _ := json.Marshal(payload)
-	
-	req, _ := http.NewRequest("POST", "https://api.sumersend.com/v1/emails", bytes.NewBuffer(body))
-	req.Header.Set("Authorization", "Bearer sm_live_key_9281")
-	req.Header.Set("Content-Type", "application/json")
-	
-	client := &http.Client{}
-	client.Do(req)
-}`
-  };
-
-  const renderHighlightedCode = () => {
-    switch (activeCodeTab) {
-      case 'curl':
-        return (
-          <span style={{ color: '#a1a1aa' }}>
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>curl</span> <span style={{ color: '#38bdf8' }}>-X POST</span> <span style={{ color: '#e2e8f0' }}>"https://api.sumersend.com/v1/emails"</span> \<br />
-            &nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>-H</span> <span style={{ color: '#ecc94b' }}>"Authorization: Bearer sm_live_key_9281"</span> \<br />
-            &nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>-H</span> <span style={{ color: '#ecc94b' }}>"Content-Type: application/json"</span> \<br />
-            &nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>-d</span> <span style={{ color: '#a78bfa' }}>{`'{`}</span><br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"from"</span>: <span style={{ color: '#ecc94b' }}>"Sumer Send &lt;admin@aiandthings.tech&gt;"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"to"</span>: <span style={{ color: '#ecc94b' }}>"customer@gmail.com"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"subject"</span>: <span style={{ color: '#ecc94b' }}>"Order #9283 Dispatch Success"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"html"</span>: <span style={{ color: '#ecc94b' }}>"&lt;h3&gt;Your package is on its way!&lt;/h3&gt;"</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#a78bfa' }}>{`}'`}</span>
-          </span>
-        );
-      case 'node':
-        return (
-          <span style={{ color: '#a1a1aa' }}>
-            <span style={{ color: '#71717a' }}>// Node.js - Dispatch Email</span><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>const</span> <span style={{ color: '#e2e8f0' }}>fetch = require(</span><span style={{ color: '#ecc94b' }}>'node-fetch'</span><span style={{ color: '#e2e8f0' }}>);</span><br /><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>const</span> <span style={{ color: '#38bdf8' }}>payload</span> = <span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;from: <span style={{ color: '#ecc94b' }}>"Sumer Send &lt;admin@aiandthings.tech&gt;"</span>,<br />
-            &nbsp;&nbsp;to: <span style={{ color: '#ecc94b' }}>"customer@gmail.com"</span>,<br />
-            &nbsp;&nbsp;subject: <span style={{ color: '#ecc94b' }}>"Welcome to our platform!"</span>,<br />
-            &nbsp;&nbsp;html: <span style={{ color: '#ecc94b' }}>"&lt;h2&gt;Welcome!&lt;/h2&gt;&lt;p&gt;Thanks for subscribing.&lt;/p&gt;"</span><br />
-            <span style={{ color: '#a78bfa' }}>{`};`}</span><br /><br />
-            <span style={{ color: '#38bdf8' }}>fetch</span>(<span style={{ color: '#ecc94b' }}>'https://api.sumersend.com/v1/emails'</span>, <span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;method: <span style={{ color: '#ecc94b' }}>'POST'</span>,<br />
-            &nbsp;&nbsp;headers: <span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>'Authorization'</span>: <span style={{ color: '#ecc94b' }}>'Bearer sm_live_key_9281'</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>'Content-Type'</span>: <span style={{ color: '#ecc94b' }}>'application/json'</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#a78bfa' }}>{`}`}</span>,<br />
-            &nbsp;&nbsp;body: <span style={{ color: '#e2e8f0' }}>JSON.stringify(payload)</span><br />
-            <span style={{ color: '#a78bfa' }}>{`})`}</span><br />
-            .<span style={{ color: '#38bdf8' }}>then</span>(res =&gt; res.<span style={{ color: '#38bdf8' }}>json</span>())<br />
-            .<span style={{ color: '#38bdf8' }}>then</span>(data =&gt; console.<span style={{ color: '#38bdf8' }}>log</span>(<span style={{ color: '#ecc94b' }}>'Success:'</span>, data))<br />
-            .<span style={{ color: '#38bdf8' }}>catch</span>(err =&gt; console.<span style={{ color: '#38bdf8' }}>error</span>(err));
-          </span>
-        );
-      case 'python':
-        return (
-          <span style={{ color: '#a1a1aa' }}>
-            <span style={{ color: '#71717a' }}># Python - Send Transactional Email</span><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>import</span> <span style={{ color: '#e2e8f0' }}>requests</span><br /><br />
-            <span style={{ color: '#e2e8f0' }}>url = </span><span style={{ color: '#ecc94b' }}>"https://api.sumersend.com/v1/emails"</span><br />
-            <span style={{ color: '#e2e8f0' }}>headers = </span><span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"Authorization"</span>: <span style={{ color: '#ecc94b' }}>"Bearer sm_live_key_9281"</span>,<br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"Content-Type"</span>: <span style={{ color: '#ecc94b' }}>"application/json"</span><br />
-            <span style={{ color: '#a78bfa' }}>{`}`}</span><br />
-            <span style={{ color: '#e2e8f0' }}>payload = </span><span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"from"</span>: <span style={{ color: '#ecc94b' }}>"Sumer Send &lt;admin@aiandthings.tech&gt;"</span>,<br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"to"</span>: <span style={{ color: '#ecc94b' }}>"customer@gmail.com"</span>,<br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"subject"</span>: <span style={{ color: '#ecc94b' }}>"System Confirmation"</span>,<br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"html"</span>: <span style={{ color: '#ecc94b' }}>"&lt;h3&gt;Account Activated Successfully&lt;/h3&gt;"</span><br />
-            <span style={{ color: '#a78bfa' }}>{`}`}</span><br /><br />
-            <span style={{ color: '#e2e8f0' }}>response = requests.</span><span style={{ color: '#38bdf8' }}>post</span>(url, json=payload, headers=headers)<br />
-            <span style={{ color: '#38bdf8' }}>print</span>(response.json())
-          </span>
-        );
-      case 'go':
-        return (
-          <span style={{ color: '#a1a1aa' }}>
-            <span style={{ color: '#71717a' }}>// Go - Send Transactional Email</span><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>package</span> <span style={{ color: '#e2e8f0' }}>main</span><br /><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>import</span> <span style={{ color: '#e2e8f0' }}>{`(`}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"bytes"</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"encoding/json"</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"net/http"</span><br />
-            <span style={{ color: '#e2e8f0' }}>{`)`}</span><br /><br />
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>func</span> <span style={{ color: '#38bdf8' }}>main</span>() <span style={{ color: '#a78bfa' }}>{`{`}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>payload := map[string]interface{}{`{`}</span><br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"from"</span>:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"Sumer Send &lt;admin@aiandthings.tech&gt;"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"to"</span>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"customer@gmail.com"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"subject"</span>: <span style={{ color: '#ecc94b' }}>"System Alert"</span>,<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"html"</span>:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#ecc94b' }}>"&lt;b&gt;CPU load exceeded&lt;/b&gt;"</span>,<br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>{`}`}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>body, _ := json.Marshal(payload)</span><br /><br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>req, _ := http.NewRequest(</span><span style={{ color: '#ecc94b' }}>"POST"</span>, <span style={{ color: '#ecc94b' }}>"https://api.sumersend.com/v1/emails"</span>, bytes.NewBuffer(body))<br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>req.Header.Set(</span><span style={{ color: '#ecc94b' }}>"Authorization"</span>, <span style={{ color: '#ecc94b' }}>"Bearer sm_live_key_9281"</span>)<br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>req.Header.Set(</span><span style={{ color: '#ecc94b' }}>"Content-Type"</span>, <span style={{ color: '#ecc94b' }}>"application/json"</span>)<br /><br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>client := &amp;http.Client{}</span><br />
-            &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>client.Do(req)</span><br />
-            <span style={{ color: '#a78bfa' }}>{`}`}</span>
-          </span>
-        );
-      default:
-        return null;
+  const handleStartFree = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (emailInput.trim()) {
+      localStorage.setItem('pre_filled_email', emailInput);
+      onNavigate('auth-signup');
+    } else {
+      onNavigate('auth-signup');
     }
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: 'var(--bg-color)', 
+    <div style={{
+      backgroundColor: 'var(--bg-color)',
       color: 'var(--text-primary)',
-      transition: 'background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Arabic", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      overflowX: 'hidden',
-      letterSpacing: isAr ? 'normal' : '-0.015em'
+      minHeight: '100vh',
+      fontFamily: isRtl ? 'var(--font-arabic)' : 'var(--font-family)',
+      direction: isRtl ? 'rtl' : 'ltr',
+      transition: 'background-color 0.3s ease, color 0.3s ease',
+      position: 'relative',
+      overflowX: 'hidden'
     }}>
-      {/* Premium Apple Developer CSS & Keyframe Animations */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes appleSlideUp {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        @keyframes appleFade {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes envelopeFly {
-          0% { transform: translate(-15px, 15px) scale(0.95); opacity: 0; }
-          15% { opacity: 1; }
-          50% { transform: translate(110px, -20px) scale(1.05) rotate(10deg); opacity: 1; }
-          85% { opacity: 1; }
-          100% { transform: translate(220px, 0px) scale(0.9) rotate(0deg); opacity: 0; }
-        }
-        @keyframes radarSweep {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulseRing {
-          0% { transform: scale(0.95); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 0.8; }
-          100% { transform: scale(1.4); opacity: 0; }
-        }
-        @keyframes cursorBlink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes toastProgressShrink {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-
-        /* Classes */
-        .apple-animate-hero {
-          animation: appleSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .apple-animate-fade {
-          animation: appleFade 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .bento-features-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-          contain: layout style;
-        }
-        @media (max-width: 768px) {
-          .bento-features-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-        }
-        .bento-col-span-2 {
-          grid-column: span 2;
-        }
-        @media (max-width: 768px) {
-          .bento-col-span-2 {
-            grid-column: span 1 !important;
-          }
-        }
-        
-        .apple-bento-card {
-          position: relative;
-          background-color: var(--panel-bg);
-          border: 1px solid var(--border-color);
-          border-radius: 20px;
-          padding: 32px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          overflow: hidden;
-          contain: content;
-          height: 340px;
-          box-sizing: border-box;
-          transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .apple-bento-card:hover {
-          border-color: var(--border-hover) !important;
-          transform: translateY(-4px) scale(1.01);
-          box-shadow: 0 12px 30px rgba(0,0,0,0.04);
-        }
-        [data-theme="dark"] .apple-bento-card:hover {
-          box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-        }
-
-        /* Preset Tier Buttons styling */
-        .preset-btn {
-          padding: 10px 20px;
-          border-radius: 99px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          border: 1px solid var(--border-color);
-          background-color: var(--panel-bg);
-          color: var(--text-secondary);
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .preset-btn.active {
-          background-color: var(--text-primary);
-          color: var(--bg-color);
-          border-color: var(--text-primary);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        [data-theme="dark"] .preset-btn.active {
-          box-shadow: 0 4px 16px rgba(255, 255, 255, 0.05);
-        }
-        .preset-btn:hover:not(.active) {
-          border-color: var(--border-hover);
-          color: var(--text-primary);
-        }
-
-        /* High contrast styled code block */
-        .mac-code-window pre {
-          font-family: "SF Mono", "Fira Code", Monaco, Consolas, "Lucida Console", monospace;
-          font-size: 12px;
-          line-height: 1.6;
-          color: #e2e8f0;
-        }
-
-        /* Custom apple slider styles */
-        .apple-slider {
-          -webkit-appearance: none;
-          width: 100%;
-          height: 6px;
-          border-radius: 99px;
-          outline: none;
-          background: var(--border-color);
-          transition: background 0.3s;
-          cursor: pointer;
-        }
-        .apple-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: var(--text-primary);
-          border: 2px solid var(--bg-color);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.18);
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .apple-slider::-webkit-slider-thumb:hover {
-          transform: scale(1.25);
-        }
-        .apple-slider::-webkit-slider-thumb:active {
-          transform: scale(1.1);
-        }
-
-        /* Bento simula        /* Responsive Header Styling */
-        .dropdown-drawer-link {
-          color: var(--text-primary);
-          font-size: 15px;
-          font-weight: 600;
-          text-decoration: none;
-          text-align: center;
-          padding: 10px 16px;
-          border-radius: 99px;
-          transition: background-color 0.2s, color 0.2s, transform 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .dropdown-drawer-link:hover {
-          background-color: rgba(0, 0, 0, 0.04);
-          transform: scale(1.02);
-        }
-        [data-theme="dark"] .dropdown-drawer-link:hover {
-          background-color: rgba(255, 255, 255, 0.06);
-        }
-        /* Unified Dropdown Drawer Animations matching inspoai.io */
-        .mobile-dropdown-menu {
-          position: fixed;
-          top: 92px;
-          left: 50%;
-          width: 92%;
-          max-width: 520px;
-          z-index: 999;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          border-radius: 18px;
-          font-family: var(--font-arabic), var(--font-family);
-          opacity: 0;
-          pointer-events: none;
-          
-          /* Anchor to top center for drag down / pull up vertical stretch */
-          transform-origin: top center;
-          transform: translateY(-36px) scaleY(0.5) scaleX(0.92) translateX(-50%);
-          clip-path: inset(0 0 100% 0 rounded 18px);
-          
-          /* Snappy close transition (pull/stretch back up) */
-          transition: opacity 0.25s cubic-bezier(0.32, 0.94, 0.6, 1),
-                      transform 0.3s cubic-bezier(0.32, 0.94, 0.6, 1),
-                      clip-path 0.3s cubic-bezier(0.32, 0.94, 0.6, 1),
-                      background-color 0.3s, 
-                      border-color 0.3s, 
-                      box-shadow 0.3s;
-        }
-
-        /* Open State (Pull down with elastic spring stretch expanding to both sides of the header) */
-        .mobile-dropdown-menu.open {
-          opacity: 1;
-          pointer-events: auto;
-          transform: translateY(0) scaleY(1) scaleX(1) translateX(-50%);
-          clip-path: inset(0 0 0% 0 rounded 18px);
-          
-          /* Elastic spring roll down transition */
-          transition: opacity 0.35s ease-out,
-                      transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                      clip-path 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-                      background-color 0.3s, 
-                      border-color 0.3s, 
-                      box-shadow 0.3s;
-        }
-
-        /* Staggered Children Animations with 3D rotate and lift */
-        .dropdown-stagger-item {
-          opacity: 0;
-          transform: translateY(16px) scale(0.96) rotateX(-8deg);
-          transform-origin: top center;
-          transition: opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                      transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .mobile-dropdown-menu.open .dropdown-stagger-item {
-          opacity: 1;
-          transform: translateY(0) scale(1) rotateX(0deg);
-        }
-
-        /* Bypassing delays on close for instant unison snap-back */
-        .mobile-dropdown-menu:not(.open) .dropdown-stagger-item {
-          transition-delay: 0s !important;
-          transition-duration: 0.18s;
-          transform: translateY(8px) scale(0.98);
-          opacity: 0;
-        }
-
-        /* Hover micro-interactions */
-        .header-menu-toggle-btn {
-          transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-          transform: rotate(0deg) scale(1);
-        }
-        .header-menu-toggle-btn:hover {
-          transform: rotate(0deg) scale(1.08);
-        }
-        .header-menu-toggle-btn:active {
-          transform: rotate(0deg) scale(0.94);
-        }
-        .header-menu-toggle-btn.open {
-          transform: rotate(180deg) scale(1);
-        }
-        .header-menu-toggle-btn.open:hover {
-          transform: rotate(180deg) scale(1.08);
-        }
-        .header-menu-toggle-btn.open:active {
-          transform: rotate(180deg) scale(0.94);
-        }
-        .header-logo-container:hover {
-          transform: translateX(-50%) scale(1.05);
-        }
-        .header-cta-container:hover {
-          transform: scale(1.02);
-        }
-        .header-cta-container:active {
-          transform: scale(0.95);
-        }
-        .header-action-pill-btn {
-          background-color: transparent;
-          color: var(--text-primary);
-          border: 1px solid var(--text-primary);
-          transition: background-color 0.2s, transform 0.2s, border-color 0.2s;
-        }
-        .header-action-pill-btn:hover {
-          background-color: var(--text-primary) !important;
-          color: var(--panel-bg) !important;
-        }
-        .header-action-pill-btn:hover .arrow-icon {
-          transform: translateX(2px);
-        }
-        [dir="rtl"] .header-action-pill-btn:hover .arrow-icon {
-          transform: translateX(-2px) rotate(180deg);
-        }
-        [dir="rtl"] .header-action-pill-btn .arrow-icon {
-          transform: rotate(180deg);
-        }
-
-        /* Desktop vs Mobile Header adjustments */
-        .header-theme-toggle-desktop,
-        .header-lang-toggle-desktop {
-          display: none;
-        }
-        @media (min-width: 768px) {
-          /* Expand header container */
-          header {
-            max-width: 960px !important;
-          }
-          /* Hide hamburger menu toggle */
-          .header-menu-toggle-btn {
-            display: none !important;
-          }
-          /* Logo placement change from absolute center to normal flow */
-          .header-logo-container {
-            position: static !important;
-            left: auto !important;
-            transform: none !important;
-          }
-          .header-logo-container:hover {
-            transform: scale(1.05) !important;
-          }
-          /* Show desktop navigation links */
-          .header-desktop-nav {
-            display: flex !important;
-          }
-          /* Desktop Theme & Lang controls */
-          .header-theme-toggle-desktop {
-            display: flex !important;
-          }
-          .header-lang-toggle-desktop {
-            display: flex !important;
-          }
-          .header-theme-toggle-desktop:hover,
-          .header-lang-toggle-desktop:hover {
-            background-color: rgba(0, 0, 0, 0.04);
-            color: var(--text-primary);
-          }
-          [data-theme="dark"] .header-theme-toggle-desktop:hover,
-          [data-theme="dark"] .header-lang-toggle-desktop:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-          }
-          .header-cta-container {
-            gap: 8px !important;
-          }
-          /* Hide mobile dropdown drawer on desktop */
-          .mobile-dropdown-menu {
-            display: none !important;
-          }
-        }
-      `}} />
-
-      {/* Luxurious Centered Responsive Header matching inspoai.io */}
+      {/* 1. Header Navigation */}
       <header style={{
-        position: 'fixed',
-        top: '24px',
-        left: '50%',
-        transform: !showHeader 
-          ? 'translateY(-80px) translateX(-50%) scale(0.92)' 
-          : isScrolled 
-            ? 'translateY(0) translateX(-50%) scale(0.98)' 
-            : 'translateY(0) translateX(-50%) scale(1)',
-        width: '92%',
-        maxWidth: '520px',
-        height: '56px',
-        backgroundColor: theme === 'dark' ? 'rgba(10, 10, 10, 0.22)' : 'rgba(255, 255, 255, 0.35)',
-        backdropFilter: 'saturate(180%) blur(40px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-        border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
-        borderRadius: '18px',
-        zIndex: 1000,
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: 'rgba(var(--panel-bg-rgb), 0.8)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--border-color)',
+        height: '64px',
         display: 'flex',
         alignItems: 'center',
-        fontFamily: isAr ? 'var(--font-arabic)' : 'var(--font-family)',
-        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, background-color 0.3s, box-shadow 0.3s',
-        boxShadow: theme === 'dark'
-          ? 'rgba(0, 0, 0, 0.5) 0px 16px 40px, rgba(255, 255, 255, 0.1) 0px 1px 0px inset, rgba(255, 255, 255, 0.03) 0px 0px 20px 0px inset'
-          : 'rgba(0, 0, 0, 0.04) 0px 12px 32px, rgba(255, 255, 255, 0.75) 0px 1px 0px inset, rgba(255, 255, 255, 0.4) 0px 0px 20px 0px inset',
-        opacity: showHeader ? 1 : 0,
-        pointerEvents: showHeader ? 'auto' : 'none'
+        padding: '0 24px',
+        justifyContent: 'space-between'
       }}>
-        {/* Edge borders gradient wrapper */}
-        <div className="nav-glass-card-edge" style={{ position: 'absolute', inset: 0, borderRadius: '17px', overflow: 'hidden', pointerEvents: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          {/* Logo */}
+          <div 
+            onClick={() => onNavigate('landing')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              cursor: 'pointer',
+              fontWeight: '800',
+              fontSize: '20px',
+              letterSpacing: isRtl ? 'normal' : '-0.5px'
+            }}
+          >
+            <img 
+              src="/artboard2.svg" 
+              alt="Sumer Send Logo" 
+              style={{
+                width: '32px',
+                height: '32px',
+                objectFit: 'contain'
+              }}
+            />
+            <span style={{ fontWeight: '800', fontSize: '18px', letterSpacing: '-0.5px' }}>{content.brand}</span>
+          </div>
 
-        <div style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          height: '100%',
-          position: 'relative',
-          zIndex: 10
-        }}>
-          
-          {/* Column 1: Left Menu Toggle Button */}
+          {/* Navigation Links */}
+          <nav className="nav-menu" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>{content.nav.products}</span>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>{content.nav.pricing}</span>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>{content.nav.docs}</span>
+          </nav>
+        </div>
+
+        {/* Right Nav Options */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Language Toggle */}
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Open menu"
+            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--text-primary)',
-              padding: '6px',
+              color: 'var(--text-secondary)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              outline: 'none'
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600
             }}
-            className={`header-menu-toggle-btn ${isMobileMenuOpen ? 'open' : ''}`}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="4" y1="6" x2="20" y2="6" style={{
-                transform: isMobileMenuOpen ? 'translateY(6px) rotate(45deg)' : 'none',
-                transformOrigin: '12px 6px',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-              }} />
-              <line x1="4" y1="12" x2="20" y2="12" style={{
-                opacity: isMobileMenuOpen ? 0 : 1,
-                transform: isMobileMenuOpen ? 'scaleX(0)' : 'none',
-                transformOrigin: 'center',
-                transition: 'opacity 0.2s, transform 0.2s'
-              }} />
-              <line x1="4" y1="18" x2="14" y2="18" style={{
-                transform: isMobileMenuOpen ? 'translateY(-6px) rotate(-45deg) scaleX(1.6)' : 'none',
-                transformOrigin: '9px 18px',
-                transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-              }} />
-            </svg>
+            <Languages size={16} />
+            <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
           </button>
 
-          {/* Column 2: Logo */}
-          <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              setCurrentTab('landing');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             style={{
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              padding: '8px',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              textDecoration: 'none'
+              justifyContent: 'center'
             }}
-            className="header-logo-container"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--text-primary)' }}>
-              <path d="M12 3L3 12H7V20H17V12H21L12 3Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 8V16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M9 11L12 8L15 11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
-              {currentT.brand}
-            </span>
-          </a>
+            <SunMoon size={18} />
+          </button>
 
-          {/* Column 2.5: Desktop Navigation Links (Center) */}
-          <div className="header-desktop-nav" style={{
-            display: 'none',
-            alignItems: 'center',
-            gap: '16px',
-            height: '100%',
-            justifyContent: 'center'
-          }}>
-            <a 
-              href="#features" 
-              onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} 
-              style={{
-                fontSize: '13.5px',
-                fontWeight: activeSection === 'features' ? 600 : 500,
-                color: activeSection === 'features' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                backgroundColor: activeSection === 'features' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)') : 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                if (activeSection !== 'features') {
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.015)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = activeSection === 'features' ? 'var(--text-primary)' : 'var(--text-secondary)';
-                e.currentTarget.style.backgroundColor = activeSection === 'features' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)') : 'transparent';
-              }}
-            >
-              {isAr ? 'المميزات' : 'Features'}
-            </a>
-            <a 
-              href="#pricing" 
-              onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} 
-              style={{
-                fontSize: '13.5px',
-                fontWeight: activeSection === 'pricing' ? 600 : 500,
-                color: activeSection === 'pricing' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                backgroundColor: activeSection === 'pricing' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)') : 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                if (activeSection !== 'pricing') {
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.015)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = activeSection === 'pricing' ? 'var(--text-primary)' : 'var(--text-secondary)';
-                e.currentTarget.style.backgroundColor = activeSection === 'pricing' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)') : 'transparent';
-              }}
-            >
-              {isAr ? 'الأسعار والخطط' : 'Pricing & Tiers'}
-            </a>
-            <a 
-              href="#sandbox" 
-              onClick={(e) => { e.preventDefault(); setCurrentTab('playground'); }} 
-              style={{
-                fontSize: '13.5px',
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.015)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-secondary)';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              {isAr ? 'منصة الاختبار' : 'API Sandbox'}
-            </a>
-          </div>
-
-          {/* Column 3: Right Sign In / Console action */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}
-          className="header-cta-container"
+          {/* Actions */}
+          <button 
+            onClick={() => onNavigate('auth-signin')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              fontSize: '14px',
+              cursor: 'pointer',
+              padding: '8px 16px'
+            }}
           >
-            {/* Desktop Theme switcher */}
-            <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-secondary)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px',
-                borderRadius: '50%',
-                transition: 'color 0.2s, background-color 0.2s',
-                boxSizing: 'border-box',
-                width: '34px',
-                height: '34px'
-              }}
-              className="header-theme-toggle-desktop"
-              title={isAr ? 'تغيير المظهر' : 'Toggle Theme'}
-            >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
+            {content.nav.login}
+          </button>
 
-            {/* Desktop Language switcher */}
-            <button 
-              onClick={() => setLang(isAr ? 'en' : 'ar')} 
-              style={{
-                background: 'none',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                color: 'var(--text-secondary)',
-                fontFamily: isAr ? 'var(--font-arabic)' : 'var(--font-family)',
-                fontSize: '11px',
-                fontWeight: 600,
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 8px',
-                borderRadius: '99px',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box',
-                height: '28px'
-              }}
-              className="header-lang-toggle-desktop"
-              title={isAr ? 'English' : 'العربية'}
-            >
-              {isAr ? 'EN' : 'عربي'}
-            </button>
-
-            {user ? (
-              <button
-                onClick={() => setCurrentTab('dashboard')}
-                className="header-action-pill-btn"
-                style={{
-                  height: '34px',
-                  borderRadius: '99px',
-                  padding: '0 16px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>{currentT.enterConsole}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s' }} className="arrow-icon">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </button>
-            ) : (
-              <button
-                onClick={() => setCurrentTab('auth-signin')}
-                className="header-action-pill-btn"
-                style={{
-                  height: '34px',
-                  borderRadius: '99px',
-                  padding: '0 16px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s' }} className="arrow-icon">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </button>
-            )}
-          </div>
-
+          <button 
+            onClick={() => onNavigate('auth-signup')}
+            style={{
+              backgroundColor: 'var(--text-primary)',
+              color: 'var(--panel-bg)',
+              border: 'none',
+              borderRadius: '24px',
+              fontWeight: 600,
+              fontSize: '14px',
+              cursor: 'pointer',
+              padding: '10px 20px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>{content.nav.signup}</span>
+            {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
+          </button>
         </div>
       </header>
 
-      {/* Unified Center-Aligned Dropdown Menu Drawer matching inspoai.io */}
-      <div 
-        className={`mobile-dropdown-menu ${isMobileMenuOpen ? 'open' : ''}`}
-        style={{
-          backgroundColor: theme === 'dark' ? 'rgba(10, 10, 10, 0.45)' : 'rgba(255, 255, 255, 0.55)',
-          backdropFilter: 'saturate(180%) blur(40px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-          border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow: theme === 'dark'
-            ? 'rgba(0, 0, 0, 0.5) 0px 20px 50px, rgba(255, 255, 255, 0.1) 0px 1px 0px inset, rgba(255, 255, 255, 0.03) 0px 0px 20px 0px inset'
-            : 'rgba(0, 0, 0, 0.06) 0px 16px 40px, rgba(255, 255, 255, 0.75) 0px 1px 0px inset, rgba(255, 255, 255, 0.4) 0px 0px 20px 0px inset',
-        }}
-      >
-        {/* Navigation Links */}
-        <a 
-          href="#features" 
-          onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} 
-          className="dropdown-drawer-link dropdown-stagger-item"
-          style={{ 
-            fontWeight: activeSection === 'features' ? 700 : 500,
-            color: activeSection === 'features' ? 'var(--accent-text)' : 'var(--text-primary)',
-            backgroundColor: activeSection === 'features' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)') : 'transparent',
-            transitionDelay: '0.04s'
-          }}
-        >
-          <Zap size={15} style={{ opacity: 0.8 }} />
-          <span>{isAr ? 'المميزات' : 'Features'}</span>
-        </a>
-        <a 
-          href="#pricing" 
-          onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} 
-          className="dropdown-drawer-link dropdown-stagger-item"
-          style={{ 
-            fontWeight: activeSection === 'pricing' ? 700 : 500,
-            color: activeSection === 'pricing' ? 'var(--accent-text)' : 'var(--text-primary)',
-            backgroundColor: activeSection === 'pricing' ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)') : 'transparent',
-            transitionDelay: '0.08s'
-          }}
-        >
-          <ShieldCheck size={15} style={{ opacity: 0.8 }} />
-          <span>{isAr ? 'الأسعار والخطط' : 'Pricing & Tiers'}</span>
-        </a>
-        <a 
-          href="#sandbox" 
-          onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); setCurrentTab('playground'); }} 
-          className="dropdown-drawer-link dropdown-stagger-item"
-          style={{ 
-            transitionDelay: '0.12s'
-          }}
-        >
-          <Terminal size={15} style={{ opacity: 0.8 }} />
-          <span>{isAr ? 'منصة الاختبار' : 'API Sandbox'}</span>
-        </a>
-        
-        <div className="dropdown-stagger-item" style={{ borderTop: '1px solid var(--border-color)', margin: '4px 0', transitionDelay: '0.16s' }} />
-        
-        <div className="dropdown-stagger-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '6px 0', transitionDelay: '0.2s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-            <Languages size={14} style={{ opacity: 0.7 }} />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '-0.1px' }}>
-              {isAr ? 'لغة الواجهة' : 'Interface Language'}
-            </span>
-          </div>
-          <button 
-            onClick={() => { setLang(isAr ? 'en' : 'ar'); }} 
-            style={{ 
-              background: 'none', 
-              border: '1px solid var(--border-color)', 
-              cursor: 'pointer', 
-              color: 'var(--text-primary)', 
-              fontSize: '13px', 
-              fontWeight: 600,
-              width: '180px',
-              height: '36px',
-              borderRadius: '99px',
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxSizing: 'border-box'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-              e.currentTarget.style.borderColor = 'var(--border-hover)';
-              e.currentTarget.style.transform = 'scale(1.02)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            {isAr ? 'English (EN)' : 'العربية (AR)'}
-          </button>
+      {/* 2. Hero Section */}
+      <section style={{
+        padding: '80px 24px 60px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        textAlign: 'center',
+        position: 'relative'
+      }}>
+        {/* Glow behind hero */}
+        <div style={{
+          position: 'absolute',
+          top: '-10%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '600px',
+          height: '350px',
+          background: 'radial-gradient(circle, rgba(232, 255, 0, 0.08) 0%, transparent 70%)',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }} />
+
+        {/* Pixel Art Crowd background behind Hero contents */}
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          top: '30%',
+          width: 0,
+          height: 0,
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}>
+          {backgroundData.z_0.filter((img: any) => {
+            const leftVal = parseFloat(img.style.left) || 0;
+            const topVal = parseFloat(img.style.top) || 0;
+            return Math.abs(leftVal) > 420 || Math.abs(topVal) > 380;
+          }).map((img: any, i: number) => (
+            <img
+              key={`hero-bg-z0-${i}`}
+              src={`${img.src}?v=4`}
+              alt=""
+              className="hilos-crowd-img"
+              style={{
+                position: 'absolute',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                left: img.style.left,
+                top: img.style.top,
+                width: img.style.width || 'var(--login-crowd-size)',
+                transform: img.style.transform,
+                transformOrigin: img.style['transform-origin'] || '50% 72%',
+                transition: img.style.transition || 'transform 90ms cubic-bezier(0.2, 0, 0, 1)',
+                zIndex: parseInt(img.style['z-index'] || '0'),
+                animationDelay: `${(i * -0.17).toFixed(2)}s`
+              }}
+            />
+          ))}
+          {backgroundData.z_20.filter((img: any) => {
+            const leftVal = parseFloat(img.style.left) || 0;
+            const topVal = parseFloat(img.style.top) || 0;
+            return Math.abs(leftVal) > 420 || Math.abs(topVal) > 380;
+          }).map((img: any, i: number) => (
+            <img
+              key={`hero-bg-z20-${i}`}
+              src={`${img.src}?v=4`}
+              alt=""
+              className="hilos-crowd-img"
+              style={{
+                position: 'absolute',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                left: img.style.left,
+                top: img.style.top,
+                width: img.style.width || 'var(--login-crowd-size)',
+                transform: img.style.transform,
+                transformOrigin: img.style['transform-origin'] || '50% 72%',
+                transition: img.style.transition || 'transform 90ms cubic-bezier(0.2, 0, 0, 1)',
+                zIndex: parseInt(img.style['z-index'] || '0'),
+                animationDelay: `${((i + 12) * -0.19).toFixed(2)}s`
+              }}
+            />
+          ))}
         </div>
 
-        <div className="dropdown-stagger-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '6px 0', transitionDelay: '0.24s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-            {theme === 'dark' ? <Moon size={14} style={{ opacity: 0.7 }} /> : <Sun size={14} style={{ opacity: 0.7 }} />}
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '-0.1px' }}>
-              {isAr ? 'مظهر المنصة' : 'Theme Mode'}
-            </span>
-          </div>
-          <button 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-            style={{ 
-              background: 'none', 
-              border: '1px solid var(--border-color)', 
-              cursor: 'pointer', 
-              color: 'var(--text-primary)', 
-              fontSize: '13px', 
-              fontWeight: 600,
-              width: '180px',
-              height: '36px',
-              borderRadius: '99px',
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        <div style={{ position: 'relative', zIndex: 1 }}>
+
+
+          {/* Title */}
+          <h1 style={{
+            fontSize: '56px',
+            fontWeight: '800',
+            lineHeight: '1.15',
+            letterSpacing: isRtl ? 'normal' : '-1.5px',
+            maxWidth: '900px',
+            margin: '0 auto 24px',
+            color: 'var(--text-primary)'
+          }}>
+            {content.hero.title}
+          </h1>
+
+          {/* Subtitle */}
+          <p style={{
+            fontSize: '18px',
+            lineHeight: '1.6',
+            color: 'var(--text-secondary)',
+            maxWidth: '750px',
+            margin: '0 auto 40px',
+            fontWeight: 400
+          }}>
+            {content.hero.subtitle}
+          </p>
+
+          {/* Inline Signup Form (Apollo.io style) */}
+          <form 
+            onSubmit={handleStartFree}
+            style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxSizing: 'border-box'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-              e.currentTarget.style.borderColor = 'var(--border-hover)';
-              e.currentTarget.style.transform = 'scale(1.02)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-              e.currentTarget.style.transform = 'scale(1)';
+              maxWidth: '520px',
+              margin: '0 auto 24px',
+              gap: '12px',
+              backgroundColor: 'var(--panel-bg)',
+              padding: '8px',
+              borderRadius: '32px',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+              flexDirection: 'row',
+              alignItems: 'center'
             }}
           >
-            {theme === 'dark' ? (isAr ? 'وضع النهار ☀️' : 'Light Mode ☀️') : (isAr ? 'الوضع الداكن 🌙' : 'Dark Mode 🌙')}
-          </button>
-        </div>
-        
-        {!user && (
-          <>
-            <div className="dropdown-stagger-item" style={{ borderTop: '1px solid var(--border-color)', margin: '4px 0', transitionDelay: '0.28s' }} />
-            <div className="dropdown-stagger-item" style={{ display: 'flex', flexDirection: 'column', gap: '8px', transitionDelay: '0.32s', alignItems: 'center' }}>
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); setCurrentTab('auth-signup'); }} 
-                className="btn-landing-primary"
+            <div style={{ display: 'flex', alignItems: 'center', flex: 1, padding: '0 12px' }}>
+              <Mail size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <input
+                type="email"
+                placeholder={content.hero.inputPlaceholder}
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
                 style={{
-                  width: '180px',
-                  height: '36px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  borderRadius: '99px',
+                  width: '100%',
+                  border: 'none',
+                  outline: 'none',
+                  background: 'none',
+                  fontSize: '15px',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              style={{
+                backgroundColor: 'var(--text-primary)',
+                color: 'var(--panel-bg)',
+                border: 'none',
+                borderRadius: '24px',
+                fontWeight: 600,
+                fontSize: '15px',
+                padding: '12px 28px',
+                cursor: 'pointer',
+                transition: 'opacity 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {content.hero.cta}
+            </button>
+          </form>
+
+          {/* Trust features */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '24px',
+            flexWrap: 'wrap',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            fontWeight: 500,
+            marginBottom: '32px'
+          }}>
+            {content.hero.features.map((feature, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Check size={14} style={{ color: 'var(--success-color)' }} />
+                <span>{feature}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* LARGE INTERACTIVE PIXEL SHADER LOGO */}
+          <PixelShaderLogo theme={theme} />
+        </div>
+      </section>
+
+      {/* 3. Logo Marquee */}
+      <section style={{
+        borderTop: '1px solid var(--border-color)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '32px 24px',
+        backgroundColor: 'rgba(var(--panel-bg-rgb), 0.3)',
+        overflow: 'hidden'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <p style={{
+            fontSize: '12px',
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            letterSpacing: '1px',
+            textAlign: 'center',
+            marginBottom: '20px',
+            textTransform: 'uppercase'
+          }}>
+            {content.marquee}
+          </p>
+
+          {/* Simple Row of Integration/Tech Badges */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '48px',
+            flexWrap: 'wrap',
+            opacity: 0.65
+          }}>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)' }}>زين كاش</div>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)' }}>آسيا حوالة</div>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)' }}>FastPay</div>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Database size={16} /> Supabase
+            </div>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Cpu size={16} /> Node.js
+            </div>
+            <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Globe size={16} /> Vercel
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Product Tabbed Showcase Section */}
+      <section style={{
+        padding: '100px 24px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '16px' }}>
+            {content.products.title}
+          </h2>
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+            {content.products.desc}
+          </p>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '320px 1fr',
+          gap: '48px',
+          alignItems: 'start'
+        }}>
+          {/* Left Tabs selectors */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={() => setActiveTab('whatsapp')}
+              style={{
+                textAlign: isRtl ? 'right' : 'left',
+                padding: '20px',
+                borderRadius: '12px',
+                background: activeTab === 'whatsapp' ? 'var(--panel-bg)' : 'none',
+                border: activeTab === 'whatsapp' ? '1px solid var(--border-color)' : '1px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: activeTab === 'whatsapp' ? '0 4px 20px rgba(0,0,0,0.03)' : 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                <span style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: activeTab === 'whatsapp' ? '#25d366' : 'var(--panel-muted)',
+                  color: activeTab === 'whatsapp' ? 'white' : 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: 'var(--text-primary)',
-                  color: 'var(--panel-bg)',
-                  border: '1px solid transparent',
+                  fontWeight: 'bold'
+                }}>
+                  <MessageSquare size={16} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {content.products.whatsapp.label}
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('sms')}
+              style={{
+                textAlign: isRtl ? 'right' : 'left',
+                padding: '20px',
+                borderRadius: '12px',
+                background: activeTab === 'sms' ? 'var(--panel-bg)' : 'none',
+                border: activeTab === 'sms' ? '1px solid var(--border-color)' : '1px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: activeTab === 'sms' ? '0 4px 20px rgba(0,0,0,0.03)' : 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                <span style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: activeTab === 'sms' ? '#10b981' : 'var(--panel-muted)',
+                  color: activeTab === 'sms' ? 'white' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  <Phone size={16} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {content.products.sms.label}
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('email')}
+              style={{
+                textAlign: isRtl ? 'right' : 'left',
+                padding: '20px',
+                borderRadius: '12px',
+                background: activeTab === 'email' ? 'var(--panel-bg)' : 'none',
+                border: activeTab === 'email' ? '1px solid var(--border-color)' : '1px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: activeTab === 'email' ? '0 4px 20px rgba(0,0,0,0.03)' : 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                <span style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: activeTab === 'email' ? '#2563eb' : 'var(--panel-muted)',
+                  color: activeTab === 'email' ? 'white' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  <Mail size={16} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {content.products.email.label}
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Right Preview Card */}
+          <div style={{
+            backgroundColor: 'var(--panel-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '20px',
+            padding: '40px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.02)',
+            display: 'grid',
+            gridTemplateColumns: '1fr 340px',
+            gap: '40px',
+            alignItems: 'center',
+            minHeight: '400px'
+          }}>
+            {/* Description Info */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <h3 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                {content.products[activeTab].title}
+              </h3>
+              <p style={{ fontSize: '15px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+                {content.products[activeTab].desc}
+              </p>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--success-color)'
+                }} />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  {content.products[activeTab].metric}
+                </span>
+              </div>
+            </div>
+
+            {/* Visual Simulator */}
+            <div style={{
+              backgroundColor: 'var(--input-bg)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              height: '320px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '20px'
+            }}>
+              {activeTab === 'whatsapp' && (
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#008069' }}>Scan QR Code</div>
+                  {/* Mock QR Code */}
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    backgroundColor: '#111',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(5, 1fr)',
+                    gap: '4px'
+                  }}>
+                    {Array.from({ length: 25 }).map((_, i) => (
+                      <div key={i} style={{
+                        backgroundColor: (i % 2 === 0 || i % 3 === 0) ? 'white' : 'transparent',
+                        borderRadius: '2px'
+                      }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                    Scan with WhatsApp to sync your session WebSockets
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'sms' && (
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <span>Operator Gateway</span>
+                    <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>ONLINE</span>
+                  </div>
+                  <div style={{ height: '1px', backgroundColor: 'var(--border-color)' }} />
+                  {/* Mock SMS Routes */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: 'var(--input-bg)', borderRadius: '6px', fontSize: '12px' }}>
+                      <span style={{ fontWeight: 'bold' }}>Zain Iraq</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>0.015s Latency</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: 'var(--input-bg)', borderRadius: '6px', fontSize: '12px' }}>
+                      <span style={{ fontWeight: 'bold' }}>Asiacell</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>0.018s Latency</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: 'var(--input-bg)', borderRadius: '6px', fontSize: '12px' }}>
+                      <span style={{ fontWeight: 'bold' }}>Korek Telecom</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>0.020s Latency</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'email' && (
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  fontSize: '12px'
+                }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Domain DNS Records</div>
+                  <div style={{ height: '1px', backgroundColor: 'var(--border-color)' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>SPF (txt)</span>
+                      <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>✓ VERIFIED</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>DKIM (txt)</span>
+                      <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>✓ VERIFIED</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>DMARC (txt)</span>
+                      <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>✓ VERIFIED</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Code terminal Sandbox Section */}
+      <section style={{
+        padding: '60px 24px 100px',
+        backgroundColor: '#0a0d0b',
+        color: '#f0f7f3'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '64px',
+          alignItems: 'center'
+        }}>
+          {/* Left Title details */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+            <h2 style={{ fontSize: '36px', fontWeight: '800', lineHeight: 1.2 }}>
+              {content.code.title}
+            </h2>
+            <p style={{ fontSize: '16px', lineHeight: '1.6', color: '#a2b5ab' }}>
+              {content.code.desc}
+            </p>
+          </div>
+
+          {/* Right Terminal interface */}
+          <div style={{
+            backgroundColor: '#121614',
+            borderRadius: '16px',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            overflow: 'hidden'
+          }}>
+            {/* Terminal Tab switcher */}
+            <div style={{
+              backgroundColor: '#181e1b',
+              padding: '12px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.06)'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setActiveCodeLang('curl')}
+                  style={{
+                    backgroundColor: activeCodeLang === 'curl' ? '#121614' : 'transparent',
+                    border: 'none',
+                    color: activeCodeLang === 'curl' ? '#e8ff00' : '#718278',
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600
+                  }}
+                >
+                  {content.code.tabs.curl}
+                </button>
+                <button
+                  onClick={() => setActiveCodeLang('javascript')}
+                  style={{
+                    backgroundColor: activeCodeLang === 'javascript' ? '#121614' : 'transparent',
+                    border: 'none',
+                    color: activeCodeLang === 'javascript' ? '#e8ff00' : '#718278',
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600
+                  }}
+                >
+                  {content.code.tabs.js}
+                </button>
+                <button
+                  onClick={() => setActiveCodeLang('python')}
+                  style={{
+                    backgroundColor: activeCodeLang === 'python' ? '#121614' : 'transparent',
+                    border: 'none',
+                    color: activeCodeLang === 'python' ? '#e8ff00' : '#718278',
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600
+                  }}
+                >
+                  {content.code.tabs.py}
+                </button>
+              </div>
+
+              {/* Copy button */}
+              <button
+                onClick={handleCopyCode}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: copied ? '#34d399' : '#718278',
                   cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  boxSizing: 'border-box'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.9';
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                  e.currentTarget.style.transform = 'scale(1)';
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px'
                 }}
               >
-                {isAr ? 'ابدأ مجاناً' : 'Get Started'}
+                <Copy size={14} />
+                <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
-          </>
-        )}
-      </div>
 
-      <main id="landing-main-content">
+            {/* Terminal Body */}
+            <div style={{ padding: '24px', position: 'relative' }}>
+              <pre style={{
+                margin: 0,
+                fontSize: '13px',
+                fontFamily: 'Consolas, Monaco, "Andale Mono", monospace',
+                lineHeight: '1.6',
+                color: '#e8efeb',
+                overflowX: 'auto',
+                whiteSpace: 'pre-wrap',
+                direction: 'ltr',
+                textAlign: 'left'
+              }}>
+                <code>{codeSnippets[activeCodeLang]}</code>
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Hero Section */}
-      <section className="apple-animate-hero" style={{
-        maxWidth: '960px',
-        margin: '0 auto',
-        padding: '70px 24px 40px 24px',
-        textAlign: 'center',
+      {/* 6. Stats & Bento Grid Section */}
+      <section style={{
+        padding: '100px 24px',
+        maxWidth: '1200px',
+        margin: '0 auto'
       }}>
-        <span style={{
-          fontSize: '12px',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: 'var(--text-secondary)',
-          display: 'block',
-          marginBottom: '18px'
-        }}>{currentT.taglineSub}</span>
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '16px' }}>
+            {content.bento.title}
+          </h2>
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+            {content.bento.desc}
+          </p>
+        </div>
 
-        <h1 style={{
-          fontSize: '60px',
-          fontWeight: 800,
-          letterSpacing: '-2.5px',
-          lineHeight: 1.05,
-          margin: '0 0 24px 0',
-          color: 'var(--text-primary)'
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '24px'
         }}>
-          {currentT.tagline}
-        </h1>
+          {/* Card 1: Delivered messages */}
+          <BentoCard glowColor="37, 211, 102">
+            <div>
+              <div style={{ fontSize: '48px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                {content.bento.stat1Num}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {content.bento.stat1}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', color: 'var(--success-color)', fontSize: '13px', fontWeight: 600 }}>
+              <Activity size={16} />
+              <span>Real-time delivery stats</span>
+            </div>
+          </BentoCard>
 
-        <p style={{
-          fontSize: '19px',
-          lineHeight: 1.55,
-          color: 'var(--text-secondary)',
-          maxWidth: '740px',
-          margin: '0 auto 44px auto',
-          fontWeight: 400,
-          letterSpacing: '-0.3px'
-        }}>
-          {currentT.description}
-        </p>
+          {/* Card 2: Uptime SLA */}
+          <BentoCard glowColor="37, 99, 235">
+            <div>
+              <div style={{ fontSize: '48px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                {content.bento.stat2Num}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {content.bento.stat2}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', color: 'var(--success-color)', fontSize: '13px', fontWeight: 600 }}>
+              <Shield size={16} />
+              <span>SLA backed guarantees</span>
+            </div>
+          </BentoCard>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-          <button 
-            onClick={() => setCurrentTab('dashboard')} 
-            className="btn-landing-primary"
-            style={{ 
-              backgroundColor: 'var(--text-primary)',
-              color: 'var(--bg-color)',
-              border: 'none',
-              borderRadius: '999px',
-              padding: '13px 30px',
-              fontSize: '14.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-              transition: 'opacity 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.88'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-          >
-            {currentT.enterConsole}
-          </button>
-          <button 
-            onClick={() => setCurrentTab('playground')} 
-            style={{ 
+          {/* Card 3: Latency */}
+          <BentoCard glowColor="16, 185, 129">
+            <div>
+              <div style={{ fontSize: '48px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                {content.bento.stat3Num}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {content.bento.stat3}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', color: 'var(--success-color)', fontSize: '13px', fontWeight: 600 }}>
+              <Zap size={16} />
+              <span>Edge cached responses</span>
+            </div>
+          </BentoCard>
+
+          {/* Card 4: Local wallet payments */}
+          <BentoCard className="span-2" style={{ gridColumn: 'span 2' }} glowColor="245, 158, 11">
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                {content.bento.payments}
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                {content.bento.paymentsDesc}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px', fontWeight: 'bold', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <span style={{ padding: '6px 12px', backgroundColor: 'var(--panel-muted)', borderRadius: '6px' }}>Zain Cash</span>
+              <span style={{ padding: '6px 12px', backgroundColor: 'var(--panel-muted)', borderRadius: '6px' }}>AsiaHawala</span>
+              <span style={{ padding: '6px 12px', backgroundColor: 'var(--panel-muted)', borderRadius: '6px' }}>Visa / MasterCard</span>
+            </div>
+          </BentoCard>
+
+          {/* Card 5: Security */}
+          <BentoCard glowColor="239, 68, 68">
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                {content.bento.security}
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                {content.bento.securityDesc}
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600 }}>
+              <Lock size={16} />
+              <span>JWT & Argon2 active</span>
+            </div>
+          </BentoCard>
+        </div>
+      </section>
+
+      {/* 7. Call To Action Banner */}
+      <section style={{
+        padding: '80px 24px',
+        backgroundColor: 'var(--text-primary)',
+        color: 'var(--panel-bg)',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Neon accent glow */}
+        <div style={{
+          position: 'absolute',
+          bottom: '-50%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '500px',
+          height: '250px',
+          background: 'radial-gradient(circle, rgba(232, 255, 0, 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <h2 style={{ fontSize: '40px', fontWeight: '800', marginBottom: '20px', letterSpacing: isRtl ? 'normal' : '-1px' }}>
+            {content.ctaBanner.title}
+          </h2>
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', opacity: 0.8, marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
+            {content.ctaBanner.desc}
+          </p>
+          <button
+            onClick={() => onNavigate('auth-signup')}
+            style={{
               backgroundColor: 'var(--panel-bg)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '999px',
-              padding: '13px 30px',
-              fontSize: '14.5px',
-              fontWeight: 600,
+              border: 'none',
+              borderRadius: '24px',
+              fontWeight: 700,
+              fontSize: '16px',
+              padding: '14px 32px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s, border-color 0.2s'
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
           >
-            {currentT.sandbox}
+            {content.ctaBanner.btn}
           </button>
         </div>
       </section>
 
-      {/* Bento Grid Features */}
-      <ScrollReveal>
-        <section id="features" style={{
-          maxWidth: '960px',
-          margin: '0 auto',
-          padding: '10px 24px 45px 24px',
-        }}>
-          <h2 style={{
-            fontSize: '30px',
-            fontWeight: 800,
-            letterSpacing: '-0.8px',
-            margin: '0 0 32px 0',
-            textAlign: 'center',
-            color: 'var(--text-primary)'
-          }}>
-            {isAr ? 'قنوات الإرسال المدعومة' : 'Supported Delivery Channels'}
-          </h2>
-          <div className="bento-features-grid">
-            {/* Email API Card - Large (Span 2) */}
-            <BentoCard glowColor="37, 99, 235" className="apple-bento-card bento-col-span-2">
-              {/* Visual Simulator */}
-              <div className="bento-sim-container" style={{ height: '120px', position: 'relative' }}>
-                {/* Animated envelope and screen */}
-                <div style={{
-                  width: '60px',
-                  height: '42px',
-                  border: '1.5px solid var(--border-color)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--panel-bg)',
-                  position: 'absolute',
-                  top: '40px',
-                  left: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.02)'
-                }}>
-                  <Terminal size={14} style={{ color: 'var(--text-muted)' }} />
-                </div>
-                
-                <div className="fly-email-plane">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                  </svg>
-                </div>
-
-                <div style={{
-                  width: '80px',
-                  height: '50px',
-                  border: '1.5px solid var(--border-color)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--panel-bg)',
-                  position: 'absolute',
-                  top: '35px',
-                  right: '30px',
-                  padding: '6px',
-                  boxShadow: '0 6px 15px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{ display: 'flex', gap: '3px' }}>
-                    <span style={{ width: '12px', height: '3px', borderRadius: '1px', backgroundColor: 'var(--channel-email)' }} />
-                    <span style={{ width: '25px', height: '3px', borderRadius: '1px', backgroundColor: 'var(--border-color)' }} />
-                  </div>
-                  <div style={{ height: '1.5px', width: '100%', backgroundColor: 'var(--border-color)' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ height: '3px', width: '30px', backgroundColor: 'var(--border-color)', borderRadius: '1px' }} />
-                    <span style={{ 
-                      fontSize: '7px', 
-                      fontWeight: 700, 
-                      color: 'var(--success-text)', 
-                      backgroundColor: 'var(--success-bg)', 
-                      padding: '1px 3px', 
-                      borderRadius: '2px' 
-                    }}>INBOX</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--channel-email)', marginBottom: '14px' }}>
-                  <Mail size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>SMTP Bridge</span>
-                </div>
-                <h3 style={{ fontSize: '21px', fontWeight: 700, margin: '0 0 10px 0', letterSpacing: '-0.4px' }}>{currentT.channelEmail}</h3>
-                <p style={{ fontSize: '13.5px', lineHeight: 1.55, color: 'var(--text-secondary)', margin: 0 }}>
-                  {currentT.channelEmailDesc}
-                </p>
-              </div>
-            </BentoCard>
-
-            {/* Baghdad Latency Card - Small (Span 1) */}
-            <BentoCard glowColor="249, 115, 22" className="apple-bento-card">
-              {/* Radar Simulator */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', height: '110px' }}>
-                <div style={{
-                  position: 'relative',
-                  width: '70px',
-                  height: '70px',
-                  borderRadius: '50%',
-                  border: '1px solid var(--border-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <div className="radar-sweep-line" />
-                  <div style={{
-                    position: 'absolute',
-                    width: '35px',
-                    height: '35px',
-                    borderRadius: '50%',
-                    border: '1.5px dashed rgba(var(--accent-rgb), 0.2)'
-                  }} />
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--accent-color)',
-                    zIndex: 2
-                  }} />
-                  {/* Latency pulse ring */}
-                  <div style={{
-                    position: 'absolute',
-                    width: '70px',
-                    height: '70px',
-                    borderRadius: '50%',
-                    border: '2px solid var(--accent-color)',
-                    animation: 'pulseRing 2s infinite ease-out',
-                    pointerEvents: 'none'
-                  }} />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning-color)', marginBottom: '14px' }}>
-                  <Zap size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Network Performance</span>
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>{isAr ? 'سرعة فائقة بالمللي ثانية' : 'Single-Digit Milliseconds'}</h3>
-                <p style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'var(--text-secondary)', margin: 0 }}>
-                  {isAr ? 'زمن إرسال فائق السرعة عبر خوادم محلية مستقرة.' : 'Fast execution and instant webhook delivery feedback loops.'}
-                </p>
-              </div>
-            </BentoCard>
-
-            {/* Carrier Info Card - Small (Span 1) */}
-            <BentoCard glowColor="16, 185, 129" className="apple-bento-card">
-              {/* Live routing visual */}
-              <div className="bento-sim-container" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', height: '110px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  <span style={{ fontWeight: 700 }}>CARRIER ROUTER</span>
-                  <span style={{ color: 'var(--success-text)', marginInlineStart: 'auto' }}>100% Tunnel UP</span>
-                </div>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '8px', backgroundColor: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>ZAIN</span>
-                  <span style={{ width: '40px', height: '2px', backgroundColor: 'var(--success-color)' }} />
-                  <span style={{ fontSize: '7.5px', color: 'var(--text-muted)' }}>Priority OK</span>
-                </div>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '8px', backgroundColor: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>ASIA</span>
-                  <span style={{ width: '40px', height: '2px', backgroundColor: 'var(--success-color)' }} />
-                  <span style={{ fontSize: '7.5px', color: 'var(--text-muted)' }}>Priority OK</span>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success-text)', marginBottom: '14px' }}>
-                  <Cpu size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Iraq Carriers</span>
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>{isAr ? 'ربط الناقل المباشر' : 'Direct Carrier Tunnels'}</h3>
-                <p style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'var(--text-secondary)', margin: 0 }}>
-                  {isAr ? 'توصيل عبر خطوط مباشرة لكافة شبكات المحمول في العراق.' : 'Direct tunnels with local telecom operators for high delivery rates.'}
-                </p>
-              </div>
-            </BentoCard>
-
-            {/* SMS API Card - Large (Span 2) */}
-            <BentoCard glowColor="16, 185, 129" className="apple-bento-card bento-col-span-2">
-              {/* SMS Simulator visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
-                <div style={{
-                  width: '180px',
-                  height: '80px',
-                  border: '1.5px solid var(--border-color)',
-                  borderRadius: '16px',
-                  backgroundColor: 'var(--panel-bg)',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
-                  padding: '10px 14px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{ display: 'flex', fontSize: '9px', borderBottom: '1.5px solid var(--border-color)', paddingBottom: '4px' }}>
-                    <span style={{ fontWeight: 700 }}>OTP Verification</span>
-                    <span style={{ color: 'var(--text-muted)', marginInlineStart: 'auto' }}>1s ago</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {smsOtpStatus === 'typing' ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600 }}>Code: [ 9 2 8</span>
-                        <span style={{ width: '1.5px', height: '12px', backgroundColor: 'var(--text-primary)', animation: 'cursorBlink 1s infinite' }} />
-                        <span style={{ fontSize: '11px', fontWeight: 600 }}> ]</span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success-text)' }}>
-                        <CheckCircle2 size={13} />
-                        <span style={{ fontSize: '11.5px', fontWeight: 700 }}>9281 Verified</span>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ height: '3px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ 
-                      height: '100%', 
-                      width: smsOtpStatus === 'typing' ? '65%' : '100%', 
-                      backgroundColor: smsOtpStatus === 'typing' ? 'var(--warning-color)' : 'var(--success-color)',
-                      transition: 'width 0.4s, background-color 0.4s'
-                    }} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--channel-sms)', marginBottom: '14px' }}>
-                  <MessageSquare size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Zain / Asia / Korek</span>
-                </div>
-                <h3 style={{ fontSize: '21px', fontWeight: 700, margin: '0 0 10px 0', letterSpacing: '-0.4px' }}>{currentT.channelSms}</h3>
-                <p style={{ fontSize: '13.5px', lineHeight: 1.55, color: 'var(--text-secondary)', margin: 0 }}>
-                  {currentT.channelSmsDesc}
-                </p>
-              </div>
-            </BentoCard>
-
-            {/* WhatsApp API Card - Large (Span 2) */}
-            <BentoCard glowColor="37, 211, 102" className="apple-bento-card bento-col-span-2">
-              {/* Interactive WhatsApp chat visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', height: '130px' }}>
-                <div style={{
-                  width: '240px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  backgroundColor: 'var(--panel-bg)',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ backgroundColor: '#075e54', padding: '6px 12px', color: 'white', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'white' }} />
-                    <span>Sumer Send Whatsapp Bridge</span>
-                  </div>
-                  <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ 
-                      backgroundColor: 'rgba(var(--channel-whatsapp-rgb), 0.05)', 
-                      border: '1px solid rgba(var(--channel-whatsapp-rgb), 0.1)', 
-                      borderRadius: '8px', 
-                    	padding: '6px 10px', 
-                    	fontSize: '9.5px', 
-                    	maxWidth: '85%' 
-                    }}>
-                      {whatsappMockState === 'idle' && "Hi Jasim, confirm booking #4829?"}
-                      {whatsappMockState === 'confirmed' && "✅ Booking #4829 Confirmed. Thank you!"}
-                      {whatsappMockState === 'cancelled' && "❌ Booking #4829 Cancelled."}
-                    </div>
-                    {whatsappMockState === 'idle' && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button 
-                          onClick={() => setWhatsappMockState('confirmed')}
-                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--success-text)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
-                        >
-                          Confirm
-                        </button>
-                        <button 
-                          onClick={() => setWhatsappMockState('cancelled')}
-                          style={{ flex: 1, padding: '4px', fontSize: '8px', fontWeight: 700, color: 'var(--danger-text)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--panel-bg)' }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                    {whatsappMockState !== 'idle' && (
-                      <button 
-                        onClick={() => setWhatsappMockState('idle')}
-                        style={{ padding: '4px', fontSize: '8px', fontWeight: 600, color: 'var(--text-muted)', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'right' }}
-                      >
-                        Reset Sim
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--channel-whatsapp)', marginBottom: '14px' }}>
-                  <Phone size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Meta API Suite</span>
-                </div>
-                <h3 style={{ fontSize: '21px', fontWeight: 700, margin: '0 0 10px 0', letterSpacing: '-0.4px' }}>{currentT.channelWhatsapp}</h3>
-                <p style={{ fontSize: '13.5px', lineHeight: 1.55, color: 'var(--text-secondary)', margin: 0 }}>
-                  {currentT.channelWhatsappDesc}
-                </p>
-              </div>
-            </BentoCard>
-
-            {/* Shield Security Card - Small (Span 1) */}
-            <BentoCard glowColor="0, 107, 255" className="apple-bento-card">
-              {/* Key signature visual */}
-              <div className="bento-sim-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
-                <div style={{
-                  border: '1.5px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--panel-bg)',
-                  padding: '10px 14px',
-                  fontSize: '8px',
-                  fontFamily: 'monospace',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.01)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px'
-                }}>
-                  <div style={{ color: 'var(--text-muted)' }}># API KEY VERIFICATION</div>
-                  <div style={{ color: 'var(--success-text)' }}>KEY_AUTHORIZED: true</div>
-                  <div style={{ color: 'var(--accent-color)' }}>SIGNATURE: sha256_0a21f...</div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-color)', marginBottom: '14px' }}>
-                  <ShieldCheck size={22} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Security Standards</span>
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>{isAr ? 'مصادقة حماية مشددة' : 'Enterprise Security'}</h3>
-                <p style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'var(--text-secondary)', margin: 0 }}>
-                  {isAr ? 'حماية تامة للرموز عبر مفاتيح API وعمليات تحقق 2FA.' : 'Verify identities and audit activities through standard authentication layers.'}
-                </p>
-              </div>
-            </BentoCard>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* Simulated Live Developer Console Mockup */}
-      <ScrollReveal>
-        <section style={{
-          borderTop: '1px solid var(--border-color)',
-          borderBottom: '1px solid var(--border-color)',
-          backgroundColor: 'rgba(var(--text-primary), 0.003)',
-          padding: '50px 24px'
-        }}>
-          <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <h2 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-0.8px', margin: '0 0 14px 0' }}>{currentT.showcaseTitle}</h2>
-              <p style={{ fontSize: '15.5px', color: 'var(--text-secondary)', maxWidth: '640px', margin: '0 auto', lineHeight: 1.55 }}>{currentT.showcaseDesc}</p>
-            </div>
-
-            {/* Console CSS Simulated Window */}
-            <div 
-              onMouseEnter={() => setIsConsoleHovered(true)}
-              onMouseLeave={() => setIsConsoleHovered(false)}
-              style={{
-                backgroundColor: theme === 'dark' ? '#09090b' : '#ffffff',
-                border: isConsoleHovered 
-                  ? '1px solid rgba(99, 102, 241, 0.5)' 
-                  : '1px solid var(--border-color)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: isConsoleHovered 
-                  ? '0 20px 50px rgba(99, 102, 241, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.15)' 
-                  : '0 10px 40px rgba(0,0,0,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                transform: isConsoleHovered ? 'translateY(-2px)' : 'translateY(0)',
-                transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s'
-              }}
-            >
-              {/* Window title bar */}
-              <div style={{
-                height: '42px',
-                borderBottom: '1px solid var(--border-color)',
-                backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 16px',
-                gap: '6px',
-                justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginLeft: '12px', letterSpacing: '0.2px' }}>
-                    {isAr ? 'منصة تحكم سومر سيند (محاكاة)' : 'Sumer Send Platform Dashboard (Simulated)'}
-                  </span>
-                </div>
-                <div style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--success-text)',
-                  backgroundColor: 'var(--success-bg)',
-                  padding: '2px 8px',
-                  borderRadius: '6px'
-                }}>
-                  {isAr ? 'متصل بالشبكة' : 'LIVE CONSOLE'}
-                </div>
-              </div>
-
-              {/* Layout Wrapper */}
-              <div style={{
-                display: 'flex',
-                minHeight: '340px'
-              }}>
-                {/* Mini Console Sidebar */}
-                <div style={{
-                  width: '60px',
-                  borderInlineEnd: '1px solid var(--border-color)',
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.005)' : 'rgba(0,0,0,0.005)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  padding: '20px 0',
-                  gap: '24px'
-                }}>
-                  <div style={{ color: 'var(--accent-color)' }}><Cpu size={16} /></div>
-                  <div style={{ color: 'var(--text-muted)' }}><Mail size={16} /></div>
-                  <div style={{ color: 'var(--text-muted)' }}><MessageSquare size={16} /></div>
-                  <div style={{ color: 'var(--text-muted)' }}><ShieldCheck size={16} /></div>
-                </div>
-
-                {/* Main Content simulation */}
-                <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* Stats Blocks */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px 16px' }}>
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>Total Dispatched</span>
-                      <span style={{ fontSize: '20px', fontWeight: 700 }}>{mockStats.sent.toLocaleString()}</span>
-                    </div>
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px 16px' }}>
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>Delivery Rate</span>
-                      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--success-text)' }}>{mockStats.rate}%</span>
-                    </div>
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px 16px' }}>
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>Wallet Balance</span>
-                      <span style={{ fontSize: '18px', fontWeight: 700 }}>{mockStats.balance.toLocaleString()} <span style={{ fontSize: '10.5px', fontWeight: 500 }}>IQD</span></span>
-                    </div>
-                  </div>
-
-                  {/* Live SVG Graph & Trigger Box */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-                    {/* Graph */}
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>{currentT.consoleTraffic}</span>
-                      <svg viewBox="0 0 400 100" style={{ width: '100%', height: '80px', overflow: 'visible' }}>
-                        <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.25"/>
-                            <stop offset="100%" stopColor="var(--accent-color)" stopOpacity="0.0"/>
-                          </linearGradient>
-                        </defs>
-                        <line x1="0" y1="20" x2="400" y2="20" stroke="var(--border-color)" strokeWidth="0.5" strokeDasharray="3,3" />
-                        <line x1="0" y1="50" x2="400" y2="50" stroke="var(--border-color)" strokeWidth="0.5" strokeDasharray="3,3" />
-                        <line x1="0" y1="80" x2="400" y2="80" stroke="var(--border-color)" strokeWidth="0.5" strokeDasharray="3,3" />
-                        
-                        <path 
-                          d={getGraphPath()} 
-                          fill="none" 
-                          stroke="var(--accent-color)" 
-                          strokeWidth="2.5" 
-                          strokeLinecap="round"
-                          style={{ transition: 'd 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
-                        />
-                        <path 
-                          d={`${getGraphPath()} L 400 100 L 0 100 Z`} 
-                          fill="url(#chartGrad)" 
-                          style={{ transition: 'd 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
-                        />
-                        <circle cx="400" cy={graphPoints[graphPoints.length - 1]} r="4" fill="var(--accent-color)" style={{ transition: 'cy 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }} />
-                        <circle cx="400" cy={graphPoints[graphPoints.length - 1]} r="8" fill="none" stroke="var(--accent-color)" strokeWidth="1.5" style={{ transition: 'cy 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-                          <animate attributeName="r" values="4;12;4" dur="2s" repeatCount="indefinite" />
-                          <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite" />
-                        </circle>
-                      </svg>
-                    </div>
-
-                    {/* Trigger Simulator */}
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
-                      <div>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Sandbox Gateway router</span>
-                        <p style={{ fontSize: '10.5px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>Trigger simulated dispatch to inspect console log output changes.</p>
-                      </div>
-
-                      <button 
-                        onClick={handleTriggerApiCall}
-                        className="btn-landing-primary"
-                        style={{
-                          width: '100%',
-                          backgroundColor: 'var(--text-primary)',
-                          color: 'var(--bg-color)',
-                          border: 'none',
-                          borderRadius: '8px',
-                          padding: '10px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          transition: 'opacity 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                      >
-                        <Play size={11} fill="currentColor" />
-                        <span>{currentT.triggerTest}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter and Logs list */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700 }}>{currentT.consoleLogs}</span>
-                      
-                      {/* Log Filters */}
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {['all', 'email', 'sms', 'whatsapp'].map(tab => (
-                          <button
-                            key={tab}
-                            onClick={() => setMockTab(tab as any)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              padding: '3px 8px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              color: mockTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-                              backgroundColor: mockTab === tab ? (theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : 'transparent'
-                            }}
-                          >
-                            {tab.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Logs Table Output */}
-                    <div style={{
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      backgroundColor: theme === 'dark' ? '#060608' : '#fafafa'
-                    }}>
-                      {filteredMockLogs.map((log, index) => (
-                        <div 
-                          key={log.id} 
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 14px',
-                            borderBottom: index === filteredMockLogs.length - 1 ? 'none' : '1px solid var(--border-color)',
-                            fontSize: '11.5px',
-                            animation: 'appleSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ 
-                              fontSize: '8px', 
-                              fontWeight: 700, 
-                              padding: '2px 6px', 
-                              borderRadius: '4px',
-                              color: log.type === 'email' ? 'var(--channel-email-text)' : log.type === 'sms' ? 'var(--channel-sms-text)' : 'var(--channel-whatsapp-text)',
-                              backgroundColor: log.type === 'email' ? 'rgba(var(--channel-email-rgb), 0.08)' : log.type === 'sms' ? 'rgba(var(--channel-sms-rgb), 0.08)' : 'rgba(var(--channel-whatsapp-rgb), 0.08)'
-                            }}>
-                              {log.type.toUpperCase()}
-                            </span>
-                            <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{log.to}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
-                              {log.status}
-                            </span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>{log.time}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* Code quickstarts / Syntax IDE Block */}
-      <ScrollReveal>
-        <section id="sandbox" style={{
-          maxWidth: '960px',
-          margin: '0 auto',
-          padding: '70px 24px 50px 24px'
-        }}>
-          {/* Centered Heading */}
-          <div style={{ textAlign: 'center', marginBottom: '44px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              color: 'var(--text-secondary)',
-              display: 'block',
-              marginBottom: '12px'
-            }}>{currentT.brand} API ENGINE</span>
-            <h2 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-0.7px', margin: '0 0 14px 0', color: 'var(--text-primary)' }}>{currentT.quickstart}</h2>
-            <p style={{ fontSize: '15.5px', color: 'var(--text-secondary)', maxWidth: '640px', margin: '0', lineHeight: 1.55 }}>{currentT.quickstartDesc}</p>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '40px',
-            alignItems: 'center'
-          }}>
-            {/* Left Column: Feature Highlights */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{ color: 'var(--text-primary)', marginTop: '2px' }}><CheckCircle2 size={18} /></div>
-                <div>
-                  <strong style={{ fontSize: '14px', display: 'block', marginBottom: '3px' }}>{isAr ? 'تفويض بروتوكول Bearer بسيط وآمن' : 'Bearer Authorization'}</strong>
-                  <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, display: 'block' }}>
-                    {isAr ? 'مصادقة قياسية سهلة الربط باستخدام رموز المفاتيح sm_live أو sm_send.' : 'Simple auth integration using standard authorization headers.'}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{ color: 'var(--text-primary)', marginTop: '2px' }}><CheckCircle2 size={18} /></div>
-                <div>
-                  <strong style={{ fontSize: '14px', display: 'block', marginBottom: '3px' }}>{isAr ? 'عائد استجابة موحد ومفهوم' : 'JSON Standard Responses'}</strong>
-                  <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, display: 'block' }}>
-                    {isAr ? 'تتلقى ردوداً منظمة ومحددة لمعالجة التحليلات وإدارة الاستثناءات في كودك.' : 'Structured execution codes and trace identifiers for clean log management.'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* IDE Window with copy option */}
-            <div 
-              className="mac-code-window" 
-              onMouseEnter={() => setIsIdeHovered(true)}
-              onMouseLeave={() => setIsIdeHovered(false)}
-              style={{
-                backgroundColor: '#09090b',
-                border: isIdeHovered 
-                  ? '1px solid rgba(139, 92, 246, 0.5)' 
-                  : '1px solid #1c1c1f',
-                borderRadius: '14px',
-                overflow: 'hidden',
-                boxShadow: isIdeHovered 
-                  ? '0 20px 50px rgba(139, 92, 246, 0.15), 0 0 0 1px rgba(139, 92, 246, 0.15)' 
-                  : '0 12px 40px rgba(0,0,0,0.18)',
-                transform: isIdeHovered ? 'translateY(-2px)' : 'translateY(0)',
-                transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s'
-              }}
-            >
-              {/* Window tabs */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 16px',
-                height: '38px',
-                borderBottom: '1px solid #1a1a1e',
-                backgroundColor: '#09090b'
-              }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['curl', 'node', 'python', 'go'].map((tab) => (
-                    <button 
-                      key={tab}
-                      onClick={() => {
-                        setActiveCodeTab(tab as any);
-                        setCopied(false);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: activeCodeTab === tab ? '#ffffff' : '#a1a1aa',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '4px 10px',
-                        borderRadius: '5px',
-                        backgroundColor: activeCodeTab === tab ? '#1c1c21' : 'transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {tab === 'curl' ? 'cURL' : tab === 'node' ? 'Node.js' : tab === 'python' ? 'Python' : 'Go'}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Window buttons & copy option */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <button
-                    onClick={copyToClipboard}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#a1a1aa',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      transition: 'color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#e2e8f0'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#a1a1aa'}
-                    title="Copy snippet"
-                  >
-                    {copied ? <Check size={11} style={{ color: 'var(--success-text)' }} /> : <Copy size={11} />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#27272a' }} />
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#27272a' }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Code viewport container */}
-              <pre style={{
-                margin: 0,
-                padding: '20px',
-                overflowX: 'auto',
-                direction: 'ltr',
-                textAlign: 'left',
-                backgroundColor: '#09090b',
-                minHeight: '260px'
-              }}>
-                <code>{renderHighlightedCode()}</code>
-              </pre>
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* Apple Store style pricing calculator */}
-      <ScrollReveal>
-        <section id="pricing" style={{
-          borderTop: '1px solid var(--border-color)',
-          padding: '50px 24px',
-          backgroundColor: 'var(--panel-bg)'
-        }}>
-          <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                color: 'var(--text-secondary)',
-                display: 'block',
-                marginBottom: '12px'
-              }}>{currentT.pricing}</span>
-              <h2 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-0.7px', margin: '0 0 14px 0' }}>{currentT.calcTitle}</h2>
-              <p style={{ fontSize: '15px', color: 'var(--text-secondary)', margin: '0 0 36px 0' }}>{currentT.calcDesc}</p>
-
-              {/* Sliding Segmented iOS Control */}
-              <div style={{
-                display: 'inline-flex',
-                backgroundColor: theme === 'dark' ? '#18181b' : '#f4f4f5',
-                padding: '4px',
-                borderRadius: '99px',
-                position: 'relative',
-                width: '100%',
-                maxWidth: '450px',
-                border: '1px solid var(--border-color)',
-                boxSizing: 'border-box'
-              }}>
-                {/* Sliding Pill Background */}
-                <div style={{
-                  position: 'absolute',
-                  top: '4px',
-                  bottom: '4px',
-                  left: isAr 
-                    ? (presetTier === 'starter' ? 'calc(66.66% + 2px)' : presetTier === 'growth' ? 'calc(33.33% + 2px)' : '4px')
-                    : (presetTier === 'starter' ? '4px' : presetTier === 'growth' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 2px)'),
-                  width: 'calc(33.33% - 6px)',
-                  backgroundColor: theme === 'dark' ? '#27272a' : '#ffffff',
-                  borderRadius: '99px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  transition: 'left 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-                  opacity: presetTier ? 1 : 0
-                }} />
-                
-                {/* Segment Buttons */}
-                {['starter', 'growth', 'enterprise'].map((tier) => (
-                  <button
-                    key={tier}
-                    onClick={() => handleApplyPreset(tier as any)}
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      padding: '10px 0',
-                      fontSize: '12.5px',
-                      fontWeight: 700,
-                      borderRadius: '99px',
-                      cursor: 'pointer',
-                      zIndex: 1,
-                      color: presetTier === tier 
-                        ? 'var(--text-primary)' 
-                        : 'var(--text-secondary)',
-                      transition: 'color 0.25s'
-                    }}
-                  >
-                    {tier === 'starter' ? currentT.presetStarter : tier === 'growth' ? currentT.presetGrowth : currentT.presetEnterprise}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Configurator block */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '32px'
-            }}>
-              {/* Email configured slider */}
-              <div 
-                onMouseEnter={() => setIsEmailCardHovered(true)}
-                onMouseLeave={() => setIsEmailCardHovered(false)}
-                style={{
-                  border: isEmailCardHovered 
-                    ? '1px solid rgba(37, 99, 235, 0.5)' 
-                    : '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  backgroundColor: isEmailCardHovered 
-                    ? (theme === 'dark' ? 'rgba(37, 99, 235, 0.02)' : 'rgba(37, 99, 235, 0.01)')
-                    : 'rgba(var(--text-primary), 0.002)',
-                  boxShadow: isEmailCardHovered 
-                    ? '0 12px 30px rgba(37, 99, 235, 0.08), 0 0 0 1px rgba(37, 99, 235, 0.15)' 
-                    : 'none',
-                  transform: isEmailCardHovered ? 'translateY(-2px)' : 'translateY(0)',
-                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s, background-color 0.3s'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14.5px', fontWeight: 700, marginBottom: '18px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Mail size={16} style={{ color: 'var(--channel-email)' }} /> 
-                    {currentT.channelEmail}
-                  </span>
-                  <span>{emailCount.toLocaleString()} {isAr ? 'رسالة' : 'messages'}</span>
-                </div>
-                <input 
-                  type="range" 
-                  aria-label={isAr ? 'حجم البريد الإلكتروني' : 'Email Volume'}
-                  min="0" 
-                  max="100000" 
-                  step="1000"
-                  value={emailCount} 
-                  onChange={(e) => handleSliderChange('email', parseInt(e.target.value))}
-                  className="apple-slider"
-                  style={{
-                    background: `linear-gradient(${isAr ? '270deg' : '90deg'}, var(--channel-email) ${(emailCount / 100000) * 100}%, var(--border-color) ${(emailCount / 100000) * 100}%)`
-                  }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '10px' }}>
-                  <span>0</span>
-                  <span>{currentT.emailRateLabel}</span>
-                  <span>100k</span>
-                </div>
-              </div>
-
-              {/* SMS configured slider */}
-              <div 
-                onMouseEnter={() => setIsSmsCardHovered(true)}
-                onMouseLeave={() => setIsSmsCardHovered(false)}
-                style={{
-                  border: isSmsCardHovered 
-                    ? '1px solid rgba(16, 185, 129, 0.5)' 
-                    : '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  backgroundColor: isSmsCardHovered 
-                    ? (theme === 'dark' ? 'rgba(16, 185, 129, 0.02)' : 'rgba(16, 185, 129, 0.01)')
-                    : 'rgba(var(--text-primary), 0.002)',
-                  boxShadow: isSmsCardHovered 
-                    ? '0 12px 30px rgba(16, 185, 129, 0.08), 0 0 0 1px rgba(16, 185, 129, 0.15)' 
-                    : 'none',
-                  transform: isSmsCardHovered ? 'translateY(-2px)' : 'translateY(0)',
-                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s, background-color 0.3s'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14.5px', fontWeight: 700, marginBottom: '18px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MessageSquare size={16} style={{ color: 'var(--channel-sms)' }} /> 
-                    {currentT.channelSms}
-                  </span>
-                  <span>{smsCount.toLocaleString()} {isAr ? 'رسالة' : 'messages'}</span>
-                </div>
-                <input 
-                  type="range" 
-                  aria-label={isAr ? 'حجم رسائل SMS' : 'SMS Volume'}
-                  min="0" 
-                  max="20000" 
-                  step="100"
-                  value={smsCount} 
-                  onChange={(e) => handleSliderChange('sms', parseInt(e.target.value))}
-                  className="apple-slider"
-                  style={{
-                    background: `linear-gradient(${isAr ? '270deg' : '90deg'}, var(--channel-sms) ${(smsCount / 20000) * 100}%, var(--border-color) ${(smsCount / 20000) * 100}%)`
-                  }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '10px' }}>
-                  <span>0</span>
-                  <span>{currentT.smsRateLabel}</span>
-                  <span>20k</span>
-                </div>
-              </div>
-
-              {/* WhatsApp configured slider */}
-              <div 
-                onMouseEnter={() => setIsWhatsappCardHovered(true)}
-                onMouseLeave={() => setIsWhatsappCardHovered(false)}
-                style={{
-                  border: isWhatsappCardHovered 
-                    ? '1px solid rgba(37, 211, 102, 0.5)' 
-                    : '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  backgroundColor: isWhatsappCardHovered 
-                    ? (theme === 'dark' ? 'rgba(37, 211, 102, 0.02)' : 'rgba(37, 211, 102, 0.01)')
-                    : 'rgba(var(--text-primary), 0.002)',
-                  boxShadow: isWhatsappCardHovered 
-                    ? '0 12px 30px rgba(37, 211, 102, 0.08), 0 0 0 1px rgba(37, 211, 102, 0.15)' 
-                    : 'none',
-                  transform: isWhatsappCardHovered ? 'translateY(-2px)' : 'translateY(0)',
-                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s, background-color 0.3s'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14.5px', fontWeight: 700, marginBottom: '18px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Phone size={16} style={{ color: 'var(--channel-whatsapp)' }} /> 
-                    {currentT.channelWhatsapp}
-                  </span>
-                  <span>{whatsappCount.toLocaleString()} {isAr ? 'رسالة' : 'messages'}</span>
-                </div>
-                <input 
-                  type="range" 
-                  aria-label={isAr ? 'حجم رسائل واتساب' : 'WhatsApp Volume'}
-                  min="0" 
-                  max="10000" 
-                  step="100"
-                  value={whatsappCount} 
-                  onChange={(e) => handleSliderChange('whatsapp', parseInt(e.target.value))}
-                  className="apple-slider"
-                  style={{
-                    background: `linear-gradient(${isAr ? '270deg' : '90deg'}, var(--channel-whatsapp) ${(whatsappCount / 10000) * 100}%, var(--border-color) ${(whatsappCount / 10000) * 100}%)`
-                  }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '10px' }}>
-                  <span>0</span>
-                  <span>{currentT.whatsappRateLabel}</span>
-                  <span>10k</span>
-                </div>
-              </div>
-
-              {/* Total monthly cost breakdown panel */}
-              <div style={{
-                borderTop: '1px solid var(--border-color)',
-                paddingTop: '36px',
-                marginTop: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '20px'
-                }}>
-                  <div>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'block', fontWeight: 700, marginBottom: '4px' }}>{currentT.estMonthly}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currentT.pricingSub}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ 
-                      fontSize: '44px', 
-                      fontWeight: 800, 
-                      letterSpacing: '-2px', 
-                      color: 'var(--text-primary)'
-                    }}>
-                      {totalCost.toLocaleString()}
-                    </span>
-                    <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)' }}>{currentT.iqd}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/{currentT.perMonth}</span>
-                  </div>
-                </div>
-
-                {/* Cost Breakdown split progress bar */}
-                <div style={{
-                  height: '6px',
-                  width: '100%',
-                  backgroundColor: 'var(--border-color)',
-                  borderRadius: '99px',
-                  display: 'flex',
-                  overflow: 'hidden'
-                }}>
-                  <div 
-                    style={{ 
-                      width: `${totalCost > 0 ? ((emailCount * emailRate) / totalCost) * 100 : 0}%`, 
-                      backgroundColor: 'var(--channel-email)', 
-                      transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
-                    }} 
-                    title="Email API Cost Share"
-                  />
-                  <div 
-                    style={{ 
-                      width: `${totalCost > 0 ? ((smsCount * smsRate) / totalCost) * 100 : 0}%`, 
-                      backgroundColor: 'var(--channel-sms)', 
-                      transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
-                    }} 
-                    title="SMS OTP Cost Share"
-                  />
-                  <div 
-                    style={{ 
-                      width: `${totalCost > 0 ? ((whatsappCount * whatsappRate) / totalCost) * 100 : 0}%`, 
-                      backgroundColor: 'var(--channel-whatsapp)', 
-                      transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
-                    }} 
-                    title="WhatsApp API Cost Share"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      </main>
-
-      {/* Luxurious Glassmorphic Floating Pill Footer matching Header style */}
+      {/* 8. Footer (Bird.com Style) */}
       <footer style={{
-        maxWidth: '520px',
-        width: '92%',
-        margin: '60px auto 40px auto',
-        padding: '24px',
-        backgroundColor: theme === 'dark' ? 'rgba(10, 10, 10, 0.22)' : 'rgba(255, 255, 255, 0.35)',
-        backdropFilter: 'saturate(180%) blur(40px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-        border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
-        borderRadius: '18px',
-        textAlign: 'center',
-        fontFamily: isAr ? 'var(--font-arabic)' : 'var(--font-family)',
-        boxShadow: theme === 'dark'
-          ? 'rgba(0, 0, 0, 0.4) 0px 12px 32px, rgba(255, 255, 255, 0.1) 0px 1px 0px inset, rgba(255, 255, 255, 0.03) 0px 0px 20px 0px inset'
-          : 'rgba(0, 0, 0, 0.03) 0px 8px 24px, rgba(255, 255, 255, 0.75) 0px 1px 0px inset, rgba(255, 255, 255, 0.4) 0px 0px 20px 0px inset',
+        padding: '80px 24px 40px',
+        backgroundColor: 'transparent'
       }}>
-        {/* Brand logo in footer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          marginBottom: '12px'
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--text-primary)' }}>
-            <path d="M12 3L3 12H7V20H17V12H21L12 3Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M12 8V16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M9 11L12 8L15 11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
-            {currentT.brand}
-          </span>
+        <div className="bird-footer-container">
+          <div className="bird-footer-grid">
+            {/* Column 1: Products */}
+            <div className="bird-footer-col">
+              <p className="bird-footer-col-title">{isRtl ? 'المنصة' : 'Platform'}</p>
+              <div className="bird-footer-col-links">
+                <span className="bird-footer-link" onClick={() => setActiveTab('whatsapp')}>{isRtl ? 'ربط واتساب' : 'WhatsApp Sync'}</span>
+                <span className="bird-footer-link" onClick={() => setActiveTab('sms')}>{isRtl ? 'بوابة SMS' : 'SMS Gateway'}</span>
+                <span className="bird-footer-link" onClick={() => setActiveTab('email')}>{isRtl ? 'إرسال بريد SMTP' : 'Email SMTP'}</span>
+                <span className="bird-footer-link" onClick={() => onNavigate('auth-signup')}>{isRtl ? 'حساب تجريبي' : 'Developer Sandbox'}</span>
+              </div>
+            </div>
+
+            {/* Column 2: Resources */}
+            <div className="bird-footer-col">
+              <p className="bird-footer-col-title">{isRtl ? 'المصادر' : 'Resources'}</p>
+              <div className="bird-footer-col-links">
+                <span className="bird-footer-link">{isRtl ? 'التوثيق البرمجي' : 'API Documentation'}</span>
+                <span className="bird-footer-link">{isRtl ? 'دليل البدء السريع' : 'Quickstart Guide'}</span>
+                <span className="bird-footer-link">{isRtl ? 'مفاتيح الـ API' : 'API Keys Guide'}</span>
+                <span className="bird-footer-link">{isRtl ? 'سجل التغييرات' : 'Changelog'}</span>
+              </div>
+            </div>
+
+            {/* Column 3: Company */}
+            <div className="bird-footer-col">
+              <p className="bird-footer-col-title">{isRtl ? 'الشركة' : 'Company'}</p>
+              <div className="bird-footer-col-links">
+                <span className="bird-footer-link">{isRtl ? 'من نحن' : 'About Us'}</span>
+                <span className="bird-footer-link">{isRtl ? 'الأسعار' : 'Pricing Plans'}</span>
+                <span className="bird-footer-link">{isRtl ? 'شروط الخدمة' : 'Terms of Use'}</span>
+                <span className="bird-footer-link">{isRtl ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
+              </div>
+            </div>
+
+            {/* Column 4: Local Support & Integrations */}
+            <div className="bird-footer-col">
+              <p className="bird-footer-col-title">{isRtl ? 'الدعم والشركاء' : 'Local Partners'}</p>
+              <div className="bird-footer-col-links">
+                <span className="bird-footer-link" style={{ fontWeight: 'bold' }}>زين كاش</span>
+                <span className="bird-footer-link" style={{ fontWeight: 'bold' }}>آسيا حوالة</span>
+                <span className="bird-footer-link" style={{ fontWeight: 'bold' }}>FastPay</span>
+                <a href="mailto:support@sumersend.com" className="bird-footer-link" style={{ fontSize: '13px' }}>support@sumersend.com</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar: Copyright & System Status */}
+          <div className="bird-footer-bottom">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {isRtl ? '© 2026 سومر سيند. جميع الحقوق محفوظة.' : '© 2026 Sumer Send. All rights reserved.'}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--success-text)' }}>
+                  {isRtl ? 'جميع الأنظمة تعمل بكفاءة' : 'All systems operational'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
+              <span className="bird-footer-link">LinkedIn</span>
+              <span className="bird-footer-link">GitHub</span>
+              <span className="bird-footer-link">Twitter</span>
+            </div>
+          </div>
         </div>
-        <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {currentT.footer}
-        </p>
+
+        {/* INTERACTIVE PIXEL SHADER LOGO */}
+        <PixelShaderLogo theme={theme} />
       </footer>
     </div>
   );

@@ -55,6 +55,8 @@ export const getTabFromPath = (path: string): { tab: string; subTab?: any } => {
       return { tab: 'reports' };
     case '/whatsapp':
       return { tab: 'whatsapp' };
+    case '/sms':
+      return { tab: 'sms' };
     case '/smtp':
       return { tab: 'smtp' };
     case '/security':
@@ -65,7 +67,7 @@ export const getTabFromPath = (path: string): { tab: string; subTab?: any } => {
     case '/admin':
       return { tab: 'admin-portal' };
     default:
-      return { tab: 'landing' };
+      return { tab: 'auth-signin' };
   }
 };
 
@@ -93,6 +95,7 @@ export const getPathFromTab = (tab: string, subTab?: string): string => {
     case 'logs': return '/logs';
     case 'reports': return '/reports';
     case 'whatsapp': return '/whatsapp';
+    case 'sms': return '/sms';
     case 'smtp': return '/smtp';
     case 'security': return '/security';
     case 'system': return '/system';
@@ -132,7 +135,7 @@ export const updateSEOMetadata = (tab: string, lang: 'ar' | 'en') => {
   let pageTitle = '';
   switch (tab) {
     case 'landing':
-      pageTitle = lang === 'ar' ? 'الرئيسية' : 'Home';
+      pageTitle = lang === 'ar' ? 'البوابة الوطنية للإشعارات والرسائل' : 'Unified Messaging & Notification Gateway';
       break;
     case 'auth-signin':
       pageTitle = lang === 'ar' ? 'تسجيل الدخول' : 'Sign In';
@@ -198,7 +201,7 @@ export const updateSEOMetadata = (tab: string, lang: 'ar' | 'en') => {
 
   // 2. Set Page Title
   const baseTitle = lang === 'ar' ? settings.siteTitleAr : settings.siteTitleEn;
-  if (tab === 'landing') {
+  if (tab === 'auth-signin') {
     document.title = baseTitle;
   } else {
     document.title = `${pageTitle} | ${baseTitle}`;

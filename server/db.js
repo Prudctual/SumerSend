@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -110,12 +111,13 @@ export async function getUserById(id) {
 // 2. Logs Database Helper Methods
 // =========================================================================
 
-export async function loadLogs(userId) {
+export async function loadLogs(userId, limit = 100, offset = 0) {
   const { data, error } = await supabase
     .from('logs')
     .select('*')
     .eq('user_id', userId)
-    .order('timestamp', { ascending: false });
+    .order('timestamp', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) {
     console.error(`Error loading logs for user ${userId}:`, error);
     return [];
@@ -195,6 +197,8 @@ export async function loadSmtpConfig(userId) {
     .eq('user_id', userId)
     .maybeSingle();
 
+  const { decryptText } = await import('./utils.js');
+
   if (error || !data) {
     return {
       host: process.env.SMTP_HOST || '',
@@ -211,19 +215,22 @@ export async function loadSmtpConfig(userId) {
     port: data.port || 587,
     secure: !!data.secure,
     user: data.username || '',
-    pass: data.password || '',
+    pass: decryptText(data.password || ''),
     from: data.sender || 'Sumer Send <onboarding@sumersend.com>'
   };
 }
 
 export async function saveSmtpConfig(userId, config) {
+  const { encryptText } = await import('./utils.js');
+  const encryptedPassword = encryptText(config.pass || '');
+
   const { error } = await supabase.from('smtp_configs').upsert({
     user_id: userId,
     host: config.host,
     port: config.port,
     secure: config.secure,
     username: config.user,
-    password: config.pass,
+    password: encryptedPassword,
     sender: config.from,
     updated_at: new Date().toISOString()
   });
@@ -345,7 +352,7 @@ export async function saveWallet(userId, wallet) {
 }
 
 export async function chargeWallet(userId, amount, description, provider = 'Usage') {
-  const txId = 'TX' + Math.floor(100000 + Math.random() * 900000).toString();
+  const txId = `TX_${crypto.randomUUID()}`;
   
   // Call the atomic postgres function to deduct balance and log transaction under row-lock
   const { data, error } = await supabase.rpc('charge_wallet_atomic', {
@@ -394,7 +401,7 @@ export async function chargeWallet(userId, amount, description, provider = 'Usag
 }
 
 export async function refundWallet(userId, amount, description, provider = 'Usage') {
-  const txId = 'TX_REF' + Math.floor(100000 + Math.random() * 900000).toString();
+  const txId = `TX_REF_${crypto.randomUUID()}`;
   
   // Call the atomic postgres function to refund balance and log transaction under row-lock
   const { data, error } = await supabase.rpc('refund_wallet_atomic', {
@@ -407,6 +414,25 @@ export async function refundWallet(userId, amount, description, provider = 'Usag
 
   if (error) {
     console.error(`Error executing refund_wallet_atomic RPC for user ${userId}:`, error);
+    return false;
+  }
+  return !!data;
+}
+
+export async function topupWallet(userId, amount, description, provider = 'Gateway', transactionId = null) {
+  const txId = transactionId || `TX_${crypto.randomUUID()}`;
+  
+  // Call the atomic postgres function to topup balance and log transaction under row-lock
+  const { data, error } = await supabase.rpc('topup_wallet_atomic', {
+    p_user_id: userId,
+    p_amount: amount,
+    p_description: description,
+    p_provider: provider,
+    p_tx_id: txId
+  });
+
+  if (error) {
+    console.error(`Error executing topup_wallet_atomic RPC for user ${userId}:`, error);
     return false;
   }
   return !!data;
@@ -481,7 +507,7 @@ export async function saveWebhooks(userId, webhooks) {
 
   if (webhooks.length > 0) {
     const dbWebhooks = webhooks.map(w => ({
-      id: w.id || Math.random().toString(36).substring(2, 15),
+      id: w.id || crypto.randomUUID(),
       user_id: userId,
       url: w.url,
       events: w.events,
@@ -493,6 +519,51 @@ export async function saveWebhooks(userId, webhooks) {
       console.error(`Error saving webhooks for user ${userId}:`, upsError);
       return false;
     }
+  }
+  return true;
+}
+
+export async function addWebhook(userId, webhook) {
+  const { error } = await supabase.from('webhooks').insert({
+    id: webhook.id,
+    user_id: userId,
+    url: webhook.url,
+    events: webhook.events,
+    secret: webhook.secret,
+    created_at: webhook.createdAt || new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error adding webhook for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function upsertWebhook(userId, webhook) {
+  const { error } = await supabase.from('webhooks').upsert({
+    id: webhook.id,
+    user_id: userId,
+    url: webhook.url,
+    events: webhook.events,
+    secret: webhook.secret,
+    created_at: webhook.createdAt || new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error upserting webhook for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteWebhook(userId, webhookId) {
+  const { error } = await supabase
+    .from('webhooks')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', webhookId);
+  if (error) {
+    console.error(`Error deleting webhook ${webhookId} for user ${userId}:`, error);
+    return false;
   }
   return true;
 }
@@ -623,6 +694,65 @@ export async function saveCampaigns(userId, campaigns) {
   return true;
 }
 
+export async function addCampaign(userId, campaign) {
+  const { error } = await supabase.from('campaigns').insert({
+    id: campaign.id,
+    user_id: userId,
+    name: campaign.name,
+    type: campaign.type,
+    status: campaign.status,
+    subject: campaign.subject,
+    body: campaign.body,
+    recipients_count: campaign.recipientsCount,
+    success_count: campaign.successCount,
+    failed_count: campaign.failedCount,
+    total_cost: campaign.totalCost,
+    recipients: campaign.recipients,
+    created_at: campaign.timestamp || new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error adding campaign for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateCampaign(userId, campaignId, updates) {
+  const dbUpdates = {};
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.successCount !== undefined) dbUpdates.success_count = updates.successCount;
+  if (updates.failedCount !== undefined) dbUpdates.failed_count = updates.failedCount;
+  if (updates.totalCost !== undefined) dbUpdates.total_cost = updates.totalCost;
+  if (updates.recipients !== undefined) dbUpdates.recipients = updates.recipients;
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.subject !== undefined) dbUpdates.subject = updates.subject;
+  if (updates.body !== undefined) dbUpdates.body = updates.body;
+
+  const { error } = await supabase
+    .from('campaigns')
+    .update(dbUpdates)
+    .eq('user_id', userId)
+    .eq('id', campaignId);
+  if (error) {
+    console.error(`Error updating campaign ${campaignId} for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteCampaign(userId, campaignId) {
+  const { error } = await supabase
+    .from('campaigns')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', campaignId);
+  if (error) {
+    console.error(`Error deleting campaign ${campaignId} for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
 // =========================================================================
 // 7. Template Database Helper Methods
 // =========================================================================
@@ -695,6 +825,65 @@ export async function saveTemplates(userId, templates) {
       console.error(`Error saving templates for user ${userId}:`, upsError);
       return false;
     }
+  }
+  return true;
+}
+
+export async function addTemplate(userId, template) {
+  const { error } = await supabase.from('templates').insert({
+    id: template.id,
+    user_id: userId,
+    name_ar: template.nameAr,
+    name_en: template.nameEn,
+    desc_ar: template.descAr,
+    desc_en: template.descEn,
+    subject_ar: template.subjectAr,
+    subject_en: template.subjectEn,
+    body: template.body,
+    icon: template.icon,
+    variables: template.variables,
+    type: template.type,
+    created_at: template.createdAt || new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error adding template for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function upsertTemplate(userId, template) {
+  const { error } = await supabase.from('templates').upsert({
+    id: template.id,
+    user_id: userId,
+    name_ar: template.nameAr,
+    name_en: template.nameEn,
+    desc_ar: template.descAr,
+    desc_en: template.descEn,
+    subject_ar: template.subjectAr,
+    subject_en: template.subjectEn,
+    body: template.body,
+    icon: template.icon,
+    variables: template.variables,
+    type: template.type,
+    created_at: template.createdAt || new Date().toISOString()
+  });
+  if (error) {
+    console.error(`Error upserting template for user ${userId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteTemplate(userId, templateId) {
+  const { error } = await supabase
+    .from('templates')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', templateId);
+  if (error) {
+    console.error(`Error deleting template ${templateId} for user ${userId}:`, error);
+    return false;
   }
   return true;
 }
@@ -807,28 +996,45 @@ export async function saveApiKeys(userId, keys) {
 
 export async function findUserByApiKey(apiKey) {
   if (!apiKey) return null;
-  const { data, error } = await supabase
+  const hashedInput = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+  let { data, error } = await supabase
     .from('api_keys')
     .select('*, users(*)')
-    .eq('key', apiKey)
-    .maybeSingle();
+    .like('key', `${hashedInput}:%`);
 
-  if (error || !data || !data.users) return null;
+  if (error || !data || data.length === 0) {
+    // Fallback to legacy plaintext check
+    const { data: legacyData, error: legacyErr } = await supabase
+      .from('api_keys')
+      .select('*, users(*)')
+      .eq('key', apiKey)
+      .maybeSingle();
+
+    if (legacyErr || !legacyData || !legacyData.users) return null;
+    data = [legacyData];
+  }
+
+  const selectedKeyRecord = data[0];
+  if (!selectedKeyRecord || !selectedKeyRecord.users) return null;
 
   const user = {
-    id: data.users.id,
-    email: data.users.email,
-    passwordHash: data.users.password_hash,
-    name: data.users.name,
-    createdAt: data.users.created_at
+    id: selectedKeyRecord.users.id,
+    email: selectedKeyRecord.users.email,
+    passwordHash: selectedKeyRecord.users.password_hash,
+    name: selectedKeyRecord.users.name,
+    createdAt: selectedKeyRecord.users.created_at
   };
 
+  const parts = selectedKeyRecord.key.split(':');
+  const displayKey = parts[1] || selectedKeyRecord.key;
+
   const key = {
-    id: data.id,
-    name: data.name,
-    key: data.key,
-    scope: data.scope,
-    createdAt: data.created_at
+    id: selectedKeyRecord.id,
+    name: selectedKeyRecord.name,
+    key: displayKey,
+    scope: selectedKeyRecord.scope,
+    createdAt: selectedKeyRecord.created_at
   };
 
   return { user, key };
@@ -863,7 +1069,7 @@ export async function loadSubscribers(userId) {
 
 export async function addSubscriber(userId, subscriber) {
   const { error } = await supabase.from('subscribers').upsert({
-    id: subscriber.id || `sub_${Math.random().toString(36).substring(2, 15)}`,
+    id: subscriber.id || `sub_${crypto.randomUUID()}`,
     user_id: userId,
     email: subscriber.email.toLowerCase().trim(),
     name: subscriber.name,
@@ -974,7 +1180,7 @@ export async function bulkAddSubscribers(userId, subscribers) {
   if (!Array.isArray(subscribers) || subscribers.length === 0) return true;
   
   const dbSubscribers = subscribers.map(s => ({
-    id: s.id || `sub_${Math.random().toString(36).substring(2, 15)}`,
+    id: s.id || `sub_${crypto.randomUUID()}`,
     user_id: userId,
     email: s.email.toLowerCase().trim(),
     name: s.name || null,
@@ -1005,7 +1211,7 @@ export async function appendLogsBulk(userId, logEntries) {
   if (!Array.isArray(logEntries) || logEntries.length === 0) return true;
 
   const dbLogs = logEntries.map(l => ({
-    id: l.id || `msg_${Math.random().toString(36).substring(2, 15)}`,
+    id: l.id || `msg_${crypto.randomUUID()}`,
     user_id: userId,
     type: l.type,
     sender: l.from,
@@ -1056,7 +1262,7 @@ export async function loadNotifications(userId) {
 }
 
 export async function addNotification(userId, title, body, type = 'info') {
-  const id = 'nt_' + Math.random().toString(36).substring(2, 15);
+  const id = 'nt_' + crypto.randomUUID();
   const { error } = await supabase
     .from('notifications')
     .insert({

@@ -1,10 +1,35 @@
 
 
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch, API_BASE } from '../config';
 import { createPortal } from 'react-dom';
 import { Mail, Phone, MessageSquare, AlertCircle, Search, FileText, Download, ChevronDown, Copy, Check, Server, CheckCheck } from 'lucide-react';
 import { ScrollReveal, BentoCard } from './LandingView';
 import { GuideBanner } from './GuideBanner';
+
+const extractVerificationCode = (text: string): string | null => {
+  if (!text) return null;
+  
+  // Look for keywords indicating a code/coupon/OTP
+  const hasOtpKeyword = /otp|verification|تحقق|رمز|كود|coupon|الكوبون|تفعيل/i.test(text);
+  if (hasOtpKeyword) {
+    // Look for numbers of length 4 to 8
+    const match = text.match(/\b\d{4,8}\b/);
+    if (match) return match[0];
+    
+    // Look for typical coupon/promo code patterns (e.g. UPPERCASE letters + numbers)
+    const couponMatch = text.match(/\b[A-Z0-9-]{4,12}\b/);
+    if (couponMatch && /coupon|كوبون|خصم|كود/i.test(text)) {
+      return couponMatch[0];
+    }
+  }
+  
+  // Fallback to simple 4-6 digit code detection if keywords aren't there but there is a clear numeric code
+  const codeMatch = text.match(/\b\d{4,6}\b/);
+  if (codeMatch) return codeMatch[0];
+  
+  return null;
+};
 
 interface LogsViewProps {
   lang: 'en' | 'ar';
@@ -22,6 +47,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'preview' | 'trace' | 'payload'>('preview');
   const [copiedPayload, setCopiedPayload] = useState(false);
+  const [copiedOtp, setCopiedOtp] = useState<any>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +174,7 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
       ? 'Are you sure you want to clear all logs? This cannot be undone.' 
       : 'هل أنت متأكد من مسح جميع السجلات؟ لا يمكن التراجع عن هذا الإجراء.';
     if (window.confirm(confirmMsg)) {
-      fetch('http://127.0.0.1:3000/api/logs', {
+      apiFetch('/api/logs', {
         method: 'DELETE'
       })
         .then(res => res.json())
@@ -663,7 +689,76 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                                   img, table, td, div {
                                     max-width: 100% !important;
                                   }
+                                  /* Smart OTP hover & active styles */
+                                  .otp-code-box {
+                                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                                    cursor: pointer !important;
+                                  }
+                                  .otp-code-box:hover {
+                                    background-color: #e4e4e7 !important;
+                                    border-color: #a1a1aa !important;
+                                    transform: scale(1.04);
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+                                  }
+                                  .otp-code-box:active {
+                                    transform: scale(0.97);
+                                  }
                                 </style>
+                                <script>
+                                  document.addEventListener('DOMContentLoaded', () => {
+                                    const otpBox = document.querySelector('.otp-code-box');
+                                    if (otpBox) {
+                                      otpBox.addEventListener('click', () => {
+                                        const codeText = otpBox.innerText.trim();
+                                        navigator.clipboard.writeText(codeText).then(() => {
+                                          showTooltip(otpBox, '${lang === 'ar' ? 'تم نسخ الرمز! 📋' : 'Code copied! 📋'}');
+                                        }).catch(err => {
+                                          console.error('Could not copy OTP: ', err);
+                                        });
+                                      });
+                                    }
+                                  });
+
+                                  function showTooltip(element, message) {
+                                    let tooltip = document.getElementById('otp-success-tooltip');
+                                    if (!tooltip) {
+                                      tooltip = document.createElement('div');
+                                      tooltip.id = 'otp-success-tooltip';
+                                      tooltip.style.position = 'fixed';
+                                      tooltip.style.bottom = '20px';
+                                      tooltip.style.left = '50%';
+                                      tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+                                      tooltip.style.backgroundColor = '#09090b';
+                                      tooltip.style.color = '#ffffff';
+                                      tooltip.style.padding = '8px 16px';
+                                      tooltip.style.borderRadius = '30px';
+                                      tooltip.style.fontSize = '11.5px';
+                                      tooltip.style.fontWeight = '600';
+                                      tooltip.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                                      tooltip.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                                      tooltip.style.zIndex = '99999';
+                                      tooltip.style.opacity = '0';
+                                      tooltip.style.fontFamily = "'Cairo', -apple-system, sans-serif";
+                                      tooltip.style.display = 'flex';
+                                      tooltip.style.alignItems = 'center';
+                                      tooltip.style.gap = '6px';
+                                      tooltip.style.whiteSpace = 'nowrap';
+                                      tooltip.innerHTML = '<span style="color:#22c55e;font-weight:bold;">✓</span> ' + message;
+                                      document.body.appendChild(tooltip);
+                                    }
+                                    
+                                    // Force reflow
+                                    tooltip.offsetHeight;
+                                    
+                                    tooltip.style.opacity = '1';
+                                    tooltip.style.transform = 'translateX(-50%) translateY(0)';
+                                    
+                                    setTimeout(() => {
+                                      tooltip.style.opacity = '0';
+                                      tooltip.style.transform = 'translateX(-50%) translateY(10px)';
+                                    }, 2200);
+                                  }
+                                </script>
                               </head>
                               <body>
                                 ${selectedLog.body}
@@ -801,6 +896,53 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                               )}
                             </div>
                           </div>
+
+                          {extractVerificationCode(selectedLog.body) && (
+                            <div style={{
+                              alignSelf: 'flex-end',
+                              marginRight: '4px',
+                              marginTop: '6px',
+                              animation: 'slideIn 0.2s ease-out'
+                            }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const code = extractVerificationCode(selectedLog.body)!;
+                                  navigator.clipboard.writeText(code);
+                                  setCopiedOtp(selectedLog.id);
+                                  setTimeout(() => setCopiedOtp(null), 2000);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '11px',
+                                  padding: '5px 12px',
+                                  backgroundColor: '#ffffff',
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '18px',
+                                  color: '#128c7e',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  boxShadow: '0 1.5px 3px rgba(0,0,0,0.06)',
+                                  transition: 'all 0.2s',
+                                  outline: 'none'
+                                }}
+                              >
+                                {copiedOtp === selectedLog.id ? (
+                                  <>
+                                    <Check size={11} color="#25d366" />
+                                    <span>{lang === 'ar' ? 'تم نسخ الرمز' : 'Code Copied'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={11} />
+                                    <span>{lang === 'ar' ? `نسخ رمز التحقق: ${extractVerificationCode(selectedLog.body)}` : `Copy Verification Code: ${extractVerificationCode(selectedLog.body)}`}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -866,6 +1008,53 @@ export const LogsView: React.FC<LogsViewProps> = ({ lang, logs, setLogs, hideHea
                               {selectedLog.body}
                             </p>
                           </div>
+
+                          {extractVerificationCode(selectedLog.body) && (
+                            <div style={{
+                              alignSelf: 'flex-end',
+                              marginRight: '6px',
+                              marginTop: '6px',
+                              animation: 'slideIn 0.2s ease-out'
+                            }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const code = extractVerificationCode(selectedLog.body)!;
+                                  navigator.clipboard.writeText(code);
+                                  setCopiedOtp(selectedLog.id);
+                                  setTimeout(() => setCopiedOtp(null), 2000);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '11px',
+                                  padding: '5px 12px',
+                                  backgroundColor: 'var(--panel-bg)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '18px',
+                                  color: 'var(--accent-color)',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  boxShadow: '0 1.5px 3px rgba(0,0,0,0.05)',
+                                  transition: 'all 0.2s',
+                                  outline: 'none'
+                                }}
+                              >
+                                {copiedOtp === selectedLog.id ? (
+                                  <>
+                                    <Check size={11} color="var(--success-color)" />
+                                    <span>{lang === 'ar' ? 'تم نسخ الرمز' : 'Code Copied'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={11} />
+                                    <span>{lang === 'ar' ? `نسخ رمز التحقق: ${extractVerificationCode(selectedLog.body)}` : `Copy Verification Code: ${extractVerificationCode(selectedLog.body)}`}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
                           
                           {selectedLog.status === 'delivered' && (
                             <span style={{

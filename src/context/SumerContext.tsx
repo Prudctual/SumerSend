@@ -1,7 +1,7 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { getTabFromPath, getPathFromTab, updateSEOMetadata } from '../utils/seo';
+import { apiFetch, API_BASE } from '../config';
 
 interface SumerContextType {
   // Navigation & Tabs
@@ -61,10 +61,14 @@ interface SumerContextType {
   setMsgBody: React.Dispatch<React.SetStateAction<string>>;
   playgroundChannel: 'email' | 'sms' | 'whatsapp';
   setPlaygroundChannel: (channel: 'email' | 'sms' | 'whatsapp') => void;
-
   // Actions
   handleLogout: () => void;
   adminSettingsTrigger: number;
+  behaviorProfile: {
+    insights: any[];
+    summaryAr: string;
+    summaryEn: string;
+  };
 }
 
 const SumerContext = createContext<SumerContextType | undefined>(undefined);
@@ -309,6 +313,7 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPlaygroundChannel(channel);
   };
 
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sumer_sidebar_collapsed') === 'true';
   });
@@ -345,9 +350,7 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     
-    fetch('http://127.0.0.1:3000/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    apiFetch('/api/auth/me')
     .then(res => {
       if (!res.ok) throw new Error('Session expired');
       return res.json();
@@ -370,7 +373,7 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!token) return;
 
-    fetch('http://127.0.0.1:3000/api/bootstrap')
+    apiFetch('/api/bootstrap')
       .then(res => {
         if (!res.ok) throw new Error('Failed to bootstrap dashboard data');
         return res.json();
@@ -434,7 +437,8 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const analytics = JSON.parse(savedAnalytics);
       
       const gaId = analytics.googleAnalyticsId;
-      if (gaId) {
+      // Validate GA ID (G-XXXXXXX or UA-XXXXXXX-Y)
+      if (gaId && /^(G|UA)-[A-Z0-9-]+$/i.test(gaId)) {
         const scriptExists = document.querySelector(`script[src*="googletagmanager.com/gtag"]`);
         if (!scriptExists) {
           const newScript = document.createElement('script');
@@ -454,7 +458,8 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       const gtmId = analytics.gtmContainerId;
-      if (gtmId) {
+      // Validate GTM ID (GTM-XXXXXX)
+      if (gtmId && /^GTM-[A-Z0-9]{4,10}$/i.test(gtmId)) {
         const gtmScript = document.querySelector(`script[src*="gtm.js?id="]`);
         if (!gtmScript) {
           const scriptEl = document.createElement('script');
@@ -470,7 +475,8 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       const pixelId = analytics.metaPixelId;
-      if (pixelId) {
+      // Validate Pixel ID (numeric only, 10-20 digits)
+      if (pixelId && /^[0-9]{10,20}$/.test(pixelId)) {
         const pixelScript = document.querySelector(`script[src*="connect.facebook.net"]`);
         if (!pixelScript) {
           const scriptEl = document.createElement('script');
@@ -489,44 +495,6 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           document.head.appendChild(scriptEl);
         }
       }
-
-      if (analytics.customHeadScript) {
-        const id = 'sumer-custom-head-scripts';
-        let wrapper = document.getElementById(id);
-        if (wrapper) wrapper.remove();
-        
-        wrapper = document.createElement('div');
-        wrapper.id = id;
-        wrapper.style.display = 'none';
-        wrapper.innerHTML = analytics.customHeadScript;
-        document.head.appendChild(wrapper);
-        const scripts = wrapper.getElementsByTagName('script');
-        for (let i = 0; i < scripts.length; i++) {
-          const s = document.createElement('script');
-          if (scripts[i].src) s.src = scripts[i].src;
-          s.innerHTML = scripts[i].innerHTML;
-          document.head.appendChild(s);
-        }
-      }
-
-      if (analytics.customBodyScript) {
-        const id = 'sumer-custom-body-scripts';
-        let wrapper = document.getElementById(id);
-        if (wrapper) wrapper.remove();
-        
-        wrapper = document.createElement('div');
-        wrapper.id = id;
-        wrapper.style.display = 'none';
-        wrapper.innerHTML = analytics.customBodyScript;
-        document.body.appendChild(wrapper);
-        const scripts = wrapper.getElementsByTagName('script');
-        for (let i = 0; i < scripts.length; i++) {
-          const s = document.createElement('script');
-          if (scripts[i].src) s.src = scripts[i].src;
-          s.innerHTML = scripts[i].innerHTML;
-          document.body.appendChild(s);
-        }
-      }
     } catch (e) {
       console.error('Failed to inject analytics scripts', e);
     }
@@ -542,11 +510,192 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('sumer_theme', theme);
   }, [theme]);
 
+  const behaviorProfile = useMemo(() => {
+    const insights: any[] = [];
+    
+    // 1. Balance check
+    if (walletBalance < 15000) {
+      insights.push({
+        id: 'ins_balance_low',
+        type: 'weakness',
+        section: 'billing',
+        titleAr: '⚠️ رصيد محفظتك منخفض',
+        titleEn: '⚠️ Low Wallet Balance',
+        descAr: `رصيدك الحالي (${walletBalance.toLocaleString()} د.ع) منخفض. قد تتوقف بوابات الإرسال بمجرد استهلاك الرصيد المتبقي.`,
+        descEn: `Your current balance (${walletBalance.toLocaleString()} IQD) is low. Gateways may pause once depleted.`,
+        actionLabelAr: 'شحن المحفظة الآن',
+        actionLabelEn: 'Recharge Wallet Now',
+        tab: 'billing'
+      });
+      insights.push({
+        id: 'pred_balance_depletion',
+        type: 'prediction',
+        section: 'billing',
+        titleAr: '🔮 توقع نفاد الرصيد',
+        titleEn: '🔮 Balance Depletion Prediction',
+        descAr: 'بناءً على معدل الإرسال اليومي، نتوقع نفاد رصيدك بالكامل خلال 48 ساعة. نقترح تفعيل الشحن التلقائي.',
+        descEn: 'Based on your sending velocity, we predict your balance will empty in 48 hours. Activate auto-recharge.',
+        actionLabelAr: 'تفعيل الشحن التلقائي',
+        actionLabelEn: 'Enable Auto-Topup',
+        tab: 'billing'
+      });
+    } else {
+      insights.push({
+        id: 'ins_balance_healthy',
+        type: 'strength',
+        section: 'billing',
+        titleAr: '🟢 ملاءة مالية ممتازة',
+        titleEn: '🟢 Healthy Capital Runway',
+        descAr: `لديك رصيد تشغيلي كافٍ (${walletBalance.toLocaleString()} د.ع) لتغطية أكثر من 50,000 رسالة بريد أو 400 رسالة واتساب.`,
+        descEn: `You have sufficient operational runway (${walletBalance.toLocaleString()} IQD) covering 50,000+ emails.`,
+        tab: 'billing'
+      });
+    }
+
+    // 2. Domains check
+    const pendingDomains = domains.filter(d => d.status !== 'verified');
+    const verifiedDomains = domains.filter(d => d.status === 'verified');
+    if (domains.length === 0) {
+      insights.push({
+        id: 'ins_domain_none',
+        type: 'weakness',
+        section: 'developer',
+        titleAr: '⚠️ إرسال بدون نطاقات موثقة',
+        titleEn: '⚠️ Sending without Verified Domains',
+        descAr: 'لم تقم بربط أي نطاق DNS خاص بك. إرسال البريد الإلكتروني بدون توثيق يزيد من نسبة تصنيفه كرسائل غير مرغوب فيها.',
+        descEn: 'No custom domains added. Sending emails without authentication triggers spam filters.',
+        actionLabelAr: 'إضافة نطاق DNS',
+        actionLabelEn: 'Add DNS Domain',
+        tab: 'domains'
+      });
+    } else if (pendingDomains.length > 0) {
+      insights.push({
+        id: 'ins_domain_pending',
+        type: 'weakness',
+        section: 'developer',
+        titleAr: `⚠️ سجلات معلقة لنطاق ${pendingDomains[0].name}`,
+        titleEn: `⚠️ Pending DNS validation for ${pendingDomains[0].name}`,
+        descAr: `النطاق البريدي (${pendingDomains[0].name}) ينقصه ربط مفاتيح CNAME بسجل DNS الخاص بك لإكمال التوثيق.`,
+        descEn: `Domain (${pendingDomains[0].name}) requires CNAME DNS records configuration to complete setup.`,
+        actionLabelAr: 'عرض سجلات التحقق',
+        actionLabelEn: 'View Verification Records',
+        tab: 'domains'
+      });
+    }
+    if (verifiedDomains.length > 0) {
+      insights.push({
+        id: 'ins_domain_verified',
+        type: 'strength',
+        section: 'developer',
+        titleAr: `🟢 توثيق DNS نشط: ${verifiedDomains[0].name}`,
+        titleEn: `🟢 Active DNS Trust: ${verifiedDomains[0].name}`,
+        descAr: `النطاق الموثق (${verifiedDomains[0].name}) يعمل بكفاءة تامة ومعايير SPF/DKIM مفعّلة تضمن تسليم البريد للصندوق الوارد مباشرة.`,
+        descEn: `Domain (${verifiedDomains[0].name}) is fully validated with SPF/DKIM keys ensuring direct inbox delivery.`,
+        tab: 'domains'
+      });
+    }
+
+    // 3. Webhooks check
+    if (webhooks.length === 0) {
+      insights.push({
+        id: 'ins_webhook_none',
+        type: 'weakness',
+        section: 'developer',
+        titleAr: '⚠️ غياب خوارزمية تسليم الأحداث (Webhooks)',
+        titleEn: '⚠️ Absent Webhook Delivery Pipeline',
+        descAr: 'لم تقم بتهيئة أي عنوان ويب هوك. ربط الويب هوك يضمن وصول إشعارات تسليم وفشل الرسائل لسيرفراتك حياً.',
+        descEn: 'No webhook endpoints registered. Webhooks are critical to stream real-time delivery and failure events.',
+        actionLabelAr: 'ربط ويب هوك جديد',
+        actionLabelEn: 'Register Webhook',
+        tab: 'webhooks'
+      });
+    } else {
+      insights.push({
+        id: 'ins_webhook_active',
+        type: 'strength',
+        section: 'developer',
+        titleAr: '🟢 استقبال الأحداث مفعل (Webhooks)',
+        titleEn: '🟢 Webhook Pipeline Connected',
+        descAr: `الويب هوك الموجه لـ (\`${webhooks[0].url.length > 25 ? webhooks[0].url.substring(0, 22) + '...' : webhooks[0].url}\`) يستمع بفعالية لأحداث المنصة.`,
+        descEn: `Webhook targeting (\`${webhooks[0].url.length > 25 ? webhooks[0].url.substring(0, 22) + '...' : webhooks[0].url}\`) is listening to events.`,
+        tab: 'webhooks'
+      });
+    }
+
+    // 4. Logs Delivery rate
+    const failedLogs = logs.filter(l => l.status === 'failed');
+    if (failedLogs.length > 0) {
+      insights.push({
+        id: 'ins_logs_failed',
+        type: 'weakness',
+        section: 'dashboard',
+        titleAr: '⚠️ رصد عمليات إرسال فاشلة',
+        titleEn: '⚠️ Recent Delivery Failures Detected',
+        descAr: `تم تسجيل رسائل فاشلة في سجلات الإرسال الأخيرة. نقترح مراجعة صحة صياغة الأرقام أو التحقق من ربط بوابات الإرسال.`,
+        descEn: `Recent messaging attempts failed. Verify phone numbers format or check active gateways status.`,
+        actionLabelAr: 'فحص سجلات الفشل',
+        actionLabelEn: 'Inspect Failed Logs',
+        tab: 'logs'
+      });
+    } else if (logs.length > 0) {
+      insights.push({
+        id: 'ins_logs_perfect',
+        type: 'strength',
+        section: 'dashboard',
+        titleAr: '🟢 كفاءة التوصيل 100%',
+        titleEn: '🟢 100% Delivery Success Rate',
+        descAr: 'جميع رسائل الاختبار والحملات الأخيرة تم تسليمها بنجاح. البنية التحتية مستقرة تماماً.',
+        descEn: 'All recent campaign and test messages were delivered successfully. Core infrastructure is stable.',
+        tab: 'logs'
+      });
+    }
+
+    // 5. Channel Diversification Check
+    const usedChannels = new Set(logs.map(l => l.type));
+    if (usedChannels.size === 1) {
+      const activeChan = Array.from(usedChannels)[0];
+      const suggestionAr = activeChan === 'whatsapp' 
+        ? 'أنت تعتمد بالكامل على قنوات الواتساب. نقترح ربط Zain SMS كقناة احتياطية وتفعيل الـ SMTP لتغطية مراسلات البريد.'
+        : activeChan === 'sms'
+        ? 'أنت تستخدم الـ SMS فقط. نقترح تفعيل إشعارات واتساب لتقليل تكلفة الإرسال بنسبة 60% وزيادة التفاعل.'
+        : 'أنت ترسل البريد الإلكتروني فقط. نقترح ربط إشعارات الواتساب لتوصيل عاجل لرموز الأمان والمعاملات.';
+      
+      const suggestionEn = activeChan === 'whatsapp'
+        ? 'You only use WhatsApp. We recommend configuring Zain SMS as a backup channel and activating SMTP emails.'
+        : activeChan === 'sms'
+        ? 'You only use SMS. We suggest enabling WhatsApp notifications to cut sending costs by 60%.'
+        : 'You only send email. We recommend syncing WhatsApp to route urgent OTP codes directly.';
+
+      insights.push({
+        id: 'pred_channel_div',
+        type: 'prediction',
+        section: 'playground',
+        titleAr: '🔮 خوارزمية تنويع قنوات الإرسال',
+        titleEn: '🔮 Channel Diversification Recommendation',
+        descAr: suggestionAr,
+        descEn: suggestionEn,
+        actionLabelAr: 'تجربة قنوات أخرى',
+        actionLabelEn: 'Test Other Channels',
+        tab: 'playground'
+      });
+    }
+
+    // Summary text
+    let summaryAr = 'سلوك الحساب مستقر بوجود قنوات نشطة ورصيد كافٍ.';
+    let summaryEn = 'Account behavior is stable with active channels and sufficient balance.';
+    if (insights.some(i => i.type === 'weakness')) {
+      summaryAr = 'الخوارزميات توصي بمعالجة معوقات تسليم البريد وسجلات الـ DNS المعلقة لتحسين الأداء.';
+      summaryEn = 'Algorithms recommend resolving DNS pending keys and email deliverability bottlenecks.';
+    }
+
+    return { insights, summaryAr, summaryEn };
+  }, [walletBalance, domains, webhooks, logs]);
+
   const handleLogout = () => {
     localStorage.removeItem('sumer_token');
     setToken(null);
     setUser(null);
-    handleTabChange('landing');
+    handleTabChange('auth-signin');
   };
 
   return (
@@ -598,7 +747,8 @@ export const SumerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       playgroundChannel,
       setPlaygroundChannel: handlePlaygroundChannelChange,
       handleLogout,
-      adminSettingsTrigger
+      adminSettingsTrigger,
+      behaviorProfile
     }}>
       {children}
     </SumerContext.Provider>

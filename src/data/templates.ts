@@ -114,7 +114,7 @@ export const templatesDb: { email: TemplateItem[]; sms: TemplateItem[]; whatsapp
     <p style="color: #555555; font-size: 13px; line-height: 1.6; margin-bottom: 20px;">لقد طلبت الحصول على رمز التحقق لتسجيل الدخول إلى حسابك في <strong>{{platform_name}}</strong>. يرجى استخدام الرمز التالي:</p>
     
     <div style="text-align: center; margin: 25px 0;">
-      <div style="display: inline-block; background-color: #f4f4f5; letter-spacing: 6px; font-family: monospace; font-size: 28px; font-weight: 700; color: #09090b; padding: 12px 30px; border-radius: 6px; border: 1px solid #eaeaea; direction: ltr;">{{otp_code}}</div>
+      <div class="otp-code-box" title="Click to copy / اضغط للنسخ" style="display: inline-block; background-color: #f4f4f5; letter-spacing: 6px; font-family: monospace; font-size: 28px; font-weight: 700; color: #09090b; padding: 12px 30px; border-radius: 6px; border: 1px solid #eaeaea; direction: ltr; cursor: pointer; transition: all 0.2s; user-select: all;">{{otp_code}}</div>
       <span style="display: block; font-size: 11px; color: #ef4444; margin-top: 8px;">ينتهي صلاحية هذا الرمز خلال {{expiry_mins}} دقائق فقط</span>
     </div>
     

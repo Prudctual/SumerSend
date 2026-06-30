@@ -15,10 +15,10 @@ interface PlatformSettingsViewProps {
   setWalletBalance: any;
   transactions: any[];
   setTransactions: any;
-  setEmailBody: any;
-  setEmailSubject: any;
-  setMsgBody: any;
-  setPlaygroundChannel: any;
+  setEmailBody?: any;
+  setEmailSubject?: any;
+  setMsgBody?: any;
+  setPlaygroundChannel?: any;
   setCurrentTab: any;
   setLogs: any;
   setPhoneNotifications: any;

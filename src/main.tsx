@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// Intercept fetch calls to automatically inject JWT Bearer tokens and clean URL paths in production
+import { API_BASE } from './config';
+
+// Intercept fetch calls to automatically inject JWT Bearer tokens, clean URL paths, and handle credentials
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
   let url = typeof input === 'string' ? input : (input as any).url;
@@ -11,39 +13,33 @@ window.fetch = async (input, init) => {
 
   // Rewrite hardcoded dev API URLs in production to use the configured VITE_API_URL
   const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
   
-    if (url && url.startsWith('http://127.0.0.1:3000')) {
-      let rewrittenUrl = url;
-      const isSmtpOrEmail = url.includes('/api/smtp') || url.includes('/v1/emails') || url.includes('/public/subscribers/join');
+  if (url && url.startsWith('http://127.0.0.1:3000')) {
+    let rewrittenUrl = url.replace('http://127.0.0.1:3000', API_BASE || 'https://sumersend-backend.onrender.com');
+    const isSmtpOrEmail = url.includes('/api/smtp') || url.includes('/v1/emails') || url.includes('/public/subscribers/join') || url.includes('/public/subscribers/unsubscribe');
 
-      if (isProduction && apiBaseUrl) {
-        if (isSmtpOrEmail) {
-          rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
-        } else {
-          rewrittenUrl = url.replace('http://127.0.0.1:3000', apiBaseUrl);
-        }
-      } else if (isProduction) {
-        if (isSmtpOrEmail) {
-          rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
-        } else {
-          rewrittenUrl = url.replace('http://127.0.0.1:3000', 'https://sumersend-backend.onrender.com');
-        }
-      }
-      
-      if (typeof input === 'string') {
-        input = rewrittenUrl;
-      } else if (input instanceof Request) {
-        input = new Request(rewrittenUrl, input as any);
-      } else {
-        input = rewrittenUrl;
-      }
-      url = rewrittenUrl;
+    if (isProduction && isSmtpOrEmail && !API_BASE) {
+      rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
     }
+    
+    if (typeof input === 'string') {
+      input = rewrittenUrl;
+    } else if (input instanceof Request) {
+      input = new Request(rewrittenUrl, input as any);
+    } else {
+      input = rewrittenUrl;
+    }
+    url = rewrittenUrl;
+  }
 
+  init = init || {};
+  
+  // Set credentials for session forwarding via HTTP-Only Cookies
+  if (url && (url.includes('/api/') || url.includes('/v1/'))) {
+    init.credentials = init.credentials || 'include';
+  }
   
   if (url && (url.includes('/api/') || url.includes('/v1/')) && !url.includes('/api/auth/')) {
-    init = init || {};
     let headers: Record<string, string> = {};
     if (init.headers) {
       if (init.headers instanceof Headers) {

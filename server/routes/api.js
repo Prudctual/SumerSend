@@ -1,15 +1,19 @@
 import express from 'express';
 import crypto from 'crypto';
+import dns from 'dns';
 import { 
   getWhatsAppStatus, 
   logoutWhatsApp 
 } from '../whatsapp.js';
+import { sendSmsMessage } from '../sms.js';
 import {
   loadLogs,
   saveLogs,
   appendLog,
   loadSmtpConfig,
   saveSmtpConfig,
+  loadSmsConfig,
+  saveSmsConfig,
   loadWallet,
   saveWallet,
   loadWebhooks,
@@ -36,12 +40,22 @@ import {
   appendLogsBulk,
   refundWallet,
   chargeWallet,
+  topupWallet,
   loadNotifications,
   addNotification,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
-  deleteAllNotifications
+  deleteAllNotifications,
+  addCampaign,
+  updateCampaign,
+  deleteCampaign,
+  addTemplate,
+  deleteTemplate,
+  upsertTemplate,
+  addWebhook,
+  deleteWebhook,
+  upsertWebhook
 } from '../db.js';
 import {
   createTransporter,
@@ -53,6 +67,16 @@ import {
 import { queueMessageJob } from '../queue.js';
 
 const apiRouter = express.Router();
+
+function escapeHtml(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // GET /api/apikeys
 apiRouter.get('/apikeys', async (req, res) => {
@@ -68,26 +92,35 @@ apiRouter.get('/apikeys', async (req, res) => {
 apiRouter.post('/apikeys', async (req, res) => {
   const { name, scope } = req.body;
   const userId = req.user.id;
+  const keyScope = scope || 'full';
   
   try {
     const keys = await loadApiKeys(userId);
     
-    const randomHex = Array.from({ length: 32 }, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
-    const generatedKey = `sm_${scope === 'full' ? 'live' : 'send'}_${randomHex}`;
+    const randomHex = crypto.randomBytes(32).toString('hex');
+    const generatedKey = `sm_${keyScope === 'full' ? 'live' : 'send'}_${randomHex}`;
+    
+    // Hash key & mask it
+    const hashedKey = crypto.createHash('sha256').update(generatedKey).digest('hex');
+    const maskedKey = `sm_${keyScope === 'full' ? 'live' : 'send'}_${generatedKey.slice(8, 12)}...${generatedKey.slice(-6)}`;
+    const storedKeyValue = `${hashedKey}:${maskedKey}`;
 
     const newKey = {
       id: Date.now().toString(),
       name: name || 'API Key',
-      key: generatedKey,
-      scope: scope || 'full',
+      key: storedKeyValue,
+      scope: keyScope,
       createdAt: new Date().toISOString()
     };
 
     keys.push(newKey);
     await saveApiKeys(userId, keys);
-    res.json(newKey);
+    
+    // Return plaintext key to user once
+    res.json({
+      ...newKey,
+      key: generatedKey
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create API key.' });
   }
@@ -188,7 +221,7 @@ apiRouter.post('/smtp/test', async (req, res) => {
     });
     
     const testLog = {
-      id: `test_${Math.random().toString(36).substring(2, 15)}`,
+      id: `test_${crypto.randomUUID()}`,
       type: 'email',
       from: from || `Sumer Send Test <${user}>`,
       to: testRecipient,
@@ -205,7 +238,7 @@ apiRouter.post('/smtp/test', async (req, res) => {
     console.error('SMTP test failed:', error);
     
     const testLog = {
-      id: `test_${Math.random().toString(36).substring(2, 15)}`,
+      id: `test_${crypto.randomUUID()}`,
       type: 'email',
       from: from || `Sumer Send Test <${user}>`,
       to: testRecipient,
@@ -222,10 +255,138 @@ apiRouter.post('/smtp/test', async (req, res) => {
   }
 });
 
+// GET /api/sms/config
+apiRouter.get('/sms/config', async (req, res) => {
+  try {
+    const config = await loadSmsConfig(req.user.id);
+
+    // If the provider is otpiq, fetch live info and sender IDs from OTPIQ API
+    if (config.provider === 'otpiq' && config.apiKey) {
+      try {
+        const [infoRes, senderIdsRes] = await Promise.all([
+          fetch('https://api.otpiq.com/api/info', {
+            headers: { 'Authorization': `Bearer ${config.apiKey}` }
+          }).then(r => r.ok ? r.json() : null),
+          fetch('https://api.otpiq.com/api/sender-ids', {
+            headers: { 'Authorization': `Bearer ${config.apiKey}` }
+          }).then(r => r.ok ? r.json() : null)
+        ]);
+
+        if (infoRes) {
+          config.otpiqInfo = infoRes; // { projectName, credit }
+        }
+        if (senderIdsRes && senderIdsRes.success) {
+          config.otpiqSenderIds = senderIdsRes.data; // array of { _id, senderId, status }
+        }
+      } catch (otpiqErr) {
+        console.error('Failed to fetch live OTPIQ metadata:', otpiqErr.message);
+      }
+    }
+
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load SMS configuration.' });
+  }
+});
+
+// POST /api/sms/config
+apiRouter.post('/sms/config', async (req, res) => {
+  const { provider, apiKey, apiSecret, senderId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const saveSuccess = await saveSmsConfig(userId, { provider, apiKey, apiSecret, senderId });
+    if (saveSuccess) {
+      const responsePayload = { success: true, message: 'SMS Configuration saved successfully.' };
+
+      if (provider === 'otpiq' && apiKey) {
+        try {
+          const [infoRes, senderIdsRes] = await Promise.all([
+            fetch('https://api.otpiq.com/api/info', {
+              headers: { 'Authorization': `Bearer ${apiKey}` }
+            }).then(r => r.ok ? r.json() : null),
+            fetch('https://api.otpiq.com/api/sender-ids', {
+              headers: { 'Authorization': `Bearer ${apiKey}` }
+            }).then(r => r.ok ? r.json() : null)
+          ]);
+
+          if (infoRes) {
+            responsePayload.otpiqInfo = infoRes;
+          }
+          if (senderIdsRes && senderIdsRes.success) {
+            responsePayload.otpiqSenderIds = senderIdsRes.data;
+          }
+        } catch (otpiqErr) {
+          console.error('Failed to fetch live OTPIQ metadata after save:', otpiqErr.message);
+        }
+      }
+
+      res.json(responsePayload);
+    } else {
+      res.status(500).json({ error: 'Failed to save SMS configuration.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Error saving SMS configuration.' });
+  }
+});
+
+// POST /api/sms/test
+apiRouter.post('/sms/test', async (req, res) => {
+  const { provider, apiKey, apiSecret, senderId, testRecipient } = req.body;
+  const userId = req.user.id;
+
+  if (!testRecipient) {
+    return res.status(400).json({ error: 'Recipient phone number is required for testing.' });
+  }
+
+  try {
+    // Save settings first so sendSmsMessage picks them up correctly from database
+    await saveSmsConfig(userId, { provider, apiKey, apiSecret, senderId });
+
+    console.log(`[SMS Test API] Launching test via ${provider} to ${testRecipient}`);
+    const result = await sendSmsMessage(userId, testRecipient, 'Sumer Send - SMS Gateway Test Success! 🚀');
+
+    const testLog = {
+      id: `test_sms_${crypto.randomUUID()}`,
+      type: 'sms',
+      from: senderId || 'SumerSend',
+      to: testRecipient,
+      subject: 'SMS Gateway Test',
+      body: 'Sumer Send - SMS Gateway Test Success! 🚀',
+      status: 'delivered',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, testLog);
+    triggerWebhooks(userId, 'sms.delivered', testLog);
+
+    res.json({ success: true, messageId: result.messageId || 'httpsms_sent' });
+  } catch (error) {
+    console.error('SMS test failed:', error);
+
+    const testLog = {
+      id: `test_sms_${crypto.randomUUID()}`,
+      type: 'sms',
+      from: senderId || 'SumerSend',
+      to: testRecipient,
+      subject: 'SMS Gateway Test Failed ❌',
+      body: `SMS Test failed: ${error.message}`,
+      status: 'failed',
+      error: error.message || 'SMS dispatch failed.',
+      timestamp: new Date().toISOString()
+    };
+    await appendLog(userId, testLog);
+    triggerWebhooks(userId, 'sms.failed', testLog);
+
+    res.status(500).json({ error: error.message || 'SMS connection failed.' });
+  }
+});
+
 // GET /api/logs
 apiRouter.get('/logs', async (req, res) => {
   try {
-    const logs = await loadLogs(req.user.id);
+    const limit = parseInt(req.query.limit, 10) || 100;
+    const offset = parseInt(req.query.offset, 10) || 0;
+    const logs = await loadLogs(req.user.id, limit, offset);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: 'Failed to load logs.' });
@@ -249,6 +410,16 @@ apiRouter.delete('/logs', async (req, res) => {
 apiRouter.get('/bootstrap', async (req, res) => {
   try {
     const data = await bootstrapUserData(req.user.id);
+    if (data.apiKeys && Array.isArray(data.apiKeys)) {
+      data.apiKeys = data.apiKeys.map(k => {
+        const parts = k.key.split(':');
+        const displayKey = parts[1] || k.key;
+        return {
+          ...k,
+          key: displayKey
+        };
+      });
+    }
     res.json(data);
   } catch (err) {
     console.error(`Bootstrap error for user ${req.user.id}:`, err);
@@ -266,33 +437,72 @@ apiRouter.get('/wallet', async (req, res) => {
   }
 });
 
-// POST /api/wallet/topup
-apiRouter.post('/wallet/topup', async (req, res) => {
-  const { provider, amount, phoneNumber } = req.body;
-  if (!provider || !amount || !phoneNumber) {
-    return res.status(400).json({ error: 'Missing required top-up parameters.' });
+// POST /api/wallet/topup/webhook
+apiRouter.post('/wallet/topup/webhook', async (req, res) => {
+  const signature = req.headers['x-gateway-signature'];
+  const payload = req.body;
+  
+  if (!signature) {
+    return res.status(401).json({ error: 'Missing webhook signature.' });
+  }
+
+  if (!process.env.PAYMENT_GATEWAY_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error("FATAL ERROR: PAYMENT_GATEWAY_SECRET is not defined in production!");
+      return res.status(500).json({ error: 'Gateway configuration error.' });
+    } else {
+      console.warn("⚠️ WARNING: PAYMENT_GATEWAY_SECRET is not defined. Using development fallback key.");
+    }
+  }
+  const gatewaySecret = process.env.PAYMENT_GATEWAY_SECRET || 'sumer_send_gateway_secret_key_12345';
+  const expectedSignature = crypto.createHmac('sha256', gatewaySecret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    return res.status(401).json({ error: 'Invalid webhook signature.' });
+  }
+
+  const { userId, provider, amount, phoneNumber, txId, transactionId } = payload;
+  if (!userId || !provider || amount === undefined) {
+    return res.status(400).json({ error: 'Missing required parameters.' });
   }
   
-  const userId = req.user.id;
+  const webhookTxId = txId || transactionId;
+  if (!webhookTxId) {
+    return res.status(400).json({ error: 'Missing transaction identifier (txId).' });
+  }
+  
   try {
-    const wallet = await loadWallet(userId);
+    // Check if transaction ID already exists in transactions table
+    const { data: existingTx, error: txError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('id', webhookTxId)
+      .maybeSingle();
+
+    if (txError) {
+      console.error('Error checking for duplicate transaction:', txError);
+      return res.status(500).json({ error: 'Failed to verify transaction uniqueness.' });
+    }
+
+    if (existingTx) {
+      return res.status(409).json({ error: 'Duplicate transaction ID. This transaction has already been processed.' });
+    }
+
     const topUpAmount = parseInt(amount);
-    wallet.balance += topUpAmount;
+    const description = `Secure wallet top-up via ${provider} (${phoneNumber || 'Gateway'})`;
     
-    const newTx = {
-      id: 'TX' + Math.floor(100000 + Math.random() * 900000).toString(),
-      provider,
-      amount: topUpAmount,
-      status: 'completed',
-      date: new Date().toISOString(),
-      description: `Wallet top-up via ${provider} (${phoneNumber})`
-    };
-    wallet.transactions.unshift(newTx);
-    await saveWallet(userId, wallet);
+    // Perform secure atomic wallet top-up using postgres row locks and webhook transaction ID for idempotency
+    const success = await topupWallet(userId, topUpAmount, description, provider, webhookTxId);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to perform secure wallet top-up. The transaction may be a duplicate or already processed.' });
+    }
     
+    const wallet = await loadWallet(userId);
     res.json(wallet);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to perform wallet top-up.' });
+    res.status(500).json({ error: 'Failed to perform secure wallet top-up.' });
   }
 });
 
@@ -315,35 +525,33 @@ apiRouter.post('/webhooks', async (req, res) => {
   
   const userId = req.user.id;
   try {
-    const webhooks = await loadWebhooks(userId);
-    let updatedWebhook;
-    
+    let webhook;
     if (id) {
-      const idx = webhooks.findIndex(w => w.id === id);
-      if (idx !== -1) {
-        webhooks[idx] = {
-          ...webhooks[idx],
-          url,
-          events,
-          secret: secret || webhooks[idx].secret
-        };
-        updatedWebhook = webhooks[idx];
-      } else {
+      // For updates, we first verify it exists by checking with loadWebhooks or doing a direct check.
+      const webhooks = await loadWebhooks(userId);
+      const existing = webhooks.find(w => w.id === id);
+      if (!existing) {
         return res.status(404).json({ error: 'Webhook not found.' });
       }
-    } else {
-      updatedWebhook = {
-        id: Math.random().toString(36).substring(2, 15),
+      webhook = {
+        id,
         url,
-        events,
-        secret: secret || 'sumer_wh_' + Math.random().toString(36).substring(2, 18),
+        events: events || ['*'],
+        secret: secret || existing.secret,
+        createdAt: existing.createdAt
+      };
+    } else {
+      webhook = {
+        id: crypto.randomUUID(),
+        url,
+        events: events || ['*'],
+        secret: secret || 'sumer_wh_' + crypto.randomBytes(12).toString('hex'),
         createdAt: new Date().toISOString()
       };
-      webhooks.push(updatedWebhook);
     }
     
-    await saveWebhooks(userId, webhooks);
-    res.json(updatedWebhook);
+    await upsertWebhook(userId, webhook);
+    res.json(webhook);
   } catch (err) {
     res.status(500).json({ error: 'Failed to save webhook.' });
   }
@@ -353,12 +561,10 @@ apiRouter.post('/webhooks', async (req, res) => {
 apiRouter.delete('/webhooks/:id', async (req, res) => {
   const userId = req.user.id;
   try {
-    const webhooks = await loadWebhooks(userId);
-    const filtered = webhooks.filter(w => w.id !== req.params.id);
-    if (filtered.length === webhooks.length) {
+    const success = await deleteWebhook(userId, req.params.id);
+    if (!success) {
       return res.status(404).json({ error: 'Webhook not found.' });
     }
-    await saveWebhooks(userId, filtered);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete webhook.' });
@@ -391,10 +597,8 @@ apiRouter.post('/campaigns', async (req, res) => {
   const userId = req.user.id;
   
   try {
-    const campaigns = await loadCampaigns(userId);
-    
     const newCampaign = {
-      id: 'camp_' + Math.floor(100000 + Math.random() * 900000).toString(),
+      id: 'camp_' + crypto.randomUUID(),
       name: name || 'Untitled Campaign',
       type: type || 'sms',
       status: 'draft',
@@ -408,8 +612,7 @@ apiRouter.post('/campaigns', async (req, res) => {
       recipients: recipients || []
     };
     
-    campaigns.push(newCampaign);
-    await saveCampaigns(userId, campaigns);
+    await addCampaign(userId, newCampaign);
     res.json(newCampaign);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create campaign.' });
@@ -424,45 +627,197 @@ apiRouter.post('/campaigns/:id/status', async (req, res) => {
   
   try {
     const campaigns = await loadCampaigns(userId);
-    
-    const index = campaigns.findIndex(c => c.id === id);
-    if (index === -1) {
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found.' });
     }
     
-    const oldStatus = campaigns[index].status;
-    if (status) campaigns[index].status = status;
-    if (successCount !== undefined) campaigns[index].successCount = successCount;
-    if (failedCount !== undefined) campaigns[index].failedCount = failedCount;
-    if (totalCost !== undefined) campaigns[index].totalCost = totalCost;
-    if (recipients) campaigns[index].recipients = recipients;
+    const oldStatus = campaign.status;
+    const updates = { status, successCount, failedCount, totalCost, recipients };
     
-    await saveCampaigns(userId, campaigns);
+    await updateCampaign(userId, id, updates);
 
     // Trigger notification if status transitioned
     if (status && status !== oldStatus) {
       if (status === 'completed' || status === 'sent') {
-        const succ = successCount !== undefined ? successCount : campaigns[index].successCount || 0;
-        const fail = failedCount !== undefined ? failedCount : campaigns[index].failedCount || 0;
+        const succ = successCount !== undefined ? successCount : campaign.successCount || 0;
+        const fail = failedCount !== undefined ? failedCount : campaign.failedCount || 0;
         await addNotification(
           userId,
-          `اكتمال إرسال حملة: ${campaigns[index].name}`,
+          `اكتمال إرسال حملة: ${campaign.name}`,
           `تم الانتهاء من إرسال الحملة بنجاح. الناجحة: ${succ}، الفاشلة: ${fail}.`,
           'success'
         );
       } else if (status === 'failed') {
         await addNotification(
           userId,
-          `فشل إرسال حملة: ${campaigns[index].name}`,
+          `فشل إرسال حملة: ${campaign.name}`,
           'حدث خطأ غير متوقع أدى إلى فشل الحملة بالكامل.',
           'error'
         );
       }
     }
 
-    res.json(campaigns[index]);
+    res.json({ ...campaign, ...updates });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update campaign status.' });
+  }
+});
+
+function personalizeCampaignMessage(text, recipient, lang = 'ar') {
+  if (!text) return '';
+  let result = text;
+
+  // Replaces placeholders like {{name}} or {name} with recipient name/variables
+  const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}/g;
+  result = result.replace(regex, (match, p1, p2) => {
+    const tag = p1 || p2;
+    const tagLower = tag.toLowerCase();
+
+    // 1. Direct field match or variables
+    let val = recipient[tag] || recipient.variables?.[tag] || recipient.variables?.[tagLower];
+
+    const isNameTag = (t) => {
+      const tagLower = t.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const nameTags = [
+        'name', 'username', 'user_name', 'customer_name', 'customername',
+        'recipient_name', 'recipientname', 'reader_name', 'readername', 'friend_name',
+        'friendname', 'member_name', 'membername', 'client_name', 'clientname',
+        'subscriber_name', 'subscribername', 'user'
+      ];
+      return nameTags.includes(tagLower) || tagLower.endsWith('name');
+    };
+
+    if (val === undefined) {
+      if (isNameTag(tag)) {
+        val = recipient.name;
+      } else if (tagLower === 'email') {
+        val = recipient.email || recipient.to || '';
+      } else if (tagLower === 'phone') {
+        val = recipient.phone || recipient.to || '';
+      }
+    }
+
+    if (val === undefined || val === null) {
+      val = '';
+    }
+
+    if (isNameTag(tag)) {
+      const trimmedName = String(val).trim();
+      const defaultPlaceholders = [
+        'عضو رائع', 'valued member', 'أحمد علي', 'ahmed ali',
+        'مستخدمنا العزيز', 'valued user', 'عميلنا المميز', 'valued customer',
+        'عميلنا العزيز', 'قارئنا الكريم', 'valued reader', 'مستلم', 'recipient',
+        'شريكنا العزيز', 'valued partner', 'أحمد', 'ahmed'
+      ];
+      if (!trimmedName || defaultPlaceholders.includes(trimmedName.toLowerCase())) {
+        val = lang === 'ar' ? 'مشتركنا الكريم' : 'Valued Subscriber';
+      }
+    }
+
+    return String(val);
+  });
+
+  return result;
+}
+
+// POST /api/campaigns/:id/send
+apiRouter.post('/campaigns/:id/send', async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const campaigns = await loadCampaigns(userId);
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found.' });
+    }
+
+    if (campaign.status === 'sent' || campaign.status === 'sending') {
+      return res.status(400).json({ error: 'Campaign has already been sent.' });
+    }
+
+    const recipients = campaign.recipients || [];
+    if (recipients.length === 0) {
+      return res.status(400).json({ error: 'Campaign has no recipients.' });
+    }
+
+    // Charge wallet
+    const costPerMsg = campaign.type === 'email' ? 10 : (campaign.type === 'whatsapp' ? 15 : 20);
+    const totalCampaignCost = recipients.length * costPerMsg;
+    const charged = await chargeWallet(userId, totalCampaignCost, `Campaign: ${campaign.name}`);
+    if (!charged) {
+      return res.status(402).json({ error: 'Insufficient wallet balance.' });
+    }
+
+    // Set campaign status to sending
+    await updateCampaign(userId, id, { status: 'sending', totalCost: totalCampaignCost });
+
+    // Process recipients
+    let successes = 0;
+    let failures = 0;
+
+    for (const r of recipients) {
+      if (!r.to) {
+        failures++;
+        continue;
+      }
+
+      const personalizedBody = personalizeCampaignMessage(campaign.body, r);
+      const personalizedSubject = campaign.type === 'email' ? personalizeCampaignMessage(campaign.subject, r) : '';
+
+      const msgId = `msg_${crypto.randomUUID()}`;
+      const { error: insertError } = await supabase
+        .from('message_queue')
+        .insert({
+          id: msgId,
+          user_id: userId,
+          type: campaign.type,
+          recipient: r.to,
+          subject: personalizedSubject,
+          body: personalizedBody,
+          status: 'pending',
+          attempts: 0,
+          max_attempts: 3,
+          scheduled_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (!insertError) {
+        try {
+          await queueMessageJob(msgId);
+          successes++;
+        } catch (err) {
+          console.error(`Failed to queue BullMQ job for msg ${msgId}:`, err);
+          failures++;
+        }
+      } else {
+        console.error(`Failed to insert msg ${msgId} in DB:`, insertError);
+        failures++;
+      }
+    }
+
+    // Update campaign to completed/sent status
+    await updateCampaign(userId, id, {
+      status: 'sent',
+      successCount: successes,
+      failedCount: failures,
+      totalCost: totalCampaignCost
+    });
+
+    // Add notification
+    await addNotification(
+      userId,
+      `اكتمال إرسال حملة: ${campaign.name}`,
+      `تم الانتهاء من إرسال الحملة بنجاح. الناجحة: ${successes}، الفاشلة: ${failures}.`,
+      'success'
+    );
+
+    res.json({ success: true, successes, failures });
+  } catch (err) {
+    console.error('Failed to dispatch campaign:', err);
+    res.status(500).json({ error: 'Failed to dispatch campaign.' });
   }
 });
 
@@ -470,12 +825,10 @@ apiRouter.post('/campaigns/:id/status', async (req, res) => {
 apiRouter.delete('/campaigns/:id', async (req, res) => {
   const userId = req.user.id;
   try {
-    const campaigns = await loadCampaigns(userId);
-    const filtered = campaigns.filter(c => c.id !== req.params.id);
-    if (filtered.length === campaigns.length) {
+    const success = await deleteCampaign(userId, req.params.id);
+    if (!success) {
       return res.status(404).json({ error: 'Campaign not found.' });
     }
-    await saveCampaigns(userId, filtered);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete campaign.' });
@@ -498,46 +851,46 @@ apiRouter.post('/templates/custom', async (req, res) => {
   const userId = req.user.id;
   
   try {
-    const templates = await loadTemplates(userId);
-    
+    let template;
     if (id) {
-      const idx = templates.findIndex(t => t.id === id);
-      if (idx !== -1) {
-        templates[idx] = {
-          ...templates[idx],
-          nameAr: nameAr || templates[idx].nameAr,
-          nameEn: nameEn || templates[idx].nameEn,
-          descAr: descAr !== undefined ? descAr : templates[idx].descAr,
-          descEn: descEn !== undefined ? descEn : templates[idx].descEn,
-          subjectAr: subjectAr !== undefined ? subjectAr : templates[idx].subjectAr,
-          subjectEn: subjectEn !== undefined ? subjectEn : templates[idx].subjectEn,
-          body: body !== undefined ? body : templates[idx].body,
-          icon: icon || templates[idx].icon,
-          variables: variables || templates[idx].variables,
-          type: type || templates[idx].type
-        };
-        await saveTemplates(userId, templates);
-        return res.json(templates[idx]);
+      const templates = await loadTemplates(userId);
+      const existing = templates.find(t => t.id === id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Template not found.' });
       }
+      template = {
+        id,
+        nameAr: nameAr || existing.nameAr,
+        nameEn: nameEn || existing.nameEn,
+        descAr: descAr !== undefined ? descAr : existing.descAr,
+        descEn: descEn !== undefined ? descEn : existing.descEn,
+        subjectAr: subjectAr !== undefined ? subjectAr : existing.subjectAr,
+        subjectEn: subjectEn !== undefined ? subjectEn : existing.subjectEn,
+        body: body !== undefined ? body : existing.body,
+        icon: icon || existing.icon,
+        variables: variables || existing.variables,
+        type: type || existing.type,
+        createdAt: existing.createdAt
+      };
+    } else {
+      template = {
+        id: 'temp_cust_' + crypto.randomUUID(),
+        nameAr: nameAr || 'قالب مخصص',
+        nameEn: nameEn || 'Custom Template',
+        descAr: descAr || '',
+        descEn: descEn || '',
+        subjectAr: subjectAr || '',
+        subjectEn: subjectEn || '',
+        body: body || '',
+        icon: icon || '📝',
+        variables: variables || [],
+        type: type || 'sms',
+        createdAt: new Date().toISOString()
+      };
     }
-
-    const newTemplate = {
-      id: id || 'temp_cust_' + Math.floor(100000 + Math.random() * 900000).toString(),
-      nameAr: nameAr || 'قالب مخصص',
-      nameEn: nameEn || 'Custom Template',
-      descAr: descAr || '',
-      descEn: descEn || '',
-      subjectAr: subjectAr || '',
-      subjectEn: subjectEn || '',
-      body: body || '',
-      icon: icon || '📝',
-      variables: variables || [],
-      type: type || 'sms'
-    };
     
-    templates.push(newTemplate);
-    await saveTemplates(userId, templates);
-    res.json(newTemplate);
+    await upsertTemplate(userId, template);
+    res.json(template);
   } catch (err) {
     res.status(500).json({ error: 'Failed to save template.' });
   }
@@ -547,12 +900,10 @@ apiRouter.post('/templates/custom', async (req, res) => {
 apiRouter.delete('/templates/custom/:id', async (req, res) => {
   const userId = req.user.id;
   try {
-    const templates = await loadTemplates(userId);
-    const filtered = templates.filter(t => t.id !== req.params.id);
-    if (filtered.length === templates.length) {
+    const success = await deleteTemplate(userId, req.params.id);
+    if (!success) {
       return res.status(404).json({ error: 'Template not found.' });
     }
-    await saveTemplates(userId, filtered);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete template.' });
@@ -597,7 +948,7 @@ apiRouter.post('/security/verify-phone', async (req, res) => {
   }
   
   try {
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
     activeSecurityOTPs[userId] = {
       phone,
       code: otpCode,
@@ -607,7 +958,7 @@ apiRouter.post('/security/verify-phone', async (req, res) => {
     console.log(`Security OTP generated for user ${userId} (${phone}): ${otpCode}`);
 
     const securityLog = {
-      id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+      id: `sms_${crypto.randomUUID()}`,
       type: 'sms',
       from: 'Sumer Send Security',
       to: phone,
@@ -615,10 +966,25 @@ apiRouter.post('/security/verify-phone', async (req, res) => {
       status: 'delivered',
       timestamp: new Date().toISOString()
     };
-    await appendLog(userId, securityLog);
-    triggerWebhooks(userId, 'sms.delivered', securityLog);
     
-    res.json({ success: true, otp: otpCode, log: securityLog });
+    // Call SMS Service to dispatch the OTP message (logs to console if provider is mock)
+    sendSmsMessage(userId, phone, securityLog.body).catch(smsErr => {
+      console.error(`[Security] Failed to dispatch verification SMS to ${phone}:`, smsErr.message);
+    });
+
+    const sanitizedLog = { ...securityLog, body: 'تم إرسال رمز التحقق بنجاح.' };
+    
+    const responsePayload = {
+      success: true,
+      log: sanitizedLog
+    };
+    
+    // In development mode, return the OTP code to allow mock notifications or testing in UI
+    if (process.env.NODE_ENV !== 'production') {
+      responsePayload.otp = otpCode;
+    }
+    
+    res.json(responsePayload);
   } catch (err) {
     res.status(500).json({ error: 'Failed to initiate phone verification.' });
   }
@@ -778,9 +1144,9 @@ apiRouter.post('/subscribers', async (req, res) => {
     }
 
     const sub = {
-      id: `sub_${Math.random().toString(36).substring(2, 15)}`,
+      id: `sub_${crypto.randomUUID()}`,
       email,
-      name,
+      name: name ? escapeHtml(name) : '',
       phone: phone || null,
       metadata: { source: 'manual', ...(metadata || {}) },
       status: 'active',
@@ -891,9 +1257,9 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
 
       seenEmails.add(normalizedEmail);
       validSubs.push({
-        id: `sub_${Math.random().toString(36).substring(2, 15)}`,
+        id: `sub_${crypto.randomUUID()}`,
         email: normalizedEmail,
-        name: s.name ? String(s.name).trim() : null,
+        name: s.name ? escapeHtml(String(s.name).trim()) : null,
         phone: s.phone ? String(s.phone).trim() : null,
         metadata: { source: 'import', ...(s.metadata || {}) },
         status: 'active',
@@ -988,7 +1354,7 @@ apiRouter.post('/subscribers/bulk', async (req, res) => {
             const compiledBody = compileWelcomeMessage(welcomeBodyTemplate, sub.name, sub.email);
             const compiledSubject = compileWelcomeMessage(welcomeSubject, sub.name, sub.email);
             return {
-              id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+              id: `msg_${crypto.randomUUID()}`,
               type: 'email',
               from: fromSender,
               to: sub.email,
@@ -1069,6 +1435,7 @@ apiRouter.get('/public/users/:userId/profile', async (req, res) => {
 apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req, res) => {
   const { userId } = req.params;
   const { email, name, phone, metadata } = req.body;
+  const sanitizedName = name ? escapeHtml(name) : '';
 
   if (!email) {
     return res.status(400).json({ error: 'Email address is required.' });
@@ -1110,7 +1477,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
           .from('subscribers')
           .update({
             status: 'active',
-            name: name || existingSub.name,
+            name: sanitizedName || existingSub.name,
             phone: phone || existingSub.phone,
             metadata: { source: 'hosted_page', ...(existingSub.metadata || {}), ...(metadata || {}) },
             updated_at: new Date().toISOString()
@@ -1120,11 +1487,11 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
         isNewSubscription = true;
       }
     } else {
-      subId = `sub_${Math.random().toString(36).substring(2, 15)}`;
+      subId = `sub_${crypto.randomUUID()}`;
       await addSubscriber(userId, {
         id: subId,
         email: email,
-        name: name,
+        name: sanitizedName,
         phone: phone,
         metadata: { source: 'hosted_page', ...(metadata || {}) }
       });
@@ -1135,7 +1502,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
     triggerWebhooks(userId, 'subscriber.subscribed', {
       id: subId,
       email: email.toLowerCase().trim(),
-      name: name || '',
+      name: sanitizedName || '',
       phone: phone || '',
       status: 'active',
       timestamp: new Date().toISOString()
@@ -1148,12 +1515,12 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
         const cost = 10;
         const charged = await chargeWallet(userId, cost, `Welcome Email to ${email}`);
         
-        const compiledSubject = compileWelcomeMessage(settings.welcomeSubject, name, email);
-        const compiledBody = compileWelcomeMessage(settings.welcomeBody, name, email);
+        const compiledSubject = compileWelcomeMessage(settings.welcomeSubject, sanitizedName, email);
+        const compiledBody = compileWelcomeMessage(settings.welcomeBody, sanitizedName, email);
 
         if (!charged) {
           const failedLog = {
-            id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+            id: `msg_${crypto.randomUUID()}`,
             type: 'email',
             from: 'Sumer Send <onboarding@sumersend.com>',
             to: email,
@@ -1189,15 +1556,23 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
               }
               
               const fromSender = smtpConfig.from || `Sumer Send <${smtpConfig.user}>`;
+              const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.APP_URL || 'http://127.0.0.1:3000');
+              const unsubscribeUrl = `${baseUrl}/api/public/subscribers/unsubscribe/${userId}?email=${encodeURIComponent(email)}`;
+              
               await transporter.sendMail({
                 from: fromSender,
                 to: email,
                 subject: compiledSubject || 'Welcome',
-                html: compiledBody
+                html: compiledBody,
+                text: htmlToText(compiledBody),
+                headers: {
+                  'List-Unsubscribe': `<${unsubscribeUrl}>`,
+                  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+                }
               });
               
               const deliveredLog = {
-                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                id: `msg_${crypto.randomUUID()}`,
                 type: 'email',
                 sender: fromSender,
                 recipient: email,
@@ -1227,7 +1602,7 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
               await refundWallet(userId, cost, `Refund: Welcome Email delivery failure to ${email}`);
               
               const failedLog = {
-                id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+                id: `msg_${crypto.randomUUID()}`,
                 type: 'email',
                 sender: smtpConfig?.from || 'Sumer Send <onboarding@sumersend.com>',
                 recipient: email,
@@ -1293,6 +1668,251 @@ apiRouter.post('/public/subscribers/join/:userId', publicJoinLimiter, async (req
   } catch (err) {
     console.error('Public subscription opt-in error:', err);
     res.status(500).json({ error: 'Failed to complete subscription request.' });
+  }
+});
+
+// POST /api/smtp/dns-check
+apiRouter.post('/smtp/dns-check', async (req, res) => {
+  const { host, user, from } = req.body;
+  
+  if (!from && !user) {
+    return res.status(400).json({ error: 'Sender email or authenticated user email is required.' });
+  }
+
+  // Extract domain from sender address
+  const emailToExtract = from || user;
+  const match = emailToExtract.match(/<([^>]+)>/) || [null, emailToExtract];
+  const emailAddress = match[1] ? match[1].trim() : emailToExtract.trim();
+  const domain = emailAddress.split('@')[1];
+
+  if (!domain) {
+    return res.status(400).json({ error: 'Invalid sender email domain.' });
+  }
+
+  const result = {
+    domain,
+    alignment: { status: 'pass', message: 'Domain alignment matches authentication user.' },
+    mx: { status: 'fail', message: 'No MX records found.' },
+    spf: { status: 'fail', message: 'No SPF record found.' },
+    dmarc: { status: 'fail', message: 'No DMARC record found.' }
+  };
+
+  // 1. Check Alignment
+  if (user && from) {
+    const userMatch = user.match(/<([^>]+)>/) || [null, user];
+    const userEmail = userMatch[1] ? userMatch[1].trim() : user.trim();
+    const userDomain = userEmail.split('@')[1];
+    
+    if (userDomain && domain.toLowerCase() !== userDomain.toLowerCase()) {
+      result.alignment = {
+        status: 'warning',
+        message: `From domain (${domain}) differs from SMTP authentication user domain (${userDomain}). Spam filters might penalize this.`
+      };
+    }
+  }
+
+  const dnsPromises = dns.promises;
+
+  // 2. Check MX Records
+  try {
+    const mxRecords = await dnsPromises.resolveMx(domain);
+    if (mxRecords && mxRecords.length > 0) {
+      result.mx = {
+        status: 'pass',
+        message: `MX records verified. Found ${mxRecords.length} mail servers.`
+      };
+    }
+  } catch (err) {
+    result.mx = {
+      status: 'fail',
+      message: `Failed to resolve MX records: ${err.message}. Without MX records, some spam filters reject emails.`
+    };
+  }
+
+  // 3. Check SPF Records
+  try {
+    const txtRecords = await dnsPromises.resolveTxt(domain);
+    const spfRecord = txtRecords.flat().find(record => record.startsWith('v=spf1'));
+    if (spfRecord) {
+      result.spf = {
+        status: 'pass',
+        record: spfRecord,
+        message: 'SPF record is present and active.'
+      };
+    } else {
+      result.spf = {
+        status: 'fail',
+        message: 'Missing SPF (Sender Policy Framework) record. Emails from this domain will likely end up in spam folders.'
+      };
+    }
+  } catch (err) {
+    result.spf = {
+      status: 'fail',
+      message: `Failed to query SPF: ${err.message}. Add SPF record to authorize your mail servers.`
+    };
+  }
+
+  // 4. Check DMARC Records
+  try {
+    const dmarcRecords = await dnsPromises.resolveTxt(`_dmarc.${domain}`);
+    const dmarcRecord = dmarcRecords.flat().find(record => record.startsWith('v=DMARC1'));
+    if (dmarcRecord) {
+      result.dmarc = {
+        status: 'pass',
+        record: dmarcRecord,
+        message: 'DMARC record is present and active.'
+      };
+    } else {
+      result.dmarc = {
+        status: 'warning',
+        message: 'Missing DMARC record. Highly recommended to protect your domain and boost deliverability.'
+      };
+    }
+  } catch (err) {
+    result.dmarc = {
+      status: 'warning',
+      message: `No DMARC record found at _dmarc.${domain}: ${err.message}. Recommended to add a DMARC policy.`
+    };
+  }
+
+  res.json(result);
+});
+
+// GET /api/public/subscribers/unsubscribe/:userId
+apiRouter.get('/public/subscribers/unsubscribe/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).send(`
+      <div style="font-family: system-ui, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #e4e4e7; border-radius: 12px; direction: rtl;">
+        <h2 style="color: #ef4444;">خطأ / Error</h2>
+        <p>البريد الإلكتروني للمستلم مطلوب. / Email address is required.</p>
+      </div>
+    `);
+  }
+
+  try {
+    // Look up subscriber
+    const { data: sub, error } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (error || !sub) {
+      return res.status(404).send(`
+        <div style="font-family: system-ui, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #e4e4e7; border-radius: 12px; direction: rtl;">
+          <h2 style="color: #ef4444;">لم يتم العثور / Not Found</h2>
+          <p>المستلم غير مسجل في هذه القائمة. / Subscriber not found.</p>
+        </div>
+      `);
+    }
+
+    // Update status to unsubscribed
+    await supabase
+      .from('subscribers')
+      .update({
+        status: 'unsubscribed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', sub.id);
+
+    // Trigger webhook notification
+    triggerWebhooks(userId, 'subscriber.unsubscribed', {
+      id: sub.id,
+      email: sub.email,
+      name: sub.name || '',
+      phone: sub.phone || '',
+      status: 'unsubscribed',
+      timestamp: new Date().toISOString()
+    });
+
+    // Render beautiful HTML page matching SumerSend styling
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>إلغاء الاشتراك | SumerSend</title>
+        <style>
+          :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --border: #27272a;
+            --text: #fafafa;
+            --text-muted: #a1a1aa;
+            --primary: #3b82f6;
+          }
+          body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+          }
+          .card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          }
+          h1 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: var(--text);
+          }
+          p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+          }
+          .success-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            font-size: 32px;
+            margin-bottom: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="success-icon">✓</div>
+          <h1>تم إلغاء الاشتراك بنجاح</h1>
+          <p>لقد تم إلغاء اشتراك البريد الإلكتروني <strong>${sub.email}</strong> بنجاح. لن تتلقى أي رسائل بريدية إضافية من هذا المرسل.</p>
+          <p style="font-size: 13px; color: var(--text-muted); direction: ltr; margin-top: 15px;">
+            Subscription for <strong>${sub.email}</strong> has been cancelled. You will no longer receive campaigns from this publisher.
+          </p>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Unsubscribe error:', err);
+    res.status(500).send(`
+      <div style="font-family: system-ui, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #e4e4e7; border-radius: 12px; direction: rtl;">
+        <h2 style="color: #ef4444;">خطأ في النظام / Server Error</h2>
+        <p>حدث خطأ غير متوقع أثناء معالجة طلب إلغاء الاشتراك. يرجى المحاولة لاحقاً.</p>
+      </div>
+    `);
   }
 });
 

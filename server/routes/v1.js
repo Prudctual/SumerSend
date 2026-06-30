@@ -21,7 +21,8 @@ import {
   isValidIraqiPhone,
   triggerWebhooks,
   createTransporter,
-  compileWelcomeMessage
+  compileWelcomeMessage,
+  htmlToText
 } from '../utils.js';
 import { getWhatsAppStatus, sendWhatsAppMessage } from '../whatsapp.js';
 import { sendSmsMessage } from '../sms.js';
@@ -77,35 +78,6 @@ async function publicApiAuth(req, res, next) {
       };
       return next();
     } catch (err) {
-      // Fallback: If verification fails, try to verify token by calling the Render backend directly.
-      // This resolves token validation failures due to JWT_SECRET mismatch between Vercel and Render.
-      try {
-        const renderBackendUrl = 'https://sumersend-backend.onrender.com';
-        const verifyRes = await fetch(`${renderBackendUrl}/api/auth/me`, {
-          headers: {
-            'Authorization': authHeader
-          }
-        });
-        if (verifyRes.ok) {
-          const verifyData = await verifyRes.json();
-          if (verifyData && verifyData.user) {
-            req.apiKeyOwner = {
-              id: verifyData.user.id,
-              email: verifyData.user.email,
-              name: verifyData.user.name
-            };
-            req.apiKeyObj = {
-              id: 'session_key',
-              name: 'Dashboard Session',
-              scope: 'full'
-            };
-            return next();
-          }
-        }
-      } catch (fetchErr) {
-        console.error('Failed to verify session token via Render fallback in v1:', fetchErr);
-      }
-
       return res.status(401).json({ 
         error: {
           message: 'Invalid API key or session token.',
@@ -180,7 +152,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
   const charged = await chargeWallet(userId, cost, `Email to ${to}`);
   if (!charged) {
     const failedLog = {
-      id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+      id: `msg_${crypto.randomUUID()}`,
       type: 'email',
       from: from || 'onboarding@sumersend.com',
       to,
@@ -242,11 +214,19 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
       }
       
       const fromSender = smtpConfig.from || `Sumer Send <${smtpConfig.user}>`;
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.APP_URL || 'http://127.0.0.1:3000');
+      const unsubscribeUrl = `${baseUrl}/api/public/subscribers/unsubscribe/${userId}?email=${encodeURIComponent(to)}`;
+      
       await transporter.sendMail({
         from: fromSender,
         to: to,
         subject: subject || 'No Subject',
-        html: html
+        html: html,
+        text: htmlToText(html),
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        }
       });
       
       await supabase
@@ -259,7 +239,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
         .eq('id', msgId);
       
       const deliveredLog = {
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+        id: `msg_${crypto.randomUUID()}`,
         type: 'email',
         sender: fromSender,
         recipient: to,
@@ -306,7 +286,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
       await refundWallet(userId, cost, `Refund: Delivery failure for Email to ${to}`);
       
       const failedLog = {
-        id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+        id: `msg_${crypto.randomUUID()}`,
         type: 'email',
         sender: from || 'Sumer Send <onboarding@sumersend.com>',
         recipient: to,
@@ -359,11 +339,19 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
         }
         
         const fromSender = smtpConfig.from || `Sumer Send <${smtpConfig.user}>`;
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.APP_URL || 'http://127.0.0.1:3000');
+        const unsubscribeUrl = `${baseUrl}/api/public/subscribers/unsubscribe/${userId}?email=${encodeURIComponent(to)}`;
+        
         await transporter.sendMail({
           from: fromSender,
           to,
           subject: subject || 'No Subject',
-          html
+          html,
+          text: htmlToText(html),
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+          }
         });
         
         await supabase
@@ -376,7 +364,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
           .eq('id', msgId);
           
         const deliveredLog = {
-          id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+          id: `msg_${crypto.randomUUID()}`,
           type: 'email',
           sender: fromSender,
           recipient: to,
@@ -413,7 +401,7 @@ v1Router.post('/emails', publicApiAuth, async (req, res) => {
         await refundWallet(userId, cost, `Refund: Fallback delivery failure for Email to ${to}`);
         
         const failedLog = {
-          id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+          id: `msg_${crypto.randomUUID()}`,
           type: 'email',
           sender: smtpConfig?.from || 'Sumer Send <onboarding@sumersend.com>',
           recipient: to,
@@ -450,7 +438,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
   const charged = await chargeWallet(userId, cost, `SMS to ${to}`);
   if (!charged) {
     const failedLog = {
-      id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+      id: `sms_${crypto.randomUUID()}`,
       type: 'sms',
       from: 'Sumer Send API',
       to,
@@ -504,7 +492,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
         .eq('id', msgId);
         
       const deliveredLog = {
-        id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+        id: `sms_${crypto.randomUUID()}`,
         type: 'sms',
         sender: 'Sumer Send API',
         recipient: to,
@@ -548,7 +536,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
       await refundWallet(userId, cost, `Refund: Delivery failure for SMS to ${to}`);
       
       const failedLog = {
-        id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+        id: `sms_${crypto.randomUUID()}`,
         type: 'sms',
         sender: 'Sumer Send API',
         recipient: to,
@@ -593,7 +581,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
           .eq('id', msgId);
           
         const deliveredLog = {
-          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          id: `sms_${crypto.randomUUID()}`,
           type: 'sms',
           sender: 'Sumer Send API',
           recipient: to,
@@ -635,7 +623,7 @@ v1Router.post('/sms', publicApiAuth, async (req, res) => {
         await refundWallet(userId, cost, `Refund: Fallback delivery failure for SMS to ${to}`);
         
         const failedLog = {
-          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          id: `sms_${crypto.randomUUID()}`,
           type: 'sms',
           sender: 'Sumer Send API',
           recipient: to,
@@ -672,7 +660,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
 
   if (!waStatus.connected && !failoverToSms) {
     const failedLog = {
-      id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+      id: `wa_${crypto.randomUUID()}`,
       type: 'whatsapp',
       from: 'Sumer Send API',
       to,
@@ -692,7 +680,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
   const charged = await chargeWallet(userId, cost, `WhatsApp to ${to}`);
   if (!charged) {
     const failedLog = {
-      id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+      id: `wa_${crypto.randomUUID()}`,
       type: 'whatsapp',
       from: 'Sumer Send API',
       to,
@@ -755,7 +743,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
       const chargedSms = await chargeWallet(userId, smsCost, `SMS Failover to ${to}`);
       if (!chargedSms) {
         const failedWaLog = {
-          id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+          id: `wa_${crypto.randomUUID()}`,
           type: 'whatsapp',
           from: 'Sumer Send API',
           to,
@@ -793,7 +781,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
           .eq('id', smsMsgId);
           
         const deliveredLog = {
-          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          id: `sms_${crypto.randomUUID()}`,
           type: 'sms',
           sender: 'Sumer Send API (Failover)',
           recipient: to,
@@ -835,7 +823,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
         await refundWallet(userId, smsCost, `Refund: Failover SMS delivery failure to ${to}`);
         
         const failedSmsLog = {
-          id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+          id: `sms_${crypto.randomUUID()}`,
           type: 'sms',
           sender: 'Sumer Send API (Failover)',
           recipient: to,
@@ -863,7 +851,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
         .eq('id', msgId);
         
       const deliveredLog = {
-        id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+        id: `wa_${crypto.randomUUID()}`,
         type: 'whatsapp',
         sender: 'Sumer Send API',
         recipient: to,
@@ -912,7 +900,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
         const chargedSms = await chargeWallet(userId, smsCost, `SMS Failover to ${to}`);
         if (!chargedSms) {
           const failedWaLog = {
-            id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+            id: `wa_${crypto.randomUUID()}`,
             type: 'whatsapp',
             from: 'Sumer Send API',
             to,
@@ -950,7 +938,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
             .eq('id', smsMsgId);
             
           const deliveredLog = {
-            id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+            id: `sms_${crypto.randomUUID()}`,
             type: 'sms',
             sender: 'Sumer Send API (Failover)',
             recipient: to,
@@ -992,7 +980,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
           await refundWallet(userId, smsCost, `Refund: Failover SMS delivery failure to ${to}`);
           
           const failedSmsLog = {
-            id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+            id: `sms_${crypto.randomUUID()}`,
             type: 'sms',
             sender: 'Sumer Send API (Failover)',
             recipient: to,
@@ -1019,7 +1007,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
         await refundWallet(userId, cost, `Refund: Delivery failure for WhatsApp to ${to}`);
         
         const failedWaLog = {
-          id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+          id: `wa_${crypto.randomUUID()}`,
           type: 'whatsapp',
           sender: 'Sumer Send API',
           recipient: to,
@@ -1067,7 +1055,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
           .eq('id', msgId);
           
         const deliveredLog = {
-          id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+          id: `wa_${crypto.randomUUID()}`,
           type: 'whatsapp',
           sender: 'Sumer Send API',
           recipient: to,
@@ -1117,7 +1105,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
           const chargedSms = await chargeWallet(userId, smsCost, `SMS Failover to ${to}`);
           if (!chargedSms) {
             const failedWaLog = {
-              id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+              id: `wa_${crypto.randomUUID()}`,
               type: 'whatsapp',
               from: 'Sumer Send API',
               to,
@@ -1155,7 +1143,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
               .eq('id', smsMsgId);
               
             const deliveredLog = {
-              id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+              id: `sms_${crypto.randomUUID()}`,
               type: 'sms',
               sender: 'Sumer Send API (Failover)',
               recipient: to,
@@ -1198,7 +1186,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
             await refundWallet(userId, smsCost, `Refund: Failover SMS delivery failure to ${to}`);
             
             const failedSmsLog = {
-              id: `sms_${Math.random().toString(36).substring(2, 15)}`,
+              id: `sms_${crypto.randomUUID()}`,
               type: 'sms',
               sender: 'Sumer Send API (Failover)',
               recipient: to,
@@ -1225,7 +1213,7 @@ v1Router.post('/whatsapp', publicApiAuth, async (req, res) => {
           await refundWallet(userId, cost, `Refund: Delivery failure for WhatsApp to ${to}`);
           
           const failedWaLog = {
-            id: `wa_${Math.random().toString(36).substring(2, 15)}`,
+            id: `wa_${crypto.randomUUID()}`,
             type: 'whatsapp',
             sender: 'Sumer Send API',
             recipient: to,
@@ -1334,7 +1322,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
         isNewSubscription = true;
       }
     } else {
-      subId = `sub_${Math.random().toString(36).substring(2, 15)}`;
+      subId = `sub_${crypto.randomUUID()}`;
       await addSubscriber(userId, {
         id: subId,
         email: email,
@@ -1367,7 +1355,7 @@ v1Router.post('/subscribers/subscribe', async (req, res) => {
 
         if (!charged) {
           const failedLog = {
-            id: `msg_${Math.random().toString(36).substring(2, 15)}`,
+            id: `msg_${crypto.randomUUID()}`,
             type: 'email',
             from: 'Sumer Send <onboarding@sumersend.com>',
             to: email,

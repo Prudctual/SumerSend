@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import DOMPurify from 'dompurify';
+import { apiFetch, API_BASE } from '../config';
 import { 
   User, 
   Plus, 
@@ -209,7 +211,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
   useEffect(() => {
     if (isCampaignWizardOpen) {
-      fetch('http://127.0.0.1:3000/api/templates/custom')
+      apiFetch('/api/templates/custom')
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) setCustomTemplates(data);
@@ -489,10 +491,10 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     setLoading(true);
     try {
       const [subsRes, settingsRes, templatesRes, smtpRes] = await Promise.all([
-        fetch('http://127.0.0.1:3000/api/subscribers'),
-        fetch('http://127.0.0.1:3000/api/subscribers/settings'),
-        fetch('http://127.0.0.1:3000/api/templates/custom').catch(() => null),
-        fetch('http://127.0.0.1:3000/api/smtp/config').catch(() => null)
+        apiFetch('/api/subscribers'),
+        apiFetch('/api/subscribers/settings'),
+        apiFetch('/api/templates/custom').catch(() => null),
+        apiFetch('/api/smtp/config').catch(() => null)
       ]);
 
       if (subsRes.ok) {
@@ -571,9 +573,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
     setAddLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/subscribers', {
+      const res = await apiFetch('/api/subscribers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: newSubEmail, name: newSubName, phone: newSubPhone, metadata: { source: 'manual' } })
       });
 
@@ -603,9 +604,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
   const handleToggleStatus = async (id: string, currentStatus: 'active' | 'unsubscribed') => {
     const newStatus = currentStatus === 'active' ? 'unsubscribed' : 'active';
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/subscribers/${id}/status`, {
+      const res = await apiFetch(`/api/subscribers/${id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
 
@@ -630,7 +630,7 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     }
 
     try {
-      const res = await fetch(`http://127.0.0.1:3000/api/subscribers/${id}`, {
+      const res = await apiFetch(`/api/subscribers/${id}`, {
         method: 'DELETE'
       });
 
@@ -660,9 +660,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/subscribers/settings', {
+      const res = await apiFetch('/api/subscribers/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(compiledSettings)
       });
 
@@ -909,9 +908,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     });
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/subscribers/bulk', {
+      const res = await apiFetch('/api/subscribers/bulk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subscribers: mappedSubscribers,
           sendWelcome: sendWelcomeToImported
@@ -1371,15 +1369,11 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     };
 
     const endpoint = campChannel === 'email' ? 'emails' : campChannel;
-    const url = `http://127.0.0.1:3000/v1/${endpoint}`;
+    const url = `${API_BASE}/v1/${endpoint}`;
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(`/v1/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer sm_live_campaign_auth'
-        },
         body: JSON.stringify(payload)
       });
       
@@ -1444,9 +1438,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         };
 
         try {
-          const resSave = await fetch('http://127.0.0.1:3000/api/templates/custom', {
+          const resSave = await apiFetch('/api/templates/custom', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(templatePayload)
           });
           if (resSave.ok) {
@@ -1458,9 +1451,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
         }
       }
 
-      const res = await fetch('http://127.0.0.1:3000/api/campaigns', {
+      const res = await apiFetch('/api/campaigns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: campName,
           type: campChannel,
@@ -1490,141 +1482,56 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
       };
       setLaunchedCampaign(createdCamp);
     }
-
-    const updatedRecipients = createdCamp.recipients ? [...createdCamp.recipients] : audience.map(a => ({ name: a.name, to: a.to || a.email, status: 'pending' }));
     let successes = 0;
     let failures = 0;
-    let currentBalance = walletBalance;
-    const rate = getCampaignCostPerMessage();
-
-    for (let index = 0; index < updatedRecipients.length; index++) {
-      const rc = updatedRecipients[index];
-      
-      setLaunchLogs(prev => [...prev, lang === 'ar' ? `> [${index + 1}/${updatedRecipients.length}] جاري الإرسال إلى ${rc.name} (${rc.to || rc.email})...` : `> [${index + 1}/${updatedRecipients.length}] Sending to ${rc.name} (${rc.to || rc.email})...`]);
-      
-      if (currentBalance < rate) {
-        failures++;
-        updatedRecipients[index].status = 'failed';
-        updatedRecipients[index].error = 'Insufficient balance';
-        setLaunchLogs(prev => [...prev, `  [Failed] Error: Insufficient Wallet Balance.`]);
-        continue;
-      }
-
-      const personalizedBody = getPreviewText(campBody, audience[index]);
-      const personalizedSubject = campChannel === 'email' ? getPreviewText(campSubject, audience[index]) : '';
-
-      const payload = campChannel === 'email' ? {
-        to: rc.to || rc.email,
-        subject: personalizedSubject || 'Campaign Alert!',
-        html: `<p>${personalizedBody}</p>`
-      } : {
-        to: rc.to || rc.email,
-        body: personalizedBody
-      };
-
-      const endpoint = campChannel === 'email' ? 'emails' : campChannel;
-      const url = `http://127.0.0.1:3000/v1/${endpoint}`;
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      try {
-        const sendRes = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer sm_live_campaign_auth'
-          },
-          body: JSON.stringify(payload)
-        });
-        const sendData = await sendRes.json();
-
-        if (!sendRes.ok) {
-          throw new Error(sendData.error?.message || 'Dispatch failed');
-        }
-
-        successes++;
-        updatedRecipients[index].status = 'delivered';
-        currentBalance -= rate;
-        if (setWalletBalance) setWalletBalance(currentBalance);
-
-        setLaunchLogs(prev => [
-          ...prev, 
-          lang === 'ar' 
-            ? `  [نجح] معرف الرسالة: ${sendData.id || 'msg_sim'} (تم خصم ${rate} عملة)`
-            : `  [Success] Message ID: ${sendData.id || 'msg_sim'} (${rate} coins deducted)`
-        ]);
-
-        if (setPhoneNotifications) {
-          setPhoneNotifications(prev => [
-            {
-              id: Date.now().toString() + index,
-              type: campChannel,
-              title: campChannel === 'email' ? (personalizedSubject || 'New Mail') : campChannel === 'sms' ? 'SMS: Sumer Send' : 'WhatsApp: Sumer Send',
-              body: personalizedBody,
-              time: 'Now'
-            },
-            ...prev
-          ]);
-        }
-      } catch (err: any) {
-        if (currentBalance >= rate) {
-          successes++;
-          updatedRecipients[index].status = 'delivered';
-          currentBalance -= rate;
-          if (setWalletBalance) setWalletBalance(currentBalance);
-
-          setLaunchLogs(prev => [
-            ...prev, 
-            lang === 'ar'
-              ? `  [نجاح محاكي] تم الإرسال محلياً (تم خصم ${rate} عملة)`
-              : `  [Success Fallback] Simulated delivery (${rate} coins deducted)`
-          ]);
-
-          if (setPhoneNotifications) {
-            setPhoneNotifications(prev => [
-              {
-                id: Date.now().toString() + index,
-                type: campChannel,
-                title: campChannel === 'email' ? (personalizedSubject || 'New Mail') : campChannel === 'sms' ? 'SMS: Sumer Send' : 'WhatsApp: Sumer Send',
-                body: personalizedBody,
-                time: 'Now'
-              },
-              ...prev
-            ]);
-          }
-        } else {
-          failures++;
-          updatedRecipients[index].status = 'failed';
-          updatedRecipients[index].error = 'Insufficient balance';
-          setLaunchLogs(prev => [...prev, `  [Failed] Error: Insufficient Wallet Balance.`]);
-        }
-      }
-
-      if (setLogs) {
-        fetch('http://127.0.0.1:3000/api/logs')
-          .then(r => r.json())
-          .then(data => {
-            if (Array.isArray(data)) setLogs(data);
-          })
-          .catch(() => {});
-      }
-
-      setLaunchProgress(Math.round(((index + 1) / updatedRecipients.length) * 100));
-    }
+    setLaunchProgress(10);
+    setLaunchLogs(prev => [...prev, `> Requesting bulk dispatch on backend...`]);
 
     try {
-      await fetch(`http://127.0.0.1:3000/api/campaigns/${createdCamp.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'completed',
-          successCount: successes,
-          failedCount: failures,
-          recipients: updatedRecipients
-        })
+      const sendRes = await apiFetch(`/api/campaigns/${createdCamp.id}/send`, {
+        method: 'POST'
       });
-    } catch (e) {
-      console.warn('Could not persist final campaign stats to backend.');
+      const sendData = await sendRes.json();
+      
+      if (!sendRes.ok) {
+        throw new Error(sendData.error || 'Backend dispatch failed');
+      }
+
+      successes = sendData.successes || 0;
+      failures = sendData.failures || 0;
+      setLaunchProgress(100);
+      setLaunchLogs(prev => [
+        ...prev,
+        `> Backend dispatch complete!`,
+        `> Successfully queued: ${successes}`,
+        `> Failed to queue: ${failures}`
+      ]);
+    } catch (err: any) {
+      failures = audience.length;
+      setLaunchLogs(prev => [
+        ...prev,
+        `> [Error] Dispatch failed: ${err.message || err}`
+      ]);
+    }
+
+    // Sync wallet balance
+    try {
+      const walletRes = await apiFetch('/api/wallet');
+      if (walletRes.ok) {
+        const walletData = await walletRes.json();
+        if (setWalletBalance) setWalletBalance(walletData.balance);
+      }
+    } catch (e) {}
+
+    // Sync logs
+    if (setLogs) {
+      try {
+        const logsRes = await apiFetch('/api/logs');
+        if (logsRes.ok) {
+          const logsData = await logsRes.json();
+          if (Array.isArray(logsData)) setLogs(logsData);
+        }
+      } catch (e) {}
     }
 
     setLaunchLogs(prev => [...prev, lang === 'ar' ? `> اكتمل الإرسال بنجاح لـ ${successes} مشترك.` : `> Finished dispatching! Success: ${successes} subscribers.`]);
@@ -1684,9 +1591,8 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/subscribers/bulk', {
+      const res = await apiFetch('/api/subscribers/bulk', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: selectedSubIds })
       });
 
@@ -1715,28 +1621,32 @@ export const SubscribersView: React.FC<SubscribersViewProps> = ({
 
 
   // Filtered list
-  const filteredSubscribers = subscribers.filter(s => {
-    const matchesSearch = s.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (s.name && s.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    let matchesStatus = true;
-    if (statusFilter === 'active') matchesStatus = s.status === 'active';
-    if (statusFilter === 'unsubscribed') matchesStatus = s.status === 'unsubscribed';
+  const filteredSubscribers = useMemo(() => {
+    return subscribers.filter(s => {
+      const matchesSearch = s.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (s.name && s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      let matchesStatus = true;
+      if (statusFilter === 'active') matchesStatus = s.status === 'active';
+      if (statusFilter === 'unsubscribed') matchesStatus = s.status === 'unsubscribed';
 
-    let matchesSource = true;
-    if (sourceFilter !== 'all') {
-      matchesSource = s.metadata?.source === sourceFilter;
-    }
-    
-    return matchesSearch && matchesStatus && matchesSource;
-  });
+      let matchesSource = true;
+      if (sourceFilter !== 'all') {
+        matchesSource = s.metadata?.source === sourceFilter;
+      }
+      
+      return matchesSearch && matchesStatus && matchesSource;
+    });
+  }, [subscribers, searchQuery, statusFilter, sourceFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredSubscribers.length / itemsPerPage) || 1;
-  const paginatedSubscribers = filteredSubscribers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedSubscribers = useMemo(() => {
+    return filteredSubscribers.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredSubscribers, currentPage, itemsPerPage]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -2091,9 +2001,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                 <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#27272a', direction: 'ltr', textAlign: 'start', overflowY: 'auto', maxHeight: '280px', paddingInlineEnd: '4px' }} className="custom-code-scroll">
                   {previewContent ? (
                     previewContent.isHtml ? (
-                      <div dangerouslySetInnerHTML={{ __html: previewContent.body }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent.body) }} />
                     ) : (
-                      <div dangerouslySetInnerHTML={{ __html: previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com')) }} />
                     )
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', gap: '8px', color: '#a1a1aa' }}>
@@ -2126,9 +2036,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
               <div style={{ maxWidth: '500px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6', color: '#333333', textAlign: 'start' }}>
                 {previewContent ? (
                   previewContent.isHtml ? (
-                    <div dangerouslySetInnerHTML={{ __html: previewContent.body }} />
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent.body) }} />
                   ) : (
-                    <div dangerouslySetInnerHTML={{ __html: previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com') }} />
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent.body.replace(/\n/g, '<br/>').replace(/{name}/g, `<strong>${lang === 'ar' ? 'جاسم كريم' : 'Jasim Kareem'}</strong>`).replace(/{email}/g, 'client@domain.com')) }} />
                   )
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '10px', color: '#999999' }}>
@@ -4383,7 +4293,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                           <label className="sch-checkbox" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
                             <input
                               type="checkbox"
-                              checked={paginatedSubscribers.length > 0 && paginatedSubscribers.every((s) => selectedSubIds.includes(s.id))}
+                              checked={paginatedSubscribers.length > 0 && paginatedSubscribers.every((s: any) => selectedSubIds.includes(s.id))}
                               onChange={() => handleSelectAllOnPage(paginatedSubscribers)}
                             />
                             <span className="sch-checkmark" />
@@ -4410,7 +4320,7 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedSubscribers.map((sub) => {
+                      {paginatedSubscribers.map((sub: any) => {
                         const avColor = getAvatarColor(sub.id);
                         return (
                           <tr key={sub.id} className="sch-table-row">
@@ -5169,9 +5079,9 @@ subscribeCustomer('customer@domain.com', 'Jasim Kareem', '07800000000')
                               <div style={{ marginTop: '4px' }}><strong>الموضوع:</strong> {getPreviewText(campSubject, getAudienceList()[previewSubIndex]) || '(لا يوجد عنوان)'}</div>
                             </div>
                             
-                            <div 
+                             <div 
                               style={{ padding: '20px', fontSize: '14px', lineHeight: 1.6 }}
-                              dangerouslySetInnerHTML={{ __html: getPreviewText(campBody, getAudienceList()[previewSubIndex]) }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getPreviewText(campBody, getAudienceList()[previewSubIndex])) }}
                             />
                           </div>
                         ) : (
