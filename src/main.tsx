@@ -15,12 +15,7 @@ window.fetch = async (input, init) => {
   const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
   
   if (url && url.startsWith('http://127.0.0.1:3000')) {
-    let rewrittenUrl = url.replace('http://127.0.0.1:3000', API_BASE || 'https://sumersend-backend.onrender.com');
-    const isSmtpOrEmail = url.includes('/api/smtp') || url.includes('/v1/emails') || url.includes('/public/subscribers/join') || url.includes('/public/subscribers/unsubscribe');
-
-    if (isProduction && isSmtpOrEmail && !API_BASE) {
-      rewrittenUrl = url.replace('http://127.0.0.1:3000', '');
-    }
+    let rewrittenUrl = url.replace('http://127.0.0.1:3000', API_BASE);
     
     if (typeof input === 'string') {
       input = rewrittenUrl;
