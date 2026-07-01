@@ -147,18 +147,19 @@ authRouter.post('/logout', (req, res) => {
 
 // Auth middleware to secure routing
 export async function authMiddleware(req, res, next) {
-  // Read token from Cookie first, then Authorization Header
-  const cookieToken = req.headers.cookie
-    ? req.headers.cookie.match(/(?:^|;)\s*sumer_token\s*=\s*([^;]+)/)?.[1]
-    : null;
+  // Prioritize Authorization Header first, then fall back to Cookie
+  const authHeader = req.headers.authorization;
+  let token = null;
 
-  let token = cookieToken;
-  let authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
 
   if (!token) {
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
+    const cookieToken = req.headers.cookie
+      ? req.headers.cookie.match(/(?:^|;)\s*sumer_token\s*=\s*([^;]+)/)?.[1]
+      : null;
+    token = cookieToken;
   }
 
   if (!token) {

@@ -24,7 +24,8 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     const isVercel = origin.endsWith('.vercel.app');
-    const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel || process.env.NODE_ENV !== 'production';
+    const isSumerSend = origin === 'https://sumersend.com' || origin.endsWith('.sumersend.com');
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel || isSumerSend || process.env.NODE_ENV !== 'production';
 
     if (isAllowed) {
       return callback(null, true);
